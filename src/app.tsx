@@ -46,11 +46,13 @@ export async function getInitialState(): Promise<{
       });
       if (response.code === 0) {
         // 合并API设置和默认设置，保留前端特有字段
+        // 排除 extra 和 authPlugins 等不需要的字段
+        const { extra, authPlugins, ...apiSettings } = response.data;
         return {
-          ...response.data,
-          fixSiderbar: response.data.fixSiderbar ?? defaultSettings.fixSiderbar,
-          pwa: response.data.pwa ?? defaultSettings.pwa,
-          iconfontUrl: response.data.iconfontUrl ?? defaultSettings.iconfontUrl,
+          ...apiSettings,
+          fixSiderbar: apiSettings.fixSiderbar ?? defaultSettings.fixSiderbar,
+          pwa: apiSettings.pwa ?? defaultSettings.pwa,
+          iconfontUrl: apiSettings.iconfontUrl ?? defaultSettings.iconfontUrl,
         } as any;
       }
     } catch (_error) {
