@@ -2,6 +2,19 @@
 
 基于 Ant Design Pro 构建的现代化企业级中后台管理系统，使用 React 18 + TypeScript + Umi 4 + Ant Design 5 技术栈。
 
+## 📝 最近更新
+
+### 2024-12-19 - API 接口清理
+- 根据 OpenAPI 规范清理了项目中的接口代码
+- 删除了 16 个不在 OpenAPI 规范中的 service 文件
+- 清理了主要 API 服务文件中的无用接口
+- 保留了符合 OpenAPI 规范的接口：
+  - `/api/auth/login` - 用户登录
+  - `/api/auth/logout` - 用户登出  
+  - `/api/auth/register` - 用户注册
+  - `/api/admin/settings` - 管理员设置
+- 移除了所有假数据接口和 demo 接口，使项目更加简洁
+
 ## 🎯 项目概览
 
 本项目是一个功能完整的中后台管理系统模板，提供了丰富的业务组件和页面模板，可以快速构建企业级应用。

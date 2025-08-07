@@ -14,9 +14,17 @@ import {
 import type { Store } from 'antd/es/form/interface';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
-import type { StateType } from './service';
-import { fakeRegister } from './service';
+import { register } from '@/services/ant-design-pro/api';
 import useStyles from './styles';
+
+export interface StateType {
+  status?: 'ok' | 'error';
+  type?: string;
+  currentAuthority?: 'user' | 'guest' | 'admin';
+  code?: number;
+  message?: string;
+  data?: Record<string, any>;
+}
 
 const FormItem = Form.Item;
 const { Option } = Select;
@@ -85,11 +93,11 @@ const Register: FC = () => {
     }
     return 'poor';
   };
-  const { loading: submitting, run: register } = useRequest<{
+  const { loading: submitting, run: registerUser } = useRequest<{
     data: StateType;
     code?: number;
     message?: string;
-  }>(fakeRegister, {
+  }>(register, {
     manual: true,
     onSuccess: (data, params) => {
       // 检查新的API响应格式
@@ -108,7 +116,7 @@ const Register: FC = () => {
     }
   });
   const onFinish = (values: Store) => {
-    register(values);
+    registerUser(values);
   };
   const checkConfirm = (_: any, value: string) => {
     const promise = Promise;
