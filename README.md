@@ -4,7 +4,24 @@
 
 ## 📝 最近更新
 
-### 2024-12-19 - API 接口清理
+### 2024-12-19 - 项目大幅重构和修复
+#### 第二次更新 - 修复项目启动错误
+- 修复了删除 service 文件后导致的项目崩溃问题
+- 删除了 151 个无用的 demo 功能文件，包括：
+  - 所有 dashboard 页面（analysis、monitor、workplace）
+  - 所有 form 页面（basic-form、advanced-form、step-form）
+  - 所有 list 页面（basic-list、card-list、search等）
+  - 所有 account 和 profile 页面
+- 大幅简化路由配置，只保留核心功能：
+  - 用户系统（登录、注册）
+  - 异常页面（403、404、500）
+  - 结果页面（成功、失败）
+  - 管理页面（Admin）
+- 修复用户注册页面，使用符合 OpenAPI 规范的 register 接口
+- 修复 app.tsx 中的用户认证逻辑，改为基于 token 的验证
+- 项目现在可以正常启动并运行
+
+#### 第一次更新 - API 接口清理
 - 根据 OpenAPI 规范清理了项目中的接口代码
 - 删除了 16 个不在 OpenAPI 规范中的 service 文件
 - 清理了主要 API 服务文件中的无用接口

@@ -9,7 +9,7 @@ import {
   AvatarName,
   Footer,
 } from '@/components';
-import { getAdminSettings } from '@/services/ant-design-pro/api';
+import { currentUser as queryCurrentUser, getAdminSettings } from '@/services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
@@ -29,28 +29,10 @@ export async function getInitialState(): Promise<{
 }> {
   const fetchUserInfo = async () => {
     try {
-      // Since we don't have currentUser API, return a default user or get from localStorage
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        history.push(loginPath);
-        return undefined;
-      }
-      
-      // Return a default admin user
-      return {
-        name: 'Admin',
-        avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
-        userid: '1',
-        email: 'admin@unfazed.com',
-        signature: 'Administrator',
-        title: 'Admin',
-        group: 'Admin Group',
-        tags: [{ key: '0', label: 'Admin' }],
-        notifyCount: 0,
-        unreadCount: 0,
-        country: 'China',
-        access: 'admin',
-      };
+      const msg = await queryCurrentUser({
+        skipErrorHandler: true,
+      });
+      return msg.data;
     } catch (_error) {
       history.push(loginPath);
     }

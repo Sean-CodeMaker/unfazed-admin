@@ -96,15 +96,20 @@ export default [
     ],
   },
   {
+    name: 'welcome',
+    icon: 'smile',
+    path: '/welcome',
+    component: './Welcome',
+  },
+  {
     name: 'admin',
     icon: 'crown',
     path: '/admin',
     component: './Admin',
-    access: 'canAdmin',
   },
   {
     path: '/',
-    redirect: '/admin',
+    redirect: '/welcome',
   },
   {
     component: '404',
