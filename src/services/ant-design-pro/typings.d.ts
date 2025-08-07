@@ -101,6 +101,7 @@ declare namespace API {
   };
 
   type AdminSettings = {
+    // ProLayout 布局相关字段
     title: string;
     navTheme: string;
     colorPrimary: string;
@@ -112,6 +113,7 @@ declare namespace API {
     fixSiderbar?: boolean;
     pwa?: boolean;
     iconfontUrl?: string;
+    // 应用级别配置字段
     pageSize: number;
     timeZone: string;
     apiPrefix: string;

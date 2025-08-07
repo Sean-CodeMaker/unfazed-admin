@@ -45,15 +45,44 @@ export async function getInitialState(): Promise<{
         skipErrorHandler: true,
       });
       if (response.code === 0) {
-        // 合并API设置和默认设置，保留前端特有字段
-        // 排除 extra 和 authPlugins 等不需要的字段
-        const { extra, authPlugins, ...apiSettings } = response.data;
-        return {
-          ...apiSettings,
-          fixSiderbar: apiSettings.fixSiderbar ?? defaultSettings.fixSiderbar,
-          pwa: apiSettings.pwa ?? defaultSettings.pwa,
-          iconfontUrl: apiSettings.iconfontUrl ?? defaultSettings.iconfontUrl,
-        } as any;
+        const apiData = response.data;
+        
+        // 分离ProLayout需要的字段和应用级别的字段
+        const layoutSettings = {
+          // ProLayout直接支持的字段
+          title: apiData.title,
+          logo: apiData.logo,
+          navTheme: apiData.navTheme,
+          colorPrimary: apiData.colorPrimary,
+          layout: apiData.layout,
+          contentWidth: apiData.contentWidth,
+          fixedHeader: apiData.fixedHeader,
+          fixSiderbar: apiData.fixSiderbar ?? defaultSettings.fixSiderbar,
+          colorWeak: apiData.colorWeak,
+          // 前端特有字段
+          pwa: apiData.pwa ?? defaultSettings.pwa,
+          iconfontUrl: apiData.iconfontUrl ?? defaultSettings.iconfontUrl,
+        };
+
+        // 应用级别的配置存储到localStorage
+        const appSettings = {
+          pageSize: apiData.pageSize,
+          timeZone: apiData.timeZone,
+          apiPrefix: apiData.apiPrefix,
+          debug: apiData.debug,
+          version: apiData.version,
+          extra: apiData.extra,
+          authPlugins: apiData.authPlugins,
+        };
+        
+        // 存储应用级别配置到localStorage
+        try {
+          localStorage.setItem('unfazed_app_settings', JSON.stringify(appSettings));
+        } catch (error) {
+          console.warn('Failed to save app settings to localStorage:', error);
+        }
+
+        return layoutSettings as any;
       }
     } catch (_error) {
       console.warn('Failed to fetch settings, using default settings');
