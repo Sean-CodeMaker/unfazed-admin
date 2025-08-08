@@ -7,15 +7,12 @@ import type {
 import {
     PageContainer,
     ProTable,
-    ProCard,
 } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { Button, message, Form, Input, Select, DatePicker, Switch, Space, Popconfirm } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { getModelDesc, getModelData, executeModelAction, deleteModelData, saveModelData } from '@/services/ant-design-pro/api';
+import { Button, message, Space, Popconfirm, Dropdown, Menu, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, MoreOutlined, EyeOutlined } from '@ant-design/icons';
+import { getModelDesc, getModelData, executeModelAction, saveModelData } from '@/services/ant-design-pro/api';
 import dayjs from 'dayjs';
-
-const { RangePicker } = DatePicker;
 
 interface ModelListProps {
     modelName: string;
@@ -31,7 +28,6 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
     // 状态管理
     const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
     const [selectedRowsState, setSelectedRows] = useState<Record<string, any>[]>([]);
-    const [searchForm] = Form.useForm();
     const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
 
     // 从 localStorage 获取设置
@@ -77,8 +73,8 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
             // 构建搜索条件
             const conditions: API.Condition[] = [];
 
-            // 从搜索表单获取条件
-            const searchValues = searchForm.getFieldsValue();
+            // 从 ProTable 搜索参数获取条件 (排除分页参数)
+            const { current, pageSize: requestPageSize, ...searchValues } = params;
             Object.entries(searchValues).forEach(([field, value]) => {
                 if (value !== undefined && value !== null && value !== '') {
                     const fieldConfig = modelDesc.fields[field];
@@ -134,7 +130,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                 const response = await getModelData({
                     name: modelName,
                     page: params.current || 1,
-                    size: params.pageSize || pageSize,
+                    size: requestPageSize || pageSize,
                     cond: conditions.length > 0 ? conditions : undefined,
                 });
 
@@ -154,37 +150,16 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                 return { data: [], success: false, total: 0 };
             }
         },
-        [modelDesc, modelName, searchForm, getStoredSettings, messageApi]
+        [modelDesc, modelName, getStoredSettings, messageApi]
     );
 
-    // 删除操作
-    const { loading: deleteLoading, run: handleDelete } = useRequest(
-        (records: Record<string, any>[]) => deleteModelData({
-            name: modelName,
-            data: records,
-        }),
-        {
-            manual: true,
-            onSuccess: (response) => {
-                if (response.code === 0) {
-                    messageApi.success('删除成功');
-                    setSelectedRows([]);
-                    actionRef.current?.reloadAndRest?.();
-                } else {
-                    messageApi.error(response.message || '删除失败');
-                }
-            },
-            onError: () => {
-                messageApi.error('删除失败');
-            },
-        }
-    );
+
 
     // 执行批量操作
     const handleBatchAction = useCallback(
         async (actionKey: string, records: Record<string, any>[]) => {
             if (!records.length) {
-                messageApi.warning('请选择要操作的记录');
+                messageApi.warning('Please select records to operate');
                 return;
             }
 
@@ -196,11 +171,11 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                         data: record,
                     });
                 }
-                messageApi.success('操作成功');
+                messageApi.success('Operation successful');
                 setSelectedRows([]);
                 actionRef.current?.reloadAndRest?.();
             } catch (error) {
-                messageApi.error('操作失败');
+                messageApi.error('Operation failed');
                 console.error('Batch action error:', error);
             }
         },
@@ -216,10 +191,10 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                     action: actionKey,
                     data: record,
                 });
-                messageApi.success('操作成功');
+                messageApi.success('Operation successful');
                 actionRef.current?.reload?.();
             } catch (error) {
-                messageApi.error('操作失败');
+                messageApi.error('Operation failed');
                 console.error('Row action error:', error);
             }
         },
@@ -235,11 +210,11 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                     data: record,
                     inlines: {},
                 });
-                messageApi.success('保存成功');
+                messageApi.success('Saved successfully');
                 setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== key));
                 actionRef.current?.reload?.();
             } catch (error) {
-                messageApi.error('保存失败');
+                messageApi.error('Save failed');
                 console.error('Save error:', error);
             }
         },
@@ -262,9 +237,16 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                 key: fieldName,
                 tooltip: fieldConfig.help_text,
                 readonly: fieldConfig.readonly,
+                ellipsis: true, // 启用省略号
             };
 
-            // 根据字段类型设置 valueType
+            // 为 ID 字段设置固定列
+            if (fieldName === 'id') {
+                column.fixed = 'left';
+                column.width = 80;
+            }
+
+            // 根据字段类型设置 valueType 和宽度 (如果没有预设宽度)
             switch (fieldConfig.type) {
                 case 'CharField':
                 case 'TextField':
@@ -275,32 +257,44 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                             acc[value] = { text: label };
                             return acc;
                         }, {} as Record<string, { text: string }>);
+                        if (!column.width) column.width = 120;
+                    } else if (fieldConfig.type === 'TextField') {
+                        if (!column.width) column.width = 200;
+                    } else {
+                        if (!column.width) column.width = 150;
                     }
                     break;
                 case 'IntegerField':
                     column.valueType = 'digit';
+                    if (!column.width) column.width = 100;
                     break;
                 case 'FloatField':
                     column.valueType = 'money';
+                    if (!column.width) column.width = 120;
                     break;
                 case 'BooleanField':
                     column.valueType = 'switch';
+                    if (!column.width) column.width = 80;
                     break;
                 case 'DateField':
                     column.valueType = 'date';
+                    if (!column.width) column.width = 120;
                     break;
                 case 'DatetimeField':
                     column.valueType = 'dateTime';
+                    if (!column.width) column.width = 160;
                     break;
                 case 'TimeField':
                     column.valueType = 'time';
+                    if (!column.width) column.width = 100;
                     break;
                 default:
                     column.valueType = 'text';
+                    if (!column.width) column.width = 150;
             }
 
-            // 设置搜索相关属性
-            if (modelDesc.attrs.list_search?.includes(fieldName)) {
+            // 设置搜索相关属性 - 基于 search_fields
+            if (modelDesc.attrs.search_fields?.includes(fieldName)) {
                 column.hideInSearch = false;
             } else {
                 column.hideInSearch = true;
@@ -333,13 +327,27 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
         });
 
         // 添加操作列
-        if (modelDesc.attrs.can_edit || modelDesc.attrs.can_delete || modelDesc.attrs.editable || Object.values(modelDesc.actions || {}).some(action => !action.batch)) {
+        if (modelDesc.attrs.can_edit || modelDesc.attrs.editable || Object.values(modelDesc.actions || {}).some(action => !action.batch)) {
+            // 计算操作列宽度
+            let actionWidth = 80; // 基础宽度
+            if (modelDesc.attrs.can_edit) actionWidth += 60; // Detail 按钮
+            if (modelDesc.attrs.editable) actionWidth += 100; // Edit/Save/Cancel 按钮
+
+            // 非批量操作现在只占用一个 "More" 按钮的宽度
+            const nonBatchActions = Object.values(modelDesc.actions || {}).filter(action => !action.batch);
+            if (nonBatchActions.length > 0) actionWidth += 60; // More 按钮
+
             columns.push({
-                title: '操作',
+                title: 'Actions',
                 dataIndex: 'option',
                 valueType: 'option',
+                width: Math.min(actionWidth, 300), // 最大宽度 300px
+                fixed: 'right', // 固定到右侧
                 render: (_, record, __, action) => {
                     const actions = [];
+
+                    // 添加非批量的自定义操作到下拉菜单 - 移到最前面
+
 
                     if (modelDesc.attrs.can_edit && onEdit) {
                         actions.push(
@@ -347,66 +355,13 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                                 key="edit"
                                 type="link"
                                 size="small"
-                                icon={<EditOutlined />}
+                                icon={<EyeOutlined />}
                                 onClick={() => onEdit(record)}
                             >
                                 Detail
                             </Button>
                         );
                     }
-
-                    if (modelDesc.attrs.can_delete) {
-                        actions.push(
-                            <Popconfirm
-                                key="delete"
-                                title="确定要删除这条记录吗？"
-                                onConfirm={() => handleDelete([record])}
-                                okText="确定"
-                                cancelText="取消"
-                            >
-                                <Button
-                                    type="link"
-                                    size="small"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                >
-                                    Delete
-                                </Button>
-                            </Popconfirm>
-                        );
-                    }
-
-                    // 添加非批量的自定义操作
-                    Object.entries(modelDesc.actions || {}).forEach(([actionKey, action]) => {
-                        if (!action.batch) {
-                            const actionButton = (
-                                <Button
-                                    key={actionKey}
-                                    type="link"
-                                    size="small"
-                                    onClick={() => handleRowAction(actionKey, record)}
-                                >
-                                    {action.name}
-                                </Button>
-                            );
-
-                            if (action.confirm) {
-                                actions.push(
-                                    <Popconfirm
-                                        key={actionKey}
-                                        title={`确定要${action.description}这条记录吗？`}
-                                        onConfirm={() => handleRowAction(actionKey, record)}
-                                        okText="确定"
-                                        cancelText="取消"
-                                    >
-                                        {actionButton}
-                                    </Popconfirm>
-                                );
-                            } else {
-                                actions.push(actionButton);
-                            }
-                        }
-                    });
 
                     // 可编辑模式的操作按钮
                     if (modelDesc.attrs.editable) {
@@ -463,113 +418,55 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                         }
                     }
 
+                    const nonBatchActions = Object.entries(modelDesc.actions || {}).filter(([_, action]) => !action.batch);
+                    if (nonBatchActions.length > 0) {
+                        const menuItems = nonBatchActions.map(([actionKey, action]) => ({
+                            key: actionKey,
+                            label: action.name,
+                            onClick: () => {
+                                if (action.confirm) {
+                                    // 使用 Ant Design 的确认对话框
+                                    Modal.confirm({
+                                        title: 'Confirm Action',
+                                        content: `Are you sure to ${action.description} this record?`,
+                                        okText: 'Confirm',
+                                        cancelText: 'Cancel',
+                                        onOk: () => {
+                                            handleRowAction(actionKey, record);
+                                        },
+                                    });
+                                } else {
+                                    handleRowAction(actionKey, record);
+                                }
+                            }
+                        }));
+
+                        actions.push(
+                            <Dropdown
+                                key="more"
+                                menu={{ items: menuItems }}
+                                placement="bottomRight"
+                            >
+                                <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<MoreOutlined />}
+                                >
+                                    More
+                                </Button>
+                            </Dropdown>
+                        );
+                    }
+
                     return actions;
                 },
             });
         }
 
         return columns;
-    }, [modelDesc, onEdit, handleDelete, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
+    }, [modelDesc, onEdit, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
 
-    // 生成搜索面板
-    const renderSearchPanel = useCallback(() => {
-        if (!modelDesc || !modelDesc.attrs.can_search) return null;
 
-        const searchFields = modelDesc.attrs.search_fields || [];
-        if (searchFields.length === 0) return null;
-
-        return (
-            <ProCard title="Search Panel" collapsible style={{ marginBottom: 16 }}>
-                <Form
-                    form={searchForm}
-                    onFinish={() => actionRef.current?.reload?.()}
-                >
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
-                        {searchFields.map((fieldName) => {
-                            const fieldConfig = modelDesc.fields[fieldName];
-                            if (!fieldConfig) return null;
-
-                            const commonProps = {
-                                key: fieldName,
-                                name: fieldName,
-                                label: fieldConfig.name || fieldName,
-                                placeholder: `Please input ${fieldConfig.name || fieldName}`,
-                                style: { marginBottom: 0 }
-                            };
-
-                            switch (fieldConfig.type) {
-                                case 'CharField':
-                                case 'TextField':
-                                    if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-                                        return (
-                                            <Form.Item {...commonProps}>
-                                                <Select
-                                                    allowClear
-                                                    placeholder={`Please select ${fieldConfig.name || fieldName}`}
-                                                    style={{ width: 200 }}
-                                                >
-                                                    {fieldConfig.choices.map(([value, label]) => (
-                                                        <Select.Option key={value} value={value}>
-                                                            {label}
-                                                        </Select.Option>
-                                                    ))}
-                                                </Select>
-                                            </Form.Item>
-                                        );
-                                    }
-                                    return (
-                                        <Form.Item {...commonProps}>
-                                            <Input allowClear style={{ width: 200 }} />
-                                        </Form.Item>
-                                    );
-                                case 'IntegerField':
-                                case 'FloatField':
-                                    return (
-                                        <Form.Item {...commonProps}>
-                                            <Input type="number" allowClear style={{ width: 200 }} />
-                                        </Form.Item>
-                                    );
-                                case 'BooleanField':
-                                    return (
-                                        <Form.Item {...commonProps} valuePropName="checked">
-                                            <Switch />
-                                        </Form.Item>
-                                    );
-                                case 'DateField':
-                                case 'DatetimeField':
-                                    return (
-                                        <Form.Item {...commonProps}>
-                                            <RangePicker style={{ width: 300 }} />
-                                        </Form.Item>
-                                    );
-                                default:
-                                    return (
-                                        <Form.Item {...commonProps}>
-                                            <Input allowClear style={{ width: 200 }} />
-                                        </Form.Item>
-                                    );
-                            }
-                        })}
-                        <div style={{ marginLeft: 'auto' }}>
-                            <Space>
-                                <Button type="primary" htmlType="submit">
-                                    Search
-                                </Button>
-                                <Button
-                                    onClick={() => {
-                                        searchForm.resetFields();
-                                        actionRef.current?.reload?.();
-                                    }}
-                                >
-                                    Reset
-                                </Button>
-                            </Space>
-                        </div>
-                    </div>
-                </Form>
-            </ProCard>
-        );
-    }, [modelDesc, searchForm]);
 
     // 生成工具栏按钮
     const renderToolBar = useCallback(() => {
@@ -605,10 +502,10 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                     buttons.push(
                         <Popconfirm
                             key={actionKey}
-                            title={`确定要${action.description}选中的记录吗？`}
+                            title={`Are you sure to ${action.description} selected records?`}
                             onConfirm={() => handleBatchAction(actionKey, selectedRowsState)}
-                            okText="确定"
-                            cancelText="取消"
+                            okText="Confirm"
+                            cancelText="Cancel"
                         >
                             {batchButton}
                         </Popconfirm>
@@ -631,15 +528,14 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
     }, [modelDesc, onAdd, selectedRowsState, handleBatchAction]);
 
     if (descLoading || !modelDesc) {
-        return <div>加载中...</div>;
+        return <div>Loading...</div>;
     }
 
     return (
         <PageContainer>
             {contextHolder}
 
-            {/* 搜索面板 */}
-            {renderSearchPanel()}
+
 
             {/* 列表展示 */}
             <ProTable<Record<string, any>>
@@ -647,7 +543,13 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                 actionRef={actionRef}
                 formRef={formRef}
                 rowKey={(record) => record.id || record.key || JSON.stringify(record)}
-                search={false} // 禁用内置搜索，使用自定义搜索面板
+                search={{
+                    labelWidth: 120,
+                    defaultCollapsed: false,
+                    optionRender: (searchConfig, formProps, dom) => [
+                        ...dom.reverse(),
+                    ],
+                }}
                 toolBarRender={() => renderToolBar()}
                 request={fetchModelData}
                 columns={generateColumns()}
@@ -672,6 +574,10 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                         },
                     } : undefined
                 }
+                scroll={{
+                    x: 'max-content',
+                    y: 'calc(100vh - 400px)'
+                }}
                 pagination={{
                     pageSize: getStoredSettings().pageSize || modelDesc.attrs.list_per_page || 20,
                     showSizeChanger: true,

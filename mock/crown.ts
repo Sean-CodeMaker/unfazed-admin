@@ -192,7 +192,7 @@ const crownModelDesc = {
         level: {
             type: 'IntegerField' as const,
             readonly: false,
-            show: true,
+            show: false,
             blank: false,
             choices: [
                 [1, 'Common'],
@@ -358,7 +358,7 @@ const crownModelDesc = {
             output: 0,
             confirm: true,
             description: 'Set selected crowns to maintenance status',
-            batch: true,
+            batch: false,
             extra: {}
         },
         export_data: {
@@ -367,7 +367,7 @@ const crownModelDesc = {
             output: 1,
             confirm: false,
             description: 'Export data of selected crowns',
-            batch: true,
+            batch: false,
             extra: {
                 format: 'excel'
             }
