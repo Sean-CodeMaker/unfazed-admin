@@ -267,4 +267,50 @@ declare namespace API {
     name: string;
     data: Record<string, any>[];
   };
+
+  type ModelDetailRequest = {
+    name: string;
+    data: Record<string, any>;
+  };
+
+  type AdminInlineAttrs = {
+    help_text?: string;
+    can_search?: boolean;
+    search_fields?: string[];
+    can_add?: boolean;
+    can_delete?: boolean;
+    can_edit?: boolean;
+    can_show_all?: boolean;
+    list_per_page?: number;
+    list_search?: string[];
+    list_filter?: string[];
+    list_sort?: string[];
+    list_order?: string[];
+    max_num?: number;
+    min_num?: number;
+  };
+
+  type Relation = {
+    to: string;
+    source_field: string;
+    dest_field: string;
+    relation: 'm2m' | 'fk' | 'o2o' | 'bk_fk' | 'bk_o2o';
+  };
+
+  type AdminInlineSerializeModel = {
+    fields: Record<string, AdminField>;
+    actions: Record<string, AdminAction>;
+    attrs: AdminInlineAttrs;
+    relation?: Relation | null;
+  };
+
+  type DetailData = {
+    inlines: Record<string, AdminInlineSerializeModel>;
+  };
+
+  type ModelDetailResponse = {
+    code: number;
+    message: string;
+    data: DetailData;
+  };
 }

@@ -106,6 +106,18 @@ export async function getModelData(params: API.ModelDataRequest, options?: { [ke
   });
 }
 
+/** 获取模型详情 POST /api/admin/model-detail */
+export async function getModelDetail(params: API.ModelDetailRequest, options?: { [key: string]: any }) {
+  return request<API.ModelDetailResponse>('/api/admin/model-detail', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: params,
+    ...(options || {}),
+  });
+}
+
 /** 执行模型操作 POST /api/admin/model-action */
 export async function executeModelAction(params: API.ModelActionRequest, options?: { [key: string]: any }) {
   return request<any>('/api/admin/model-action', {

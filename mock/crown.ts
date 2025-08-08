@@ -586,5 +586,103 @@ export default {
                 is_update: isUpdate
             }
         });
+    },
+
+    // Crown 模型详情
+    'POST /api/admin/model-detail': async (req: Request, res: Response) => {
+        const { name, data } = req.body;
+        await waitTime(500);
+
+        if (name !== 'crown') {
+            res.send({
+                code: 1,
+                message: `Model ${name} not found`,
+                data: null
+            });
+            return;
+        }
+
+        // 模拟返回关联模型信息
+        res.send({
+            code: 0,
+            message: 'success',
+            data: {
+                inlines: {
+                    // 示例：皇冠的历史记录
+                    crown_history: {
+                        fields: {
+                            id: {
+                                type: 'IntegerField' as const,
+                                readonly: true,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'History record ID',
+                                default: null,
+                                name: 'ID'
+                            },
+                            event_type: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [
+                                    ['created', 'Created'],
+                                    ['transferred', 'Transferred'],
+                                    ['maintenance', 'Maintenance'],
+                                    ['sold', 'Sold']
+                                ],
+                                help_text: 'Type of historical event',
+                                default: 'created',
+                                name: 'Event Type'
+                            },
+                            description: {
+                                type: 'TextField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: true,
+                                choices: [],
+                                help_text: 'Event description',
+                                default: '',
+                                name: 'Description'
+                            },
+                            event_date: {
+                                type: 'DatetimeField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'When the event occurred',
+                                default: null,
+                                name: 'Event Date'
+                            }
+                        },
+                        actions: {},
+                        attrs: {
+                            help_text: 'Crown History Records',
+                            can_search: true,
+                            search_fields: ['event_type', 'description'],
+                            can_add: true,
+                            can_delete: true,
+                            can_edit: true,
+                            can_show_all: true,
+                            list_per_page: 10,
+                            list_search: [],
+                            list_filter: ['event_type'],
+                            list_sort: ['event_date'],
+                            list_order: ['-event_date'],
+                            max_num: 50,
+                            min_num: 0
+                        },
+                        relation: {
+                            to: 'crown',
+                            source_field: 'crown_id',
+                            dest_field: 'id',
+                            relation: 'fk' as const
+                        }
+                    }
+                }
+            }
+        });
     }
 };

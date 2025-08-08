@@ -16,11 +16,11 @@ import dayjs from 'dayjs';
 
 interface ModelListProps {
     modelName: string;
-    onEdit?: (record: Record<string, any>) => void;
+    onDetail?: (record: Record<string, any>) => void;
     onAdd?: () => void;
 }
 
-const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
+const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => {
     const [messageApi, contextHolder] = message.useMessage();
     const actionRef = useRef<ActionType>(null!);
     const formRef = useRef<ProFormInstance>(null!);
@@ -326,11 +326,11 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
             columns.push(column);
         });
 
-        // 添加操作列
-        if (modelDesc.attrs.can_edit || modelDesc.attrs.editable || Object.values(modelDesc.actions || {}).some(action => !action.batch)) {
+        // 添加操作列 - 始终显示（因为 Detail 按钮总是存在）
+        if (true) {
             // 计算操作列宽度
             let actionWidth = 80; // 基础宽度
-            if (modelDesc.attrs.can_edit) actionWidth += 60; // Detail 按钮
+            actionWidth += 60; // Detail 按钮 - 始终存在
             if (modelDesc.attrs.editable) actionWidth += 100; // Edit/Save/Cancel 按钮
 
             // 非批量操作现在只占用一个 "More" 按钮的宽度
@@ -349,19 +349,18 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                     // 添加非批量的自定义操作到下拉菜单 - 移到最前面
 
 
-                    if (modelDesc.attrs.can_edit && onEdit) {
-                        actions.push(
-                            <Button
-                                key="edit"
-                                type="link"
-                                size="small"
-                                icon={<EyeOutlined />}
-                                onClick={() => onEdit(record)}
-                            >
-                                Detail
-                            </Button>
-                        );
-                    }
+                    // Detail 按钮 - 始终显示
+                    actions.push(
+                        <Button
+                            key="detail"
+                            type="link"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => onDetail?.(record)}
+                        >
+                            Detail
+                        </Button>
+                    );
 
                     // 可编辑模式的操作按钮
                     if (modelDesc.attrs.editable) {
@@ -464,7 +463,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
         }
 
         return columns;
-    }, [modelDesc, onEdit, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
+    }, [modelDesc, onDetail, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
 
 
 
