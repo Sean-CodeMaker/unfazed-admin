@@ -170,4 +170,101 @@ declare namespace API {
     message: string;
     data: AdminRoute[];
   };
+
+  // Model Admin 相关类型定义，基于 OpenAPI 规范
+  type AdminField = {
+    type: 'CharField' | 'IntegerField' | 'BooleanField' | 'FloatField' | 'DateField' | 'DatetimeField' | 'TimeField' | 'TextField';
+    readonly?: boolean;
+    show?: boolean;
+    blank?: boolean;
+    choices?: [any, any][];
+    help_text: string;
+    default?: any;
+    name?: string | null;
+  };
+
+  type AdminAction = {
+    name: string;
+    raw_name: string;
+    output: number;
+    confirm: boolean;
+    description: string;
+    batch: boolean;
+    extra?: Record<string, any>;
+  };
+
+  type AdminAttrs = {
+    help_text?: string;
+    can_search?: boolean;
+    search_fields?: string[];
+    can_add?: boolean;
+    can_delete?: boolean;
+    can_edit?: boolean;
+    can_show_all?: boolean;
+    list_per_page?: number;
+    list_search?: string[];
+    list_filter?: string[];
+    list_sort?: string[];
+    list_order?: string[];
+    editable?: boolean;
+    detail_display?: string[];
+  };
+
+  type AdminSerializeModel = {
+    fields: Record<string, AdminField>;
+    actions: Record<string, AdminAction>;
+    attrs: AdminAttrs;
+  };
+
+  type ModelDescResponse = {
+    code: number;
+    message: string;
+    data: AdminSerializeModel;
+  };
+
+  type Condition = {
+    field: string;
+    eq?: number | string | null;
+    lt?: number | null;
+    lte?: number | null;
+    gt?: number | null;
+    gte?: number | null;
+    contains?: string | null;
+    icontains?: string | null;
+  };
+
+  type ModelDataRequest = {
+    name: string;
+    page: number;
+    size: number;
+    cond?: Condition[];
+  };
+
+  type ModelDataResult = {
+    count: number;
+    data: Record<string, any>[];
+  };
+
+  type ModelDataResponse = {
+    code: number;
+    message: string;
+    data: ModelDataResult;
+  };
+
+  type ModelActionRequest = {
+    name: string;
+    action: string;
+    data: Record<string, any>;
+  };
+
+  type ModelSaveRequest = {
+    name: string;
+    data: Record<string, any>;
+    inlines: Record<string, Record<string, any>[]>;
+  };
+
+  type ModelDeleteRequest = {
+    name: string;
+    data: Record<string, any>[];
+  };
 }

@@ -469,6 +469,14 @@ export default {
           icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/CrownOutlined.js',
           hideInMenu: false,
           hideChildrenInMenu: false,
+        },
+        {
+          name: 'crown-management',
+          path: '/crown',
+          component: './crown',
+          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/CrownOutlined.js',
+          hideInMenu: false,
+          hideChildrenInMenu: false,
         }
       ]
     });

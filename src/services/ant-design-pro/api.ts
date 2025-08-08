@@ -79,3 +79,65 @@ export async function getRouteList(options?: { [key: string]: any }) {
     ...(options || {}),
   });
 }
+
+/** 获取模型描述 POST /api/admin/model-desc */
+export async function getModelDesc(modelName: string, options?: { [key: string]: any }) {
+  return request<API.ModelDescResponse>('/api/admin/model-desc', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: {
+      name: modelName,
+    },
+    ...(options || {}),
+  });
+}
+
+/** 获取模型数据 POST /api/admin/model-data */
+export async function getModelData(params: API.ModelDataRequest, options?: { [key: string]: any }) {
+  return request<API.ModelDataResponse>('/api/admin/model-data', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: params,
+    ...(options || {}),
+  });
+}
+
+/** 执行模型操作 POST /api/admin/model-action */
+export async function executeModelAction(params: API.ModelActionRequest, options?: { [key: string]: any }) {
+  return request<any>('/api/admin/model-action', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: params,
+    ...(options || {}),
+  });
+}
+
+/** 保存模型数据 POST /api/admin/model-save */
+export async function saveModelData(params: API.ModelSaveRequest, options?: { [key: string]: any }) {
+  return request<any>('/api/admin/model-save', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: params,
+    ...(options || {}),
+  });
+}
+
+/** 删除模型数据 POST /api/admin/model-delete */
+export async function deleteModelData(params: API.ModelDeleteRequest, options?: { [key: string]: any }) {
+  return request<any>('/api/admin/model-delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: params,
+    ...(options || {}),
+  });
+}

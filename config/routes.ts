@@ -108,6 +108,12 @@ export default [
     component: './Admin',
   },
   {
+    name: 'crown-management',
+    icon: 'crown',
+    path: '/crown',
+    component: './crown',
+  },
+  {
     path: '/',
     redirect: '/welcome',
   },
