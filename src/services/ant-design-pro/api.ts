@@ -71,3 +71,11 @@ export async function register(body: API.RegisterParams, options?: { [key: strin
     ...(options || {}),
   });
 }
+
+/** 获取路由列表 GET /api/admin/route-list */
+export async function getRouteList(options?: { [key: string]: any }) {
+  return request<API.RouteListResponse>('/api/admin/route-list', {
+    method: 'GET',
+    ...(options || {}),
+  });
+}

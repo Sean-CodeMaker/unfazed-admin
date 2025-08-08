@@ -9,7 +9,7 @@ import {
   AvatarName,
   Footer,
 } from '@/components';
-import { currentUser as queryCurrentUser, getAdminSettings } from '@/services/ant-design-pro/api';
+import { currentUser as queryCurrentUser, getAdminSettings, getRouteList } from '@/services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
@@ -19,6 +19,62 @@ const isDev =
 const loginPath = '/user/login';
 
 /**
+ * 将 API 路由数据转换为 ProLayout 菜单数据格式
+ */
+function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
+  const transformRoute = (route: API.AdminRoute): any => {
+    const menuItem: any = {
+      name: route.name,
+      path: route.path,
+    };
+
+    // 设置图标
+    if (route.icon) {
+      menuItem.icon = extractIconNameFromUrl(route.icon);
+    }
+
+    // 设置菜单隐藏属性
+    if (route.hideInMenu) {
+      menuItem.hideInMenu = route.hideInMenu;
+    }
+
+    if (route.hideChildrenInMenu) {
+      menuItem.hideChildrenInMenu = route.hideChildrenInMenu;
+    }
+
+    // 递归处理子路由
+    if (route.routes && route.routes.length > 0) {
+      menuItem.routes = route.routes.map(transformRoute);
+    }
+
+    return menuItem;
+  };
+
+  return routes.map(transformRoute);
+}
+
+/**
+ * 从 CDN 图标 URL 中提取图标名称
+ */
+function extractIconNameFromUrl(iconUrl: string): string {
+  const iconMap: Record<string, string> = {
+    'SmileOutlined': 'smile',
+    'CheckCircleOutlined': 'CheckCircleOutlined',
+    'WarningOutlined': 'warning',
+    'CrownOutlined': 'crown',
+    'UserOutlined': 'user',
+  };
+
+  for (const [key, value] of Object.entries(iconMap)) {
+    if (iconUrl.includes(key)) {
+      return value;
+    }
+  }
+
+  return 'smile';
+}
+
+/**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
 export async function getInitialState(): Promise<{
@@ -26,6 +82,7 @@ export async function getInitialState(): Promise<{
   currentUser?: API.CurrentUser;
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
+  menuData?: any[];
 }> {
   const fetchUserInfo = async () => {
     try {
@@ -46,7 +103,7 @@ export async function getInitialState(): Promise<{
       });
       if (response.code === 0) {
         const apiData = response.data;
-        
+
         // 分离ProLayout需要的字段和应用级别的字段
         const layoutSettings = {
           // ProLayout直接支持的字段
@@ -74,7 +131,7 @@ export async function getInitialState(): Promise<{
           extra: apiData.extra,
           authPlugins: apiData.authPlugins,
         };
-        
+
         // 存储应用级别配置到localStorage
         try {
           localStorage.setItem('unfazed_app_settings', JSON.stringify(appSettings));
@@ -90,6 +147,20 @@ export async function getInitialState(): Promise<{
     return defaultSettings as Partial<LayoutSettings>;
   };
 
+  const fetchMenuData = async () => {
+    try {
+      const response = await getRouteList({
+        skipErrorHandler: true,
+      });
+      if (response.code === 0) {
+        return transformApiRoutesToMenuData(response.data);
+      }
+    } catch (_error) {
+      console.warn('Failed to fetch menu data, using default menu');
+    }
+    return [];
+  };
+
   // 如果不是登录页面，执行
   const { location } = history;
   if (
@@ -99,23 +170,27 @@ export async function getInitialState(): Promise<{
   ) {
     const currentUser = await fetchUserInfo();
     if (currentUser) {
-      // 用户已登录，获取API设置
+      // 用户已登录，获取API设置和菜单数据
       const settings = await fetchSettings();
+      const menuData = await fetchMenuData();
       return {
         fetchUserInfo,
         currentUser,
         settings,
+        menuData,
       };
     }
     return {
       fetchUserInfo,
       currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
+      menuData: [],
     };
   }
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
+    menuData: [],
   };
 }
 
@@ -131,6 +206,12 @@ export const layout: RunTimeLayoutConfig = ({
       title: <AvatarName />,
       render: (_, avatarChildren) => {
         return <AvatarDropdown>{avatarChildren}</AvatarDropdown>;
+      },
+    },
+    // 使用动态菜单数据
+    menu: {
+      request: async () => {
+        return initialState?.menuData || [];
       },
     },
     waterMarkProps: {

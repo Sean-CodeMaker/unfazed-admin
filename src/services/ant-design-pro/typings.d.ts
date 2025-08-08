@@ -153,4 +153,21 @@ declare namespace API {
     description?: string;
     type?: NoticeIconItemType;
   };
+
+  // 路由相关类型定义，基于 OpenAPI 规范
+  type AdminRoute = {
+    name: string;
+    path: string;
+    component?: string | null;
+    routes?: AdminRoute[];
+    icon?: string | null;
+    hideInMenu?: boolean;
+    hideChildrenInMenu?: boolean;
+  };
+
+  type RouteListResponse = {
+    code: number;
+    message: string;
+    data: AdminRoute[];
+  };
 }

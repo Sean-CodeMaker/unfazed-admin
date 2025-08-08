@@ -361,94 +361,114 @@ export default {
       message: 'success',
       data: [
         {
-          title: 'Dashboard',
-          name: 'dashboard',
-          component: 'dashboard',
-          children: [
+          name: 'user',
+          path: '/user',
+          component: null,
+          icon: null,
+          hideInMenu: true, // layout: false 意味着在菜单中隐藏
+          hideChildrenInMenu: false,
+          routes: [
             {
-              title: 'Analysis',
-              name: 'analysis',
-              component: 'dashboard/analysis',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/chart-line.svg',
-                hidden: false,
-                hidden_children: false
-              }
+              name: 'login',
+              path: '/user/login',
+              component: './user/login',
+              icon: null,
+              hideInMenu: true,
+              hideChildrenInMenu: false,
             },
             {
-              title: 'Monitor',
-              name: 'monitor',
-              component: 'dashboard/monitor',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/desktop.svg',
-                hidden: false,
-                hidden_children: false
-              }
+              name: 'register-result',
+              path: '/user/register-result',
+              component: './user/register-result',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: true,
+              hideChildrenInMenu: false,
             },
             {
-              title: 'Workplace',
-              name: 'workplace',
-              component: 'dashboard/workplace',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/briefcase.svg',
-                hidden: false,
-                hidden_children: false
-              }
-            }
+              name: 'register',
+              path: '/user/register',
+              component: './user/register',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: true,
+              hideChildrenInMenu: false,
+            },
           ],
-          meta: {
-            icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/tachometer-alt.svg',
-            hidden: false,
-            hidden_children: false
-          }
         },
         {
-          title: 'Form',
-          name: 'form',
-          component: 'form',
-          children: [
+          name: 'result',
+          path: '/result',
+          component: null,
+          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/CheckCircleOutlined.js',
+          hideInMenu: false,
+          hideChildrenInMenu: false,
+          routes: [
             {
-              title: 'Basic Form',
-              name: 'basic-form',
-              component: 'form/basic-form',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/edit.svg',
-                hidden: false,
-                hidden_children: false
-              }
+              name: 'success',
+              path: '/result/success',
+              component: './result/success',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: false,
+              hideChildrenInMenu: false,
             },
             {
-              title: 'Step Form',
-              name: 'step-form',
-              component: 'form/step-form',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/list-ol.svg',
-                hidden: false,
-                hidden_children: false
-              }
+              name: 'fail',
+              path: '/result/fail',
+              component: './result/fail',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: false,
+              hideChildrenInMenu: false,
             },
-            {
-              title: 'Advanced Form',
-              name: 'advanced-form',
-              component: 'form/advanced-form',
-              children: [],
-              meta: {
-                icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/cogs.svg',
-                hidden: false,
-                hidden_children: false
-              }
-            }
           ],
-          meta: {
-            icon: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/file-alt.svg',
-            hidden: false,
-            hidden_children: false
-          }
+        },
+        {
+          name: 'exception',
+          path: '/exception',
+          component: null,
+          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/WarningOutlined.js',
+          hideInMenu: false,
+          hideChildrenInMenu: false,
+          routes: [
+            {
+              name: '403',
+              path: '/exception/403',
+              component: './exception/403',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: false,
+              hideChildrenInMenu: false,
+            },
+            {
+              name: '404',
+              path: '/exception/404',
+              component: './exception/404',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: false,
+              hideChildrenInMenu: false,
+            },
+            {
+              name: '500',
+              path: '/exception/500',
+              component: './exception/500',
+              icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+              hideInMenu: false,
+              hideChildrenInMenu: false,
+            },
+          ],
+        },
+        {
+          name: 'welcome',
+          path: '/welcome',
+          component: './Welcome',
+          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/SmileOutlined.js',
+          hideInMenu: false,
+          hideChildrenInMenu: false,
+        },
+        {
+          name: 'admin',
+          path: '/admin',
+          component: './Admin',
+          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/CrownOutlined.js',
+          hideInMenu: false,
+          hideChildrenInMenu: false,
         }
       ]
     });

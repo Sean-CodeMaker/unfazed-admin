@@ -340,10 +340,15 @@
         "schemas": {
             "unfazed.contrib.admin.endpoints.list_route.AdminRoute": {
                 "properties": {
-                    "title": {
+                    "name": {
                         "type": "string",
-                        "title": "Title",
-                        "description": "title of this route"
+                        "title": "Name",
+                        "description": "name of this route"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path",
+                        "description": "path of this route"
                     },
                     "component": {
                         "anyOf": [
@@ -357,34 +362,14 @@
                         "title": "Component",
                         "description": "component of this route"
                     },
-                    "name": {
-                        "type": "string",
-                        "title": "Name",
-                        "description": "name of this route"
-                    },
-                    "children": {
+                    "routes": {
                         "items": {
                             "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.list_route.AdminRoute"
                         },
                         "type": "array",
-                        "title": "Children",
+                        "title": "Routes",
                         "description": "children routes of this route"
                     },
-                    "meta": {
-                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.list_route.RouteMeta",
-                        "description": "metadata of this route"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "title",
-                    "name",
-                    "meta"
-                ],
-                "title": "AdminRoute"
-            },
-            "unfazed.contrib.admin.endpoints.list_route.RouteMeta": {
-                "properties": {
                     "icon": {
                         "anyOf": [
                             {
@@ -400,21 +385,25 @@
                             "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/solid/user.svg"
                         ]
                     },
-                    "hidden": {
+                    "hideInMenu": {
                         "type": "boolean",
-                        "title": "Hidden",
+                        "title": "Hideinmenu",
                         "description": "hide this route in frontend admin",
                         "default": false
                     },
-                    "hidden_children": {
+                    "hideChildrenInMenu": {
                         "type": "boolean",
-                        "title": "Hidden Children",
+                        "title": "Hidechildreninmenu",
                         "description": "hide children routes in frontend admin",
                         "default": false
                     }
                 },
                 "type": "object",
-                "title": "RouteMeta"
+                "required": [
+                    "name",
+                    "path"
+                ],
+                "title": "AdminRoute"
             },
             "unfazed.contrib.admin.endpoints.list_route.RouteResp": {
                 "properties": {
@@ -476,6 +465,21 @@
                         "title": "Fixedheader",
                         "description": "fixed header of this admin site"
                     },
+                    "fixSiderbar": {
+                        "type": "boolean",
+                        "title": "Fixsiderbar",
+                        "description": "fix siderbar of this admin site"
+                    },
+                    "pwa": {
+                        "type": "boolean",
+                        "title": "Pwa",
+                        "description": "pwa of this admin site"
+                    },
+                    "iconfontUrl": {
+                        "type": "string",
+                        "title": "Iconfonturl",
+                        "description": "iconfont url of this admin site"
+                    },
                     "colorWeak": {
                         "type": "boolean",
                         "title": "Colorweak",
@@ -485,21 +489,6 @@
                         "type": "string",
                         "title": "Logo",
                         "description": "logo of this admin site"
-                    },
-                    "fixSiderbar": {
-                        "type": "boolean",
-                        "title": "Fixsiderbar",
-                        "description": "fixed sidebar of this admin site"
-                    },
-                    "pwa": {
-                        "type": "boolean",
-                        "title": "Pwa",
-                        "description": "PWA settings of this admin site"
-                    },
-                    "iconfontUrl": {
-                        "type": "string",
-                        "title": "Iconfonturl",
-                        "description": "iconfont URL of this admin site"
                     },
                     "pageSize": {
                         "type": "integer",
@@ -550,6 +539,9 @@
                     "layout",
                     "contentWidth",
                     "fixedHeader",
+                    "fixSiderbar",
+                    "pwa",
+                    "iconfontUrl",
                     "colorWeak",
                     "logo",
                     "pageSize",
