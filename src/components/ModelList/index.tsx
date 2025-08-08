@@ -12,7 +12,7 @@ import {
 import { useRequest } from '@umijs/max';
 import { Button, message, Form, Input, Select, DatePicker, Switch, Space, Popconfirm } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { getModelDesc, getModelData, executeModelAction, deleteModelData } from '@/services/ant-design-pro/api';
+import { getModelDesc, getModelData, executeModelAction, deleteModelData, saveModelData } from '@/services/ant-design-pro/api';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -32,6 +32,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
     const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
     const [selectedRowsState, setSelectedRows] = useState<Record<string, any>[]>([]);
     const [searchForm] = Form.useForm();
+    const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
 
     // 从 localStorage 获取设置
     const getStoredSettings = useCallback(() => {
@@ -225,6 +226,26 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
         [modelName, messageApi]
     );
 
+    // 保存编辑的数据
+    const handleSave = useCallback(
+        async (key: React.Key, record: Record<string, any>) => {
+            try {
+                await saveModelData({
+                    name: modelName,
+                    data: record,
+                    inlines: {},
+                });
+                messageApi.success('保存成功');
+                setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== key));
+                actionRef.current?.reload?.();
+            } catch (error) {
+                messageApi.error('保存失败');
+                console.error('Save error:', error);
+            }
+        },
+        [modelName, messageApi]
+    );
+
     // 根据字段类型生成 ProTable 列配置
     const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
         if (!modelDesc) return [];
@@ -290,16 +311,34 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                 column.sorter = true;
             }
 
+            // 设置筛选
+            if (modelDesc.attrs.list_filter?.includes(fieldName) && fieldConfig.choices && fieldConfig.choices.length > 0) {
+                column.filters = fieldConfig.choices.map(([value, label]) => ({
+                    text: label,
+                    value: value,
+                }));
+                column.onFilter = (value: any, record: Record<string, any>) => {
+                    return record[fieldName] === value;
+                };
+            }
+
+
+
+            // 设置可编辑 (对于 EditableProTable)
+            if (modelDesc.attrs.editable && !fieldConfig.readonly) {
+                column.editable = () => true;
+            }
+
             columns.push(column);
         });
 
         // 添加操作列
-        if (modelDesc.attrs.can_edit || modelDesc.attrs.can_delete || Object.values(modelDesc.actions || {}).some(action => !action.batch)) {
+        if (modelDesc.attrs.can_edit || modelDesc.attrs.can_delete || modelDesc.attrs.editable || Object.values(modelDesc.actions || {}).some(action => !action.batch)) {
             columns.push({
                 title: '操作',
                 dataIndex: 'option',
                 valueType: 'option',
-                render: (_, record) => {
+                render: (_, record, __, action) => {
                     const actions = [];
 
                     if (modelDesc.attrs.can_edit && onEdit) {
@@ -311,7 +350,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                                 icon={<EditOutlined />}
                                 onClick={() => onEdit(record)}
                             >
-                                Edit
+                                Detail
                             </Button>
                         );
                     }
@@ -369,107 +408,164 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                         }
                     });
 
+                    // 可编辑模式的操作按钮
+                    if (modelDesc.attrs.editable) {
+                        const recordKey = record.id || record.key || JSON.stringify(record);
+                        const isEditing = editableKeys.includes(recordKey);
+
+                        if (isEditing) {
+                            // 编辑状态：显示保存和取消按钮
+                            actions.push(
+                                <Button
+                                    key="save"
+                                    type="link"
+                                    size="small"
+                                    onClick={async () => {
+                                        try {
+                                            await handleSave(recordKey, record);
+                                        } catch (error) {
+                                            console.error('Save error:', error);
+                                        }
+                                    }}
+                                >
+                                    Save
+                                </Button>
+                            );
+                            actions.push(
+                                <Button
+                                    key="cancel"
+                                    type="link"
+                                    size="small"
+                                    onClick={() => {
+                                        action?.cancelEditable?.(recordKey);
+                                        setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== recordKey));
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            );
+                        } else {
+                            // 非编辑状态：显示编辑按钮
+                            actions.push(
+                                <Button
+                                    key="edit-inline"
+                                    type="link"
+                                    size="small"
+                                    icon={<EditOutlined />}
+                                    onClick={() => {
+                                        action?.startEditable?.(recordKey);
+                                        setEditableRowKeys(prevKeys => [...prevKeys, recordKey]);
+                                    }}
+                                >
+                                    Edit
+                                </Button>
+                            );
+                        }
+                    }
+
                     return actions;
                 },
             });
         }
 
         return columns;
-    }, [modelDesc, onEdit, handleDelete, handleRowAction]);
+    }, [modelDesc, onEdit, handleDelete, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
 
     // 生成搜索面板
     const renderSearchPanel = useCallback(() => {
         if (!modelDesc || !modelDesc.attrs.can_search) return null;
 
-        const searchFields = modelDesc.attrs.list_search || [];
+        const searchFields = modelDesc.attrs.search_fields || [];
         if (searchFields.length === 0) return null;
 
         return (
-            <ProCard title="搜索条件" collapsible style={{ marginBottom: 16 }}>
+            <ProCard title="Search Panel" collapsible style={{ marginBottom: 16 }}>
                 <Form
                     form={searchForm}
-                    layout="inline"
                     onFinish={() => actionRef.current?.reload?.()}
                 >
-                    {searchFields.map((fieldName) => {
-                        const fieldConfig = modelDesc.fields[fieldName];
-                        if (!fieldConfig) return null;
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
+                        {searchFields.map((fieldName) => {
+                            const fieldConfig = modelDesc.fields[fieldName];
+                            if (!fieldConfig) return null;
 
-                        const commonProps = {
-                            key: fieldName,
-                            name: fieldName,
-                            label: fieldConfig.name || fieldName,
-                            placeholder: `请输入${fieldConfig.name || fieldName}`,
-                        };
+                            const commonProps = {
+                                key: fieldName,
+                                name: fieldName,
+                                label: fieldConfig.name || fieldName,
+                                placeholder: `Please input ${fieldConfig.name || fieldName}`,
+                                style: { marginBottom: 0 }
+                            };
 
-                        switch (fieldConfig.type) {
-                            case 'CharField':
-                            case 'TextField':
-                                if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+                            switch (fieldConfig.type) {
+                                case 'CharField':
+                                case 'TextField':
+                                    if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+                                        return (
+                                            <Form.Item {...commonProps}>
+                                                <Select
+                                                    allowClear
+                                                    placeholder={`Please select ${fieldConfig.name || fieldName}`}
+                                                    style={{ width: 200 }}
+                                                >
+                                                    {fieldConfig.choices.map(([value, label]) => (
+                                                        <Select.Option key={value} value={value}>
+                                                            {label}
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select>
+                                            </Form.Item>
+                                        );
+                                    }
                                     return (
                                         <Form.Item {...commonProps}>
-                                            <Select
-                                                allowClear
-                                                placeholder={`请选择${fieldConfig.name || fieldName}`}
-                                                style={{ width: 200 }}
-                                            >
-                                                {fieldConfig.choices.map(([value, label]) => (
-                                                    <Select.Option key={value} value={value}>
-                                                        {label}
-                                                    </Select.Option>
-                                                ))}
-                                            </Select>
+                                            <Input allowClear style={{ width: 200 }} />
                                         </Form.Item>
                                     );
-                                }
-                                return (
-                                    <Form.Item {...commonProps}>
-                                        <Input allowClear style={{ width: 200 }} />
-                                    </Form.Item>
-                                );
-                            case 'IntegerField':
-                            case 'FloatField':
-                                return (
-                                    <Form.Item {...commonProps}>
-                                        <Input type="number" allowClear style={{ width: 200 }} />
-                                    </Form.Item>
-                                );
-                            case 'BooleanField':
-                                return (
-                                    <Form.Item {...commonProps} valuePropName="checked">
-                                        <Switch />
-                                    </Form.Item>
-                                );
-                            case 'DateField':
-                            case 'DatetimeField':
-                                return (
-                                    <Form.Item {...commonProps}>
-                                        <RangePicker style={{ width: 300 }} />
-                                    </Form.Item>
-                                );
-                            default:
-                                return (
-                                    <Form.Item {...commonProps}>
-                                        <Input allowClear style={{ width: 200 }} />
-                                    </Form.Item>
-                                );
-                        }
-                    })}
-                    <Form.Item>
-                        <Space>
-                            <Button type="primary" htmlType="submit">
-                                搜索
-                            </Button>
-                            <Button
-                                onClick={() => {
-                                    searchForm.resetFields();
-                                    actionRef.current?.reload?.();
-                                }}
-                            >
-                                重置
-                            </Button>
-                        </Space>
-                    </Form.Item>
+                                case 'IntegerField':
+                                case 'FloatField':
+                                    return (
+                                        <Form.Item {...commonProps}>
+                                            <Input type="number" allowClear style={{ width: 200 }} />
+                                        </Form.Item>
+                                    );
+                                case 'BooleanField':
+                                    return (
+                                        <Form.Item {...commonProps} valuePropName="checked">
+                                            <Switch />
+                                        </Form.Item>
+                                    );
+                                case 'DateField':
+                                case 'DatetimeField':
+                                    return (
+                                        <Form.Item {...commonProps}>
+                                            <RangePicker style={{ width: 300 }} />
+                                        </Form.Item>
+                                    );
+                                default:
+                                    return (
+                                        <Form.Item {...commonProps}>
+                                            <Input allowClear style={{ width: 200 }} />
+                                        </Form.Item>
+                                    );
+                            }
+                        })}
+                        <div style={{ marginLeft: 'auto' }}>
+                            <Space>
+                                <Button type="primary" htmlType="submit">
+                                    Search
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        searchForm.resetFields();
+                                        actionRef.current?.reload?.();
+                                    }}
+                                >
+                                    Reset
+                                </Button>
+                            </Space>
+                        </div>
+                    </div>
                 </Form>
             </ProCard>
         );
@@ -488,7 +584,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                     icon={<PlusOutlined />}
                     onClick={onAdd}
                 >
-                    新增
+                    Add
                 </Button>
             );
         }
@@ -562,6 +658,19 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onEdit, onAdd }) => {
                             setSelectedRows(selectedRows);
                         },
                     }
+                }
+                editable={
+                    modelDesc.attrs.editable ? {
+                        type: 'multiple',
+                        editableKeys,
+                        onChange: setEditableRowKeys,
+                        onSave: async (key: any, record: Record<string, any>) => {
+                            await handleSave(key, record);
+                        },
+                        actionRender: (row, config, defaultDom) => {
+                            return [defaultDom.save, defaultDom.cancel];
+                        },
+                    } : undefined
                 }
                 pagination={{
                     pageSize: getStoredSettings().pageSize || modelDesc.attrs.list_per_page || 20,
