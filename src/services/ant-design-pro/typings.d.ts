@@ -251,10 +251,22 @@ declare namespace API {
     data: ModelDataResult;
   };
 
+  type Condition = {
+    field: string;
+    eq?: number | string | null;
+    lt?: number | null;
+    lte?: number | null;
+    gt?: number | null;
+    gte?: number | null;
+    contains?: string | null;
+    icontains?: string | null;
+  };
+
   type ModelActionRequest = {
     name: string;
     action: string;
-    data: Record<string, any>;
+    extra?: Record<string, any>;
+    cond?: Condition[];
   };
 
   type ModelSaveRequest = {

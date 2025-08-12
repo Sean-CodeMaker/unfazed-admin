@@ -148,6 +148,214 @@ const crownData = [
     }
 ];
 
+// Crown History model mock data
+const crownHistoryData = [
+    {
+        id: 1,
+        crown_id: 1,
+        event_type: 'created',
+        description: 'Crown was forged by master craftsman in the royal forge',
+        event_date: '2024-01-15T10:30:00Z',
+        created_at: '2024-01-15T10:30:00Z',
+        updated_at: '2024-01-15T10:30:00Z'
+    },
+    {
+        id: 2,
+        crown_id: 1,
+        event_type: 'transferred',
+        description: 'Crown transferred to King Arthur during coronation ceremony',
+        event_date: '2024-01-16T14:00:00Z',
+        created_at: '2024-01-16T14:00:00Z',
+        updated_at: '2024-01-16T14:00:00Z'
+    },
+    {
+        id: 3,
+        crown_id: 1,
+        event_type: 'maintenance',
+        description: 'Regular maintenance and gem polishing performed',
+        event_date: '2024-01-20T09:15:00Z',
+        created_at: '2024-01-20T09:15:00Z',
+        updated_at: '2024-01-20T09:15:00Z'
+    },
+    {
+        id: 4,
+        crown_id: 2,
+        event_type: 'created',
+        description: 'Diamond Crown crafted with 99 premium diamonds',
+        event_date: '2024-01-16T09:15:00Z',
+        created_at: '2024-01-16T09:15:00Z',
+        updated_at: '2024-01-16T09:15:00Z'
+    },
+    {
+        id: 5,
+        crown_id: 2,
+        event_type: 'reserved',
+        description: 'Crown reserved for Queen Elizabeth special ceremony',
+        event_date: '2024-01-22T11:30:00Z',
+        created_at: '2024-01-22T11:30:00Z',
+        updated_at: '2024-01-22T11:30:00Z'
+    },
+    {
+        id: 6,
+        crown_id: 3,
+        event_type: 'created',
+        description: 'Jade Crown carved from ancient jade stone',
+        event_date: '2024-01-17T08:45:00Z',
+        created_at: '2024-01-17T08:45:00Z',
+        updated_at: '2024-01-17T08:45:00Z'
+    },
+    {
+        id: 7,
+        crown_id: 3,
+        event_type: 'appraised',
+        description: 'Crown appraised by jade expert, confirmed authenticity',
+        event_date: '2024-01-18T15:20:00Z',
+        created_at: '2024-01-18T15:20:00Z',
+        updated_at: '2024-01-18T15:20:00Z'
+    },
+    {
+        id: 8,
+        crown_id: 4,
+        event_type: 'created',
+        description: 'Silver Crown forged with traditional techniques',
+        event_date: '2024-01-18T12:00:00Z',
+        created_at: '2024-01-18T12:00:00Z',
+        updated_at: '2024-01-18T12:00:00Z'
+    },
+    {
+        id: 9,
+        crown_id: 4,
+        event_type: 'sold',
+        description: 'Crown sold to Noble House collector',
+        event_date: '2024-01-21T10:45:00Z',
+        created_at: '2024-01-21T10:45:00Z',
+        updated_at: '2024-01-21T10:45:00Z'
+    },
+    {
+        id: 10,
+        crown_id: 5,
+        event_type: 'created',
+        description: 'Crystal Crown crafted with rare magical crystals',
+        event_date: '2024-01-19T16:30:00Z',
+        created_at: '2024-01-19T16:30:00Z',
+        updated_at: '2024-01-19T16:30:00Z'
+    },
+    {
+        id: 11,
+        crown_id: 1,
+        event_type: 'inspection',
+        description: 'Annual quality inspection completed successfully',
+        event_date: '2024-01-25T14:00:00Z',
+        created_at: '2024-01-25T14:00:00Z',
+        updated_at: '2024-01-25T14:00:00Z'
+    },
+    {
+        id: 12,
+        crown_id: 2,
+        event_type: 'exhibition',
+        description: 'Crown displayed in Royal Heritage Exhibition',
+        event_date: '2024-01-26T10:00:00Z',
+        created_at: '2024-01-26T10:00:00Z',
+        updated_at: '2024-01-26T10:00:00Z'
+    }
+];
+
+// Crown Tags model mock data (m2m relation)
+const crownTagsData = [
+    { id: 1, name: 'luxury', description: 'High-end luxury items' },
+    { id: 2, name: 'antique', description: 'Historical antique pieces' },
+    { id: 3, name: 'royal', description: 'Royal collection items' },
+    { id: 4, name: 'ceremonial', description: 'Used in ceremonies' },
+    { id: 5, name: 'decorative', description: 'Decorative purposes only' },
+    { id: 6, name: 'museum', description: 'Museum exhibition pieces' },
+    { id: 7, name: 'rare', description: 'Rare and unique items' },
+    { id: 8, name: 'valuable', description: 'High monetary value' }
+];
+
+// Crown Certificates model mock data (fk relation)
+const crownCertificatesData = [
+    {
+        id: 1,
+        crown_id: 1,
+        certificate_type: 'authenticity',
+        issuer: 'Royal Authentication Society',
+        issue_date: '2024-01-15T10:00:00Z',
+        expiry_date: '2026-01-15T10:00:00Z',
+        certificate_number: 'RAS-2024-001',
+        status: 'active'
+    },
+    {
+        id: 2,
+        crown_id: 1,
+        certificate_type: 'appraisal',
+        issuer: 'International Gem Institute',
+        issue_date: '2024-01-16T14:30:00Z',
+        expiry_date: '2025-01-16T14:30:00Z',
+        certificate_number: 'IGI-2024-001',
+        status: 'active'
+    },
+    {
+        id: 3,
+        crown_id: 2,
+        certificate_type: 'authenticity',
+        issuer: 'Royal Authentication Society',
+        issue_date: '2024-01-17T09:00:00Z',
+        expiry_date: '2026-01-17T09:00:00Z',
+        certificate_number: 'RAS-2024-002',
+        status: 'active'
+    },
+    {
+        id: 4,
+        crown_id: 3,
+        certificate_type: 'heritage',
+        issuer: 'Heritage Preservation Council',
+        issue_date: '2024-01-18T11:00:00Z',
+        expiry_date: '2029-01-18T11:00:00Z',
+        certificate_number: 'HPC-2024-001',
+        status: 'active'
+    }
+];
+
+// Crown Insurance model mock data (o2o relation)
+const crownInsuranceData = [
+    {
+        id: 1,
+        crown_id: 1,
+        policy_number: 'POL-2024-001',
+        insurance_company: 'Royal Heritage Insurance Co.',
+        coverage_amount: 15000000.00,
+        premium_amount: 25000.00,
+        start_date: '2024-01-01T00:00:00Z',
+        end_date: '2024-12-31T23:59:59Z',
+        policy_type: 'comprehensive',
+        status: 'active'
+    },
+    {
+        id: 2,
+        crown_id: 2,
+        policy_number: 'POL-2024-002',
+        insurance_company: 'Premium Artifacts Insurance',
+        coverage_amount: 25000000.00,
+        premium_amount: 45000.00,
+        start_date: '2024-01-01T00:00:00Z',
+        end_date: '2024-12-31T23:59:59Z',
+        policy_type: 'comprehensive',
+        status: 'active'
+    },
+    {
+        id: 3,
+        crown_id: 3,
+        policy_number: 'POL-2024-003',
+        insurance_company: 'Heritage Protection Insurance',
+        coverage_amount: 8000000.00,
+        premium_amount: 15000.00,
+        start_date: '2024-01-01T00:00:00Z',
+        end_date: '2024-12-31T23:59:59Z',
+        policy_type: 'basic',
+        status: 'active'
+    }
+];
+
 const crownModelDesc = {
     fields: {
         id: {
@@ -403,6 +611,111 @@ export default {
                 message: 'success',
                 data: crownModelDesc
             });
+        } else if (name === 'crown_history') {
+            res.send({
+                code: 0,
+                message: 'success',
+                data: {
+                    fields: {
+                        id: {
+                            type: 'IntegerField' as const,
+                            readonly: true,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'History record ID',
+                            default: null,
+                            name: 'ID'
+                        },
+                        crown_id: {
+                            type: 'IntegerField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'Associated crown ID',
+                            default: null,
+                            name: 'Crown ID'
+                        },
+                        event_type: {
+                            type: 'CharField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [
+                                ['created', 'Created'],
+                                ['transferred', 'Transferred'],
+                                ['maintenance', 'Maintenance'],
+                                ['reserved', 'Reserved'],
+                                ['sold', 'Sold'],
+                                ['appraised', 'Appraised'],
+                                ['inspection', 'Inspection'],
+                                ['exhibition', 'Exhibition'],
+                            ],
+                            help_text: 'Type of historical event',
+                            default: 'created',
+                            name: 'Event Type'
+                        },
+                        description: {
+                            type: 'TextField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: true,
+                            choices: [],
+                            help_text: 'Detailed description of the event',
+                            default: null,
+                            name: 'Description'
+                        },
+                        event_date: {
+                            type: 'DatetimeField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'When the event occurred',
+                            default: null,
+                            name: 'Event Date'
+                        },
+                        created_at: {
+                            type: 'DatetimeField' as const,
+                            readonly: true,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'Record creation time',
+                            default: null,
+                            name: 'Created At'
+                        },
+                        updated_at: {
+                            type: 'DatetimeField' as const,
+                            readonly: true,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'Record last update time',
+                            default: null,
+                            name: 'Updated At'
+                        }
+                    },
+                    actions: {},
+                    attrs: {
+                        help_text: 'Crown History Records',
+                        can_search: true,
+                        search_fields: ['event_type', 'description'],
+                        can_add: true,
+                        can_delete: true,
+                        can_edit: true,
+                        can_show_all: true,
+                        list_per_page: 10,
+                        list_search: [],
+                        list_filter: ['event_type'],
+                        list_sort: ['event_date'],
+                        list_order: ['-event_date'],
+                        editable: true,
+                        detail_display: ['id', 'crown_id', 'event_type', 'description', 'event_date', 'created_at', 'updated_at']
+                    }
+                }
+            });
         } else {
             res.send({
                 code: 1,
@@ -417,7 +730,19 @@ export default {
         const { name, page = 1, size = 20, cond = [] } = req.body;
         await waitTime(300);
 
-        if (name !== 'crown') {
+        let filteredData: any[] = [];
+
+        if (name === 'crown') {
+            filteredData = [...crownData];
+        } else if (name === 'crown_history') {
+            filteredData = [...crownHistoryData];
+        } else if (name === 'crown_tags') {
+            filteredData = [...crownTagsData];
+        } else if (name === 'crown_certificates') {
+            filteredData = [...crownCertificatesData];
+        } else if (name === 'crown_insurance') {
+            filteredData = [...crownInsuranceData];
+        } else {
             res.send({
                 code: 1,
                 message: `Model ${name} not found`,
@@ -425,8 +750,6 @@ export default {
             });
             return;
         }
-
-        let filteredData = [...crownData];
 
         // 应用搜索条件
         if (cond && cond.length > 0) {
@@ -608,7 +931,7 @@ export default {
             message: 'success',
             data: {
                 inlines: {
-                    // 示例：皇冠的历史记录
+                    // fk关系：皇冠历史记录 (一对多)
                     crown_history: {
                         fields: {
                             id: {
@@ -679,6 +1002,233 @@ export default {
                             source_field: 'crown_id',
                             dest_field: 'id',
                             relation: 'fk' as const
+                        }
+                    },
+                    // fk关系：皇冠证书 (一对多)
+                    crown_certificates: {
+                        fields: {
+                            id: {
+                                type: 'IntegerField' as const,
+                                readonly: true,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Certificate ID',
+                                default: null,
+                                name: 'ID'
+                            },
+                            certificate_type: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [
+                                    ['authenticity', 'Authenticity'],
+                                    ['appraisal', 'Appraisal'],
+                                    ['heritage', 'Heritage'],
+                                    ['insurance', 'Insurance']
+                                ],
+                                help_text: 'Type of certificate',
+                                default: 'authenticity',
+                                name: 'Certificate Type'
+                            },
+                            issuer: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Certificate issuing authority',
+                                default: null,
+                                name: 'Issuer'
+                            },
+                            certificate_number: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Unique certificate number',
+                                default: null,
+                                name: 'Certificate Number'
+                            },
+                            status: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [
+                                    ['active', 'Active'],
+                                    ['expired', 'Expired'],
+                                    ['revoked', 'Revoked']
+                                ],
+                                help_text: 'Certificate status',
+                                default: 'active',
+                                name: 'Status'
+                            }
+                        },
+                        actions: {},
+                        attrs: {
+                            help_text: 'Crown Certificates',
+                            can_search: true,
+                            search_fields: ['certificate_type', 'issuer'],
+                            can_add: true,
+                            can_delete: true,
+                            can_edit: true,
+                            can_show_all: true,
+                            list_per_page: 10,
+                            list_search: [],
+                            list_filter: ['certificate_type', 'status'],
+                            list_sort: ['issue_date'],
+                            list_order: ['-issue_date'],
+                            max_num: 20,
+                            min_num: 0
+                        },
+                        relation: {
+                            to: 'crown',
+                            source_field: 'crown_id',
+                            dest_field: 'id',
+                            relation: 'fk' as const
+                        }
+                    },
+                    // o2o关系：皇冠保险 (一对一)
+                    crown_insurance: {
+                        fields: {
+                            id: {
+                                type: 'IntegerField' as const,
+                                readonly: true,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Insurance ID',
+                                default: null,
+                                name: 'ID'
+                            },
+                            policy_number: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Insurance policy number',
+                                default: null,
+                                name: 'Policy Number'
+                            },
+                            insurance_company: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Insurance company name',
+                                default: null,
+                                name: 'Insurance Company'
+                            },
+                            coverage_amount: {
+                                type: 'FloatField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Insurance coverage amount',
+                                default: null,
+                                name: 'Coverage Amount'
+                            },
+                            policy_type: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [
+                                    ['basic', 'Basic'],
+                                    ['comprehensive', 'Comprehensive'],
+                                    ['premium', 'Premium']
+                                ],
+                                help_text: 'Type of insurance policy',
+                                default: 'basic',
+                                name: 'Policy Type'
+                            }
+                        },
+                        actions: {},
+                        attrs: {
+                            help_text: 'Crown Insurance',
+                            can_search: true,
+                            search_fields: ['policy_number', 'insurance_company'],
+                            can_add: true,
+                            can_delete: true,
+                            can_edit: true,
+                            can_show_all: true,
+                            list_per_page: 10,
+                            list_search: [],
+                            list_filter: ['policy_type'],
+                            list_sort: ['start_date'],
+                            list_order: ['-start_date'],
+                            max_num: 1,
+                            min_num: 0
+                        },
+                        relation: {
+                            to: 'crown',
+                            source_field: 'crown_id',
+                            dest_field: 'id',
+                            relation: 'o2o' as const
+                        }
+                    },
+                    // m2m关系：皇冠标签 (多对多)
+                    crown_tags: {
+                        fields: {
+                            id: {
+                                type: 'IntegerField' as const,
+                                readonly: true,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Tag ID',
+                                default: null,
+                                name: 'ID'
+                            },
+                            name: {
+                                type: 'CharField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: false,
+                                choices: [],
+                                help_text: 'Tag name',
+                                default: null,
+                                name: 'Name'
+                            },
+                            description: {
+                                type: 'TextField' as const,
+                                readonly: false,
+                                show: true,
+                                blank: true,
+                                choices: [],
+                                help_text: 'Tag description',
+                                default: null,
+                                name: 'Description'
+                            }
+                        },
+                        actions: {},
+                        attrs: {
+                            help_text: 'Crown Tags',
+                            can_search: true,
+                            search_fields: ['name', 'description'],
+                            can_add: true,
+                            can_delete: true,
+                            can_edit: true,
+                            can_show_all: true,
+                            list_per_page: 10,
+                            list_search: [],
+                            list_filter: ['name'],
+                            list_sort: ['name'],
+                            list_order: ['name'],
+                            max_num: 0,
+                            min_num: 0
+                        },
+                        relation: {
+                            to: 'crown',
+                            source_field: 'crown_id',
+                            dest_field: 'id',
+                            relation: 'm2m' as const
                         }
                     }
                 }

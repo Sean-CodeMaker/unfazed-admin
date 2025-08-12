@@ -67,8 +67,42 @@ const MyPage = () => {
 
 ### 4. 执行操作
 - **接口**: `POST /api/admin/model-action`
-- **用途**: 执行批量操作
-- **调用时机**: 用户点击批量操作按钮时
+- **用途**: 通过条件过滤执行操作（支持批量和单个记录）
+- **调用时机**: 用户点击操作按钮时
+- **重要特性**: 
+  - **批量操作**：自动合并搜索面板的过滤条件和选中记录条件
+  - **行级操作**：只传入当前行的 ID，不考虑搜索条件
+  - 支持复杂的条件组合
+
+#### 批量操作参数格式
+```json
+{
+  "name": "ModelName",
+  "action": "action_name",
+  "cond": [
+    // 来自搜索面板的条件
+    {"field": "status", "eq": "active"},
+    {"field": "created_at", "gte": "2024-01-01"},
+    // 选中记录的条件
+    {"field": "id", "eq": 1},
+    {"field": "id", "eq": 2}
+  ],
+  "extra": {} // 可选的额外数据
+}
+```
+
+#### 行级操作参数格式
+```json
+{
+  "name": "ModelName",
+  "action": "action_name",
+  "cond": [
+    // 只包含当前行的 ID
+    {"field": "id", "eq": 1}
+  ],
+  "extra": {} // 可选的额外数据
+}
+```
 
 ## 搜索功能
 
@@ -93,7 +127,7 @@ const MyPage = () => {
 | CharField        | text/select        | icontains |
 | TextField        | text               | icontains |
 | IntegerField     | digit              | eq        |
-| FloatField       | money              | eq        |
+| FloatField       | digit              | eq        |
 | BooleanField     | switch             | eq (0/1)  |
 | DateField        | date               | 日期范围  |
 | DatetimeField    | dateTime           | 日期范围  |
