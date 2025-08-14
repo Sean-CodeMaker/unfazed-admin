@@ -1,26 +1,25 @@
 import React, { useCallback, useRef, useState } from 'react';
 import type {
     ActionType,
-    ProColumns,
     ProFormInstance,
 } from '@ant-design/pro-components';
 import {
     PageContainer,
-    ProTable,
 } from '@ant-design/pro-components';
+import { CommonProTable } from '../index';
 import { useRequest } from '@umijs/max';
-import { Button, Space, Popconfirm, Dropdown, Modal } from 'antd';
-import { PlusOutlined, EditOutlined, MoreOutlined, EyeOutlined } from '@ant-design/icons';
+import { Modal, Table } from 'antd';
 import { useModelOperations } from '@/hooks/useModelOperations';
-import dayjs from 'dayjs';
+import { StringInputModal, FileUploadModal } from '@/components/ActionModals';
 
 interface ModelListProps {
     modelName: string;
     onDetail?: (record: Record<string, any>) => void;
     onAdd?: () => void;
+    onModelDescLoaded?: (modelDesc: API.AdminSerializeModel) => void;
 }
 
-const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => {
+const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd, onModelDescLoaded }) => {
     const actionRef = useRef<ActionType>(null!);
     const formRef = useRef<ProFormInstance>(null!);
 
@@ -43,8 +42,19 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => 
 
     // 状态管理
     const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
-    const [selectedRowsState, setSelectedRows] = useState<Record<string, any>[]>([]);
     const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
+
+    // Action Modal 状态
+    const [stringModalVisible, setStringModalVisible] = useState(false);
+    const [fileModalVisible, setFileModalVisible] = useState(false);
+    const [currentAction, setCurrentAction] = useState<{
+        actionKey: string;
+        actionConfig: any;
+        record?: Record<string, any>;
+        isBatch?: boolean;
+        records?: Record<string, any>[];
+    } | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     // 获取模型描述
     const { loading: descLoading } = useRequest(
@@ -52,6 +62,7 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => 
             const modelDescData = await fetchModelDesc();
             if (modelDescData) {
                 setModelDesc(modelDescData);
+                onModelDescLoaded?.(modelDescData); // 通知父组件
             }
             return modelDescData;
         },
@@ -68,35 +79,175 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => 
         [fetchModelData, modelDesc]
     );
 
+    // 显示数据弹窗
+    const showDisplayModal = (data: any, actionConfig: any) => {
+        const displayData = Array.isArray(data) ? data : [data];
+
+        // 生成列配置
+        const columns = displayData.length > 0 ?
+            Object.keys(displayData[0]).map(key => ({
+                title: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                dataIndex: key,
+                key,
+                ellipsis: true,
+                render: (value: any) => {
+                    if (value === null || value === undefined) return '-';
+                    if (typeof value === 'boolean') return value ? '✓' : '✗';
+                    if (typeof value === 'object') return JSON.stringify(value);
+                    return String(value);
+                }
+            })) : [];
+
+        Modal.info({
+            title: actionConfig?.description || 'Action Result',
+            width: Math.min(1000, window.innerWidth * 0.8),
+            content: (
+                <Table
+                    dataSource={displayData}
+                    columns={columns}
+                    pagination={{ pageSize: 10 }}
+                    size="small"
+                    rowKey={(record, index) => record.id || index}
+                    scroll={{ x: 'max-content' }}
+                />
+            ),
+            onOk() {
+                // Modal 关闭后的回调
+            },
+        });
+    };
 
 
-    // 执行批量操作
-    const handleBatchAction = useCallback(
-        async (actionKey: string, records: Record<string, any>[]) => {
-            const success = await executeBatchAction(actionKey, records, modelDesc || undefined);
-            if (success) {
-                setSelectedRows([]);
-                actionRef.current?.reloadAndRest?.();
+
+    // 触发Action（根据input类型）
+    const triggerAction = useCallback(
+        (actionKey: string, actionConfig: any, record?: Record<string, any>, isBatch = false, records: Record<string, any>[] = []) => {
+            setCurrentAction({
+                actionKey,
+                actionConfig,
+                record,
+                isBatch,
+                records,
+            });
+
+            switch (actionConfig.input) {
+                case 'string':
+                    setStringModalVisible(true);
+                    break;
+                case 'file':
+                    setFileModalVisible(true);
+                    break;
+                case 'empty':
+                default:
+                    // 直接执行
+                    executeAction(actionKey, actionConfig, record, isBatch, records);
+                    break;
             }
         },
-        [executeBatchAction, modelDesc]
+        []
     );
 
-    // 执行行级操作
-    const handleRowAction = useCallback(
-        async (actionKey: string, record: Record<string, any>) => {
-            const success = await executeRowAction(actionKey, record);
-            if (success) {
-                actionRef.current?.reload?.();
+    // 执行Action的核心逻辑
+    const executeAction = useCallback(
+        async (actionKey: string, actionConfig: any, record?: Record<string, any>, isBatch = false, records: Record<string, any>[] = [], extra?: any) => {
+            setActionLoading(true);
+            try {
+                let result;
+                if (isBatch) {
+                    result = await executeBatchAction(actionKey, records, modelDesc || undefined, extra);
+                } else {
+                    result = await executeRowAction(actionKey, record!, modelDesc || undefined, extra);
+                }
+
+                if (result.success) {
+                    // 处理display类型的输出
+                    if ((result.actionConfig as any)?.output === 'display' && result.data) {
+                        showDisplayModal(result.data, result.actionConfig);
+                    } else {
+                        // 其他类型的输出已在hook中处理
+                        actionRef.current?.reload?.();
+                    }
+                }
+            } catch (error) {
+                console.error('Action execution error:', error);
+            } finally {
+                setActionLoading(false);
             }
         },
-        [executeRowAction]
+        [executeBatchAction, executeRowAction, modelDesc]
     );
+
+    // 字符串输入Modal的确认处理
+    const handleStringInputConfirm = useCallback(
+        (inputValue: string) => {
+            if (currentAction) {
+                const extra = { input: inputValue };
+                executeAction(
+                    currentAction.actionKey,
+                    currentAction.actionConfig,
+                    currentAction.record,
+                    currentAction.isBatch,
+                    currentAction.records || [],
+                    extra
+                );
+            }
+            setStringModalVisible(false);
+            setCurrentAction(null);
+        },
+        [currentAction, executeAction]
+    );
+
+    // 文件上传Modal的确认处理
+    const handleFileUploadConfirm = useCallback(
+        (files: File[]) => {
+            if (currentAction) {
+                // 这里应该将文件转换为后端需要的格式
+                // 可以是base64编码或者FormData，根据后端要求调整
+                const filePromises = files.map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            resolve({
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                content: reader.result, // base64 data URL
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                Promise.all(filePromises).then(filesData => {
+                    const extra = { files: filesData };
+                    executeAction(
+                        currentAction.actionKey,
+                        currentAction.actionConfig,
+                        currentAction.record,
+                        currentAction.isBatch,
+                        currentAction.records || [],
+                        extra
+                    );
+                });
+            }
+            setFileModalVisible(false);
+            setCurrentAction(null);
+        },
+        [currentAction, executeAction]
+    );
+
+    // Modal取消处理
+    const handleModalCancel = useCallback(() => {
+        setStringModalVisible(false);
+        setFileModalVisible(false);
+        setCurrentAction(null);
+        setActionLoading(false);
+    }, []);
 
     // 保存编辑的数据
     const handleSave = useCallback(
         async (key: React.Key, record: Record<string, any>) => {
-            const success = await saveData(record, {});
+            const success = await saveData(record);
             if (success) {
                 setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== key));
                 actionRef.current?.reload?.();
@@ -104,309 +255,6 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => 
         },
         [saveData]
     );
-
-    // 根据字段类型生成 ProTable 列配置
-    const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
-        if (!modelDesc) return [];
-
-        const columns: ProColumns<Record<string, any>>[] = [];
-
-        // 遍历模型字段
-        Object.entries(modelDesc.fields).forEach(([fieldName, fieldConfig]) => {
-            if (!fieldConfig.show) return;
-
-            const column: ProColumns<Record<string, any>> = {
-                title: fieldConfig.name || fieldName,
-                dataIndex: fieldName,
-                key: fieldName,
-                tooltip: fieldConfig.help_text,
-                readonly: fieldConfig.readonly,
-                ellipsis: true, // 启用省略号
-            };
-
-            // 为 ID 字段设置固定列
-            if (fieldName === 'id') {
-                column.fixed = 'left';
-                column.width = 80;
-            }
-
-            // 根据字段类型设置 valueType 和宽度 (如果没有预设宽度)
-            switch (fieldConfig.type) {
-                case 'CharField':
-                case 'TextField':
-                    column.valueType = 'text';
-                    if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-                        column.valueType = 'select';
-                        column.valueEnum = fieldConfig.choices.reduce((acc, [value, label]) => {
-                            acc[value] = { text: label };
-                            return acc;
-                        }, {} as Record<string, { text: string }>);
-                        if (!column.width) column.width = 120;
-                    } else if (fieldConfig.type === 'TextField') {
-                        if (!column.width) column.width = 200;
-                    } else {
-                        if (!column.width) column.width = 150;
-                    }
-                    break;
-                case 'IntegerField':
-                    column.valueType = 'digit';
-                    if (!column.width) column.width = 100;
-                    break;
-                case 'FloatField':
-                    column.valueType = 'digit';
-                    if (!column.width) column.width = 120;
-                    break;
-                case 'BooleanField':
-                    column.valueType = 'switch';
-                    if (!column.width) column.width = 80;
-                    break;
-                case 'DateField':
-                    column.valueType = 'date';
-                    if (!column.width) column.width = 120;
-                    break;
-                case 'DatetimeField':
-                    column.valueType = 'dateTime';
-                    if (!column.width) column.width = 160;
-                    break;
-                case 'TimeField':
-                    column.valueType = 'time';
-                    if (!column.width) column.width = 100;
-                    break;
-                default:
-                    column.valueType = 'text';
-                    if (!column.width) column.width = 150;
-            }
-
-            // 设置搜索相关属性 - 基于 search_fields
-            if (modelDesc.attrs.search_fields?.includes(fieldName)) {
-                column.hideInSearch = false;
-            } else {
-                column.hideInSearch = true;
-            }
-
-            // 设置排序
-            if (modelDesc.attrs.list_sort?.includes(fieldName)) {
-                column.sorter = true;
-            }
-
-            // 设置筛选
-            if (modelDesc.attrs.list_filter?.includes(fieldName) && fieldConfig.choices && fieldConfig.choices.length > 0) {
-                column.filters = fieldConfig.choices.map(([value, label]) => ({
-                    text: label,
-                    value: value,
-                }));
-                column.onFilter = (value: any, record: Record<string, any>) => {
-                    return record[fieldName] === value;
-                };
-            }
-
-
-
-            // 设置可编辑 (对于 EditableProTable)
-            if (modelDesc.attrs.editable && !fieldConfig.readonly) {
-                column.editable = () => true;
-            }
-
-            columns.push(column);
-        });
-
-        // 添加操作列 - 始终显示（因为 Detail 按钮总是存在）
-        // 计算操作列宽度
-        let actionWidth = 80; // 基础宽度
-        actionWidth += 60; // Detail 按钮 - 始终存在
-        if (modelDesc.attrs.editable) actionWidth += 100; // Edit/Save/Cancel 按钮
-
-        // 非批量操作现在只占用一个 "More" 按钮的宽度
-        const nonBatchActions = Object.values(modelDesc.actions || {}).filter(action => !action.batch);
-        if (nonBatchActions.length > 0) actionWidth += 60; // More 按钮
-
-        columns.push({
-            title: 'Actions',
-            dataIndex: 'option',
-            valueType: 'option',
-            width: Math.min(actionWidth, 300), // 最大宽度 300px
-            fixed: 'right', // 固定到右侧
-            render: (_, record, __, action) => {
-                const actions = [];
-
-                // 添加非批量的自定义操作到下拉菜单 - 移到最前面
-
-
-                // Detail 按钮 - 始终显示
-                actions.push(
-                    <Button
-                        key="detail"
-                        type="link"
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => onDetail?.(record)}
-                    >
-                        Detail
-                    </Button>
-                );
-
-                // 可编辑模式的操作按钮
-                if (modelDesc.attrs.editable) {
-                    const recordKey = record.id || record.key || JSON.stringify(record);
-                    const isEditing = editableKeys.includes(recordKey);
-
-                    if (isEditing) {
-                        // 编辑状态：显示保存和取消按钮
-                        actions.push(
-                            <Button
-                                key="save"
-                                type="link"
-                                size="small"
-                                onClick={async () => {
-                                    try {
-                                        await handleSave(recordKey, record);
-                                    } catch (error) {
-                                        console.error('Save error:', error);
-                                    }
-                                }}
-                            >
-                                Save
-                            </Button>
-                        );
-                        actions.push(
-                            <Button
-                                key="cancel"
-                                type="link"
-                                size="small"
-                                onClick={() => {
-                                    action?.cancelEditable?.(recordKey);
-                                    setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== recordKey));
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                        );
-                    } else {
-                        // 非编辑状态：显示编辑按钮
-                        actions.push(
-                            <Button
-                                key="edit-inline"
-                                type="link"
-                                size="small"
-                                icon={<EditOutlined />}
-                                onClick={() => {
-                                    action?.startEditable?.(recordKey);
-                                    setEditableRowKeys(prevKeys => [...prevKeys, recordKey]);
-                                }}
-                            >
-                                Edit
-                            </Button>
-                        );
-                    }
-                }
-
-                const nonBatchActions = Object.entries(modelDesc.actions || {}).filter(([_, action]) => !action.batch);
-                if (nonBatchActions.length > 0) {
-                    const menuItems = nonBatchActions.map(([actionKey, action]) => ({
-                        key: actionKey,
-                        label: action.name,
-                        onClick: () => {
-                            if (action.confirm) {
-                                // 使用 Ant Design 的确认对话框
-                                Modal.confirm({
-                                    title: 'Confirm Action',
-                                    content: `Are you sure to ${action.description} this record?`,
-                                    okText: 'Confirm',
-                                    cancelText: 'Cancel',
-                                    onOk: () => {
-                                        handleRowAction(actionKey, record);
-                                    },
-                                });
-                            } else {
-                                handleRowAction(actionKey, record);
-                            }
-                        }
-                    }));
-
-                    actions.push(
-                        <Dropdown
-                            key="more"
-                            menu={{ items: menuItems }}
-                            placement="bottomRight"
-                        >
-                            <Button
-                                type="link"
-                                size="small"
-                                icon={<MoreOutlined />}
-                            >
-                                More
-                            </Button>
-                        </Dropdown>
-                    );
-                }
-
-                return actions;
-            },
-        });
-
-        return columns;
-    }, [modelDesc, onDetail, handleRowAction, handleSave, editableKeys, setEditableRowKeys]);
-
-
-
-    // 生成工具栏按钮
-    const renderToolBar = useCallback(() => {
-        const buttons = [];
-
-        // 添加按钮
-        if (modelDesc?.attrs.can_add && onAdd) {
-            buttons.push(
-                <Button
-                    key="add"
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={onAdd}
-                >
-                    Add
-                </Button>
-            );
-        }
-
-        // 批量操作按钮 - 只显示 batch=true 的操作
-        Object.entries(modelDesc?.actions || {}).forEach(([actionKey, action]) => {
-            if (action.batch) {
-                const batchButton = (
-                    <Button
-                        key={actionKey}
-                        disabled={selectedRowsState.length === 0}
-                    >
-                        {action.name}
-                    </Button>
-                );
-
-                if (action.confirm) {
-                    buttons.push(
-                        <Popconfirm
-                            key={actionKey}
-                            title={`Are you sure to ${action.description} selected records?`}
-                            onConfirm={() => handleBatchAction(actionKey, selectedRowsState)}
-                            okText="Confirm"
-                            cancelText="Cancel"
-                        >
-                            {batchButton}
-                        </Popconfirm>
-                    );
-                } else {
-                    buttons.push(
-                        <Button
-                            key={actionKey}
-                            disabled={selectedRowsState.length === 0}
-                            onClick={() => handleBatchAction(actionKey, selectedRowsState)}
-                        >
-                            {action.name}
-                        </Button>
-                    );
-                }
-            }
-        });
-
-        return buttons;
-    }, [modelDesc, onAdd, selectedRowsState, handleBatchAction]);
 
     if (descLoading || !modelDesc) {
         return <div>Loading...</div>;
@@ -416,53 +264,53 @@ const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd }) => 
         <PageContainer>
             {contextHolder}
 
+            {/* Action Modals */}
+            <StringInputModal
+                visible={stringModalVisible}
+                title={(currentAction?.actionConfig as any)?.label || 'Input Required'}
+                description={currentAction?.actionConfig?.description}
+                onOk={handleStringInputConfirm}
+                onCancel={handleModalCancel}
+                loading={actionLoading}
+            />
 
+            <FileUploadModal
+                visible={fileModalVisible}
+                title={(currentAction?.actionConfig as any)?.label || 'Upload Files'}
+                description={currentAction?.actionConfig?.description}
+                onOk={handleFileUploadConfirm}
+                onCancel={handleModalCancel}
+                loading={actionLoading}
+            />
 
             {/* 列表展示 */}
-            <ProTable<Record<string, any>>
-                headerTitle={modelDesc.attrs.help_text || modelName}
-                actionRef={actionRef}
-                formRef={formRef}
-                rowKey={(record) => record.id || record.key || JSON.stringify(record)}
-                search={{
-                    labelWidth: 120,
-                    defaultCollapsed: false,
-                    optionRender: (searchConfig, formProps, dom) => [
-                        ...dom.reverse(),
-                    ],
-                }}
-                toolBarRender={() => renderToolBar()}
-                request={wrappedFetchModelData}
-                columns={generateColumns()}
-                rowSelection={
-                    selectedRowsState && {
-                        selectedRowKeys: selectedRowsState.map(item => item.id || item.key || JSON.stringify(item)),
-                        onChange: (_, selectedRows) => {
-                            setSelectedRows(selectedRows);
-                        },
+            <CommonProTable
+                modelDesc={modelDesc}
+                modelName={modelName}
+                onDetail={onDetail}
+                onAction={(actionKey: string, action: any, record?: any, isBatch?: boolean, records?: any[]) => {
+                    if (actionKey === 'add') {
+                        // 处理新增操作：跳转到 ModelDetail，使用 id = -1 表示新建模式
+                        const newRecord = { id: -1 };
+                        onDetail?.(newRecord);
+                    } else {
+                        triggerAction(actionKey, action, record, isBatch, records || []);
                     }
-                }
-                editable={
-                    modelDesc.attrs.editable ? {
-                        type: 'multiple',
-                        editableKeys,
-                        onChange: setEditableRowKeys,
-                        onSave: async (key: any, record: Record<string, any>) => {
-                            await handleSave(key, record);
-                        },
-                        actionRender: (row, config, defaultDom) => {
-                            return [defaultDom.save, defaultDom.cancel];
-                        },
-                    } : undefined
-                }
-                scroll={{
-                    x: 'max-content',
-                    y: 'calc(100vh - 400px)'
                 }}
-                pagination={{
-                    pageSize: getStoredSettings().pageSize || modelDesc.attrs.list_per_page || 20,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
+                onSave={async (record: any) => {
+                    await handleSave(record.id || record.key || JSON.stringify(record), record);
+                }}
+                onDelete={async (record: any) => {
+                    // 这里可以实现删除逻辑
+                    console.log('Delete record:', record);
+                }}
+                onRequest={wrappedFetchModelData}
+                tableProps={{
+                    pagination: {
+                        pageSize: getStoredSettings().pageSize || modelDesc.attrs.list_per_page || 20,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                    }
                 }}
             />
         </PageContainer>

@@ -1,193 +1,403 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import type {
-    ActionType,
-    ProColumns,
     ProFormInstance,
 } from '@ant-design/pro-components';
 import {
     PageContainer,
-    ProTable,
     ProForm,
-    ProFormText,
-    ProFormDigit,
-    ProFormSwitch,
-    ProFormSelect,
-    ProFormDatePicker,
-    ProFormDateTimePicker,
-    ProFormTimePicker,
-    ProFormTextArea,
-    EditableProTable,
+    ProTable,
 } from '@ant-design/pro-components';
+import { CommonProTable } from '../index';
 import { useRequest } from '@umijs/max';
 import { Button, message, Space, Card, Tabs, Modal, Divider, Transfer } from 'antd';
-import { SaveOutlined, DeleteOutlined, ArrowLeftOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { SaveOutlined, DeleteOutlined, ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import {
-    getModelDesc,
     getModelData,
-    getModelDetail,
+    getModelInlines,
     saveModelData,
-    deleteModelData
+    deleteModelData,
+    executeModelAction
 } from '@/services/ant-design-pro/api';
-import dayjs from 'dayjs';
+import { renderFormField } from '@/utils/formFieldRenderer';
 
 interface ModelDetailProps {
     modelName: string;
+    modelDesc: API.AdminSerializeModel;
     record: Record<string, any>;
     onBack?: () => void;
 }
 
-const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) => {
+const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record, onBack }) => {
+
     const [messageApi, contextHolder] = message.useMessage();
     const formRef = useRef<ProFormInstance>(null!);
+
+    // 判断是否为新建模式
+    const isCreateMode = record.id === -1;
+    const [hasMainDataSaved, setHasMainDataSaved] = useState(!isCreateMode);
+
+
+    // 创建一个通用的 action 处理函数
+    const handleInlineAction = useCallback(async (
+        inlineName: string,
+        actionKey: string,
+        action: any,
+        record?: any,
+        isBatch?: boolean,
+        records?: any[]
+    ) => {
+        try {
+            // 构建查询条件
+            const cond = record ? [{ field: 'id', eq: record.id }] : [];
+
+            const response = await executeModelAction({
+                name: inlineName,
+                action: actionKey,
+                extra: {},
+                cond: isBatch ? [] : cond
+            });
+
+            if (response?.code === 0) {
+                // 根据不同的输出类型处理响应
+                switch (action.output) {
+                    case 'toast':
+                        messageApi.success(response.message || 'Action completed successfully');
+                        break;
+                    case 'display':
+                        Modal.info({
+                            title: action.label || actionKey,
+                            width: 800,
+                            content: (
+                                <div>
+                                    {Array.isArray(response.data) ? (
+                                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                            <tbody>
+                                                {response.data.map((item: any) => (
+                                                    <tr key={item.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                                                        <td style={{ padding: '8px', fontWeight: 'bold', width: '30%' }}>
+                                                            {item.property}:
+                                                        </td>
+                                                        <td style={{ padding: '8px' }}>
+                                                            {item.value}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    ) : (
+                                        <pre>{JSON.stringify(response.data, null, 2)}</pre>
+                                    )}
+                                </div>
+                            ),
+                        });
+                        break;
+                    case 'download':
+                        const downloadData = response.data?.download;
+                        if (downloadData?.url) {
+                            const link = document.createElement('a');
+                            link.href = downloadData.url;
+                            link.download = downloadData.filename || 'download';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            messageApi.success('Download started');
+                        }
+                        break;
+                    case 'refresh':
+                        messageApi.success(response.message || 'Action completed successfully');
+                        // 重新加载该 inline 的数据 - 刷新页面或重新获取数据
+                        window.location.reload();
+                        break;
+                    default:
+                        messageApi.success(response.message || 'Action completed successfully');
+                }
+            } else {
+                messageApi.error(response?.message || 'Action failed');
+            }
+        } catch (error) {
+            messageApi.error('Action failed');
+            console.error('Action error:', error);
+        }
+    }, [messageApi]);
 
     // 工具函数：首字母大写
     const capitalizeFirstLetter = (str: string) => {
         return str.charAt(0).toUpperCase() + str.slice(1);
     };
 
-    // 状态管理
-    const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
-    const [detailData, setDetailData] = useState<any>(null);
-    const [isEditing, setIsEditing] = useState(true); // 默认启用编辑模式
-    const [inlineData, setInlineData] = useState<Record<string, any[]>>({});
-    const [inlineDescs, setInlineDescs] = useState<Record<string, API.AdminSerializeModel>>({});
-    const [activeTab, setActiveTab] = useState('main');
-
-    // 获取模型描述
-    const { loading: descLoading } = useRequest(
-        async () => {
-            const response = await getModelDesc(modelName);
-            if (response?.code === 0) {
-                setModelDesc(response.data);
-            } else {
-                messageApi.error(response?.message || 'Failed to fetch model description');
-            }
-            return response;
-        },
-        {
-            manual: false,
-            onError: () => {
-                messageApi.error('Failed to fetch model description');
-            },
-        }
-    );
-
-    // 根据关联关系构建查询条件
-    const buildConditions = useCallback((relation: any, recordData: any) => {
-        if (!relation) return [];
-
-        const { source_field, dest_field, relation: relationType } = relation;
-        const sourceValue = recordData[source_field];
-
-        if (sourceValue === undefined || sourceValue === null) {
-            return [];
-        }
-
-        // 根据关联类型构建条件
-        switch (relationType) {
-            case 'fk':  // 外键关联
-            case 'o2o': // 一对一关联
-                return [{
-                    field: dest_field,
-                    eq: sourceValue
-                }];
-            case 'bk_fk': // 反向外键
-            case 'bk_o2o': // 反向一对一
-                return [{
-                    field: dest_field,
-                    eq: sourceValue
-                }];
-            case 'm2m': // 多对多关联（可能需要更复杂的处理）
-                return [{
-                    field: dest_field,
-                    eq: sourceValue
-                }];
-            default:
-                return [];
-        }
-    }, []);
-
-    // 获取详情数据
-    const { loading: detailLoading } = useRequest(
-        async () => {
-            if (!modelDesc) return null;
-
-            const response = await getModelDetail({
-                name: modelName,
+    // 保存单个内联记录
+    const handleInlineSave = async (inlineName: string, record: Record<string, any>) => {
+        try {
+            const response = await saveModelData({
+                name: inlineName,
                 data: record,
             });
 
             if (response?.code === 0) {
-                setDetailData(response.data);
-
-                // 获取 inline 数据
-                const inlines = response.data.inlines || {};
-
-                // 首先设置 inline 描述信息（从 model-detail 返回的数据中获取）
-                const inlineDescriptions: Record<string, any> = {};
-                Object.entries(inlines).forEach(([inlineName, inlineModel]: [string, any]) => {
-                    inlineDescriptions[inlineName] = inlineModel;
-                });
-                setInlineDescs(inlineDescriptions);
-
-                // 然后获取每个 inline 的实际数据
-                const inlineDataPromises = Object.entries(inlines).map(async ([inlineName, inlineModel]: [string, any]) => {
-                    try {
-                        // 构建查询条件
-                        const conditions = buildConditions(inlineModel.relation, record);
-
-                        // 调用 model-data 接口获取数据
-                        const dataResp = await getModelData({
-                            name: inlineName,
-                            page: 1,
-                            size: 100,
-                            cond: conditions,
-                        });
-
-                        if (dataResp?.code === 0) {
-                            return { [inlineName]: dataResp.data.data };
-                        } else {
-                            console.error(`Failed to fetch data for inline ${inlineName}:`, dataResp?.message);
-                            return { [inlineName]: [] };
-                        }
-                    } catch (error) {
-                        console.error(`Error fetching data for inline ${inlineName}:`, error);
-                        return { [inlineName]: [] };
-                    }
-                });
-
-                const inlineResults = await Promise.all(inlineDataPromises);
-                const mergedInlineData = inlineResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-                setInlineData(mergedInlineData);
+                messageApi.success('Saved successfully');
+                // 更新本地数据而不重新请求
+                setInlineData(prev => ({
+                    ...prev,
+                    [inlineName]: (prev[inlineName] || []).map(item =>
+                        item.id === record.id ? { ...item, ...record } : item
+                    )
+                }));
+                // 退出编辑模式
+                setEditingKeys(prev => ({
+                    ...prev,
+                    [inlineName]: prev[inlineName]?.filter(key => key !== record.id) || []
+                }));
             } else {
-                messageApi.error(response?.message || 'Failed to fetch detail data');
+                messageApi.error(response?.message || 'Save failed');
             }
-            return response;
+        } catch (error) {
+            messageApi.error('Save failed');
+            console.error('Save error:', error);
+        }
+    };
+
+    // 删除单个内联记录
+    const handleInlineDelete = async (
+        inlineName: string,
+        record: Record<string, any>
+    ) => {
+        try {
+            const response = await deleteModelData({
+                name: inlineName,
+                data: [record] as any,
+            });
+
+            if (response?.code === 0) {
+                messageApi.success('Deleted successfully');
+                // 更新本地数据
+                setInlineData(prev => ({
+                    ...prev,
+                    [inlineName]: (prev[inlineName] || []).filter(item => item.id !== record.id)
+                }));
+            } else {
+                messageApi.error(response?.message || 'Delete failed');
+            }
+        } catch (error) {
+            messageApi.error('Delete failed');
+            console.error('Delete error:', error);
+        }
+    };
+
+    // 状态管理
+    const [activeTab, setActiveTab] = useState('main');
+    const [inlineData, setInlineData] = useState<Record<string, Record<string, any>[]>>({});
+    const [editingKeys, setEditingKeys] = useState<Record<string, any[]>>({});
+    const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set(['main']));
+    const [inlineDescs, setInlineDescs] = useState<Record<string, any>>({});
+    const [m2mModalVisible, setM2MModalVisible] = useState<Record<string, boolean>>({});
+
+    // 内联模型数据请求
+    const { loading: detailLoading } = useRequest(
+        async () => {
+            return await getModelInlines({
+                name: modelName,
+                data: record,
+            });
         },
         {
             manual: false,
-            ready: !!modelDesc,
-            onError: () => {
-                messageApi.error('Failed to fetch detail data');
-            },
+            onSuccess: (resp: any) => {
+                // 主表单使用传入的 record
+                if (formRef.current && record) {
+                    formRef.current.setFieldsValue(record);
+                }
+                setInlineDescs(resp || {});
+            }
         }
     );
 
+    // 构建查询条件
+    const buildConditions = useCallback((inlineDesc: any, mainRecord: Record<string, any>) => {
+        const relation = inlineDesc?.relation;
+        if (!relation) return [];
 
+        switch (relation.relation) {
+            case 'fk':
+                return [{ field: relation.source_field, eq: mainRecord[relation.dest_field] }];
+            case 'o2o':
+                return [{ field: relation.source_field, eq: mainRecord[relation.dest_field] }];
+            case 'm2m':
+                return [{ field: 'id', in: mainRecord[relation.dest_field] || [] }];
+            default:
+                console.error(`Unsupported relation type: ${relation.relation}`);
+                return [];
+        }
+    }, []);
 
-    // 删除数据
-    const handleDelete = useCallback(() => {
+    // 加载内联数据
+    const loadInlineData = useCallback(async (inlineName: string, inlineDesc: any, mainRecord: Record<string, any>) => {
+        try {
+            const relation = inlineDesc.relation;
+
+            if (relation?.relation === 'm2m' && relation?.through) {
+                // M2M 关系需要加载两个数据源：中间表和目标表
+                const { through } = relation;
+
+                // 1. 加载中间表数据（用于确定已选择的关系）
+                const throughResponse = await getModelData({
+                    name: through.mid_model,
+                    page: 1,
+                    size: 1000,
+                    cond: [{
+                        field: through.source_to_through_field,
+                        eq: mainRecord[through.source_field]
+                    }]
+                });
+
+                // 2. 加载目标表所有数据（用于显示可选择的项目）
+                const targetResponse = await getModelData({
+                    name: relation.to,
+                    page: 1,
+                    size: 1000,
+                    cond: []
+                });
+
+                if (throughResponse?.code === 0 && targetResponse?.code === 0) {
+                    const throughData = throughResponse.data?.data || [];
+                    const targetData = targetResponse.data?.data || [];
+
+                    // 根据中间表数据标记已选择的项目
+                    const selectedTargetIds = throughData.map(item => item[through.target_to_through_field]);
+                    const enrichedTargetData = targetData.map(targetItem => ({
+                        ...targetItem,
+                        selected: selectedTargetIds.includes(targetItem[through.target_field])
+                    }));
+
+                    setInlineData(prev => ({
+                        ...prev,
+                        [inlineName]: enrichedTargetData,
+                        [`${inlineName}_through`]: throughData  // 存储中间表数据
+                    }));
+                }
+            } else {
+                // 普通关系的处理逻辑保持不变
+                const conditions = buildConditions(inlineDesc, mainRecord);
+                const response = await getModelData({
+                    name: inlineName,
+                    cond: conditions,
+                    page: 1,
+                    size: 100,
+                });
+                if (response?.code === 0) {
+                    setInlineData(prev => ({
+                        ...prev,
+                        [inlineName]: (response.data as any)?.data || []
+                    }));
+                } else {
+                    messageApi.error(`Failed to load ${inlineName} data`);
+                }
+            }
+        } catch (error) {
+            messageApi.error(`Failed to load ${inlineName} data`);
+            console.error('Load error:', error);
+        }
+    }, [buildConditions, messageApi, record]);
+
+    // 处理 M2M 关系的添加操作
+    const handleM2MAdd = useCallback(async (inlineName: string, inlineDesc: any, targetRecord: any) => {
+        try {
+            const relation = inlineDesc.relation;
+            if (relation?.relation === 'm2m' && relation?.through) {
+                const { through } = relation;
+
+                // 创建中间表记录
+                const throughData = {
+                    [through.source_to_through_field]: record[through.source_field],
+                    [through.target_to_through_field]: targetRecord[through.target_field]
+                };
+
+                const response = await saveModelData({
+                    name: through.mid_model,
+                    data: throughData
+                });
+
+                if (response?.code === 0) {
+                    messageApi.success('关联项已添加');
+                    // 重新加载数据以更新显示
+                    await loadInlineData(inlineName, inlineDesc, record);
+                } else {
+                    messageApi.error('添加关联项失败');
+                }
+            }
+        } catch (error) {
+            messageApi.error('添加关联项失败');
+            console.error('Add M2M error:', error);
+        }
+    }, [record, messageApi, loadInlineData]);
+
+    // 处理 M2M 关系的移除操作
+    const handleM2MRemove = useCallback(async (inlineName: string, inlineDesc: any, targetRecord: any) => {
+        try {
+            const relation = inlineDesc.relation;
+            if (relation?.relation === 'm2m' && relation?.through) {
+                const { through } = relation;
+                const throughData = inlineData[`${inlineName}_through`] || [];
+
+                // 找到对应的中间表记录
+                const throughRecord = throughData.find(item =>
+                    item[through.source_to_through_field] === record[through.source_field] &&
+                    item[through.target_to_through_field] === targetRecord[through.target_field]
+                );
+
+                if (throughRecord) {
+                    const response = await deleteModelData({
+                        name: through.mid_model,
+                        data: [throughRecord]
+                    } as any);
+
+                    if (response?.code === 0) {
+                        messageApi.success('关联项已移除');
+                        // 重新加载数据以更新显示
+                        await loadInlineData(inlineName, inlineDesc, record);
+                    } else {
+                        messageApi.error('移除关联项失败');
+                    }
+                } else {
+                    messageApi.error('未找到对应的关联记录');
+                }
+            }
+        } catch (error) {
+            messageApi.error('移除关联项失败');
+            console.error('Remove M2M error:', error);
+        }
+    }, [record, inlineData, messageApi, loadInlineData]);
+
+    // 处理标签页切换
+    const handleTabChange = useCallback((key: string) => {
+        // 新建模式下，如果主数据还未保存，则不允许切换到 inline tabs
+        if (key !== 'main' && !hasMainDataSaved) {
+            messageApi.warning('Please save the main data first before accessing related data');
+            return;
+        }
+
+        setActiveTab(key);
+
+        // 如果切换到内联表格且数据尚未加载，则加载数据
+        if (key !== 'main' && !loadedTabs.has(key)) {
+            const inlineDesc = inlineDescs[key];
+            if (inlineDesc && record) {
+                console.log('Loading data for:', key);
+                loadInlineData(key, inlineDesc, record);
+                setLoadedTabs(prev => new Set([...prev, key]));
+            }
+        }
+    }, [inlineDescs, record, loadInlineData, loadedTabs, hasMainDataSaved, messageApi]);
+
+    // 删除主记录
+    const handleDelete = async () => {
         Modal.confirm({
             title: 'Confirm Delete',
-            content: 'Are you sure to delete this record? This action cannot be undone.',
-            okText: 'Delete',
-            okType: 'danger',
-            cancelText: 'Cancel',
+            content: 'Are you sure you want to delete this record?',
             onOk: async () => {
                 try {
                     const response = await deleteModelData({
                         name: modelName,
-                        data: [record],
+                        data: [record] as any,
                     });
 
                     if (response?.code === 0) {
@@ -198,330 +408,178 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) 
                     }
                 } catch (error) {
                     messageApi.error('Delete failed');
-                    console.error('Delete error:', error);
                 }
-            },
-        });
-    }, [modelName, record, messageApi, onBack]);
-
-    // 渲染表单字段
-    const renderFormField = useCallback((fieldName: string, fieldConfig: API.AdminField) => {
-        const value = record[fieldName];
-        const commonProps = {
-            name: fieldName,
-            label: fieldConfig.name || fieldName,
-            tooltip: fieldConfig.help_text,
-            readonly: fieldConfig.readonly, // 移除 isEditing 条件，只依赖字段本身的 readonly 属性
-            disabled: fieldConfig.readonly, // 对于只读字段，同时设置 disabled
-            rules: fieldConfig.blank ? [] : [{ required: true, message: `${fieldConfig.name || fieldName} is required` }],
-        };
-
-        switch (fieldConfig.type) {
-            case 'CharField':
-                if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-                    return (
-                        <ProFormSelect
-                            key={fieldName}
-                            {...commonProps}
-                            options={fieldConfig.choices.map(([value, label]) => ({ value, label }))}
-                        />
-                    );
-                }
-                return <ProFormText key={fieldName} {...commonProps} />;
-
-            case 'TextField':
-                return <ProFormTextArea key={fieldName} {...commonProps} />;
-
-            case 'IntegerField':
-                return <ProFormDigit key={fieldName} {...commonProps} precision={0} />;
-
-            case 'FloatField':
-                return <ProFormDigit key={fieldName} {...commonProps} />;
-
-            case 'BooleanField':
-                return <ProFormSwitch key={fieldName} {...commonProps} />;
-
-            case 'DateField':
-                return (
-                    <ProFormDatePicker
-                        key={fieldName}
-                        {...commonProps}
-                        fieldProps={{
-                            format: 'YYYY-MM-DD',
-                        }}
-                    />
-                );
-
-            case 'DatetimeField':
-                return (
-                    <ProFormDateTimePicker
-                        key={fieldName}
-                        {...commonProps}
-                        fieldProps={{
-                            format: 'YYYY-MM-DD HH:mm:ss',
-                        }}
-                    />
-                );
-
-            case 'TimeField':
-                return (
-                    <ProFormTimePicker
-                        key={fieldName}
-                        {...commonProps}
-                        fieldProps={{
-                            format: 'HH:mm:ss',
-                        }}
-                    />
-                );
-
-            default:
-                return <ProFormText key={fieldName} {...commonProps} />;
-        }
-    }, [record, isEditing]);
-
-    // 生成 inline 表格列配置
-    const generateInlineColumns = useCallback((inlineName: string): ProColumns<Record<string, any>>[] => {
-        const inlineDesc = inlineDescs[inlineName];
-        if (!inlineDesc || !inlineDesc.fields) return [];
-
-        const columns: ProColumns<Record<string, any>>[] = [];
-        // 获取关联字段名称，用于设置只读
-        const relationSourceField = (inlineDesc as any)?.relation?.source_field;
-
-        Object.entries(inlineDesc.fields).forEach(([fieldName, fieldConfig]) => {
-            if (!fieldConfig.show) return;
-
-            // 检查是否是关联字段
-            const isRelationField = fieldName === relationSourceField;
-
-            const column: ProColumns<Record<string, any>> = {
-                title: fieldConfig.name || fieldName,
-                dataIndex: fieldName,
-                key: fieldName,
-                tooltip: fieldConfig.help_text,
-                ellipsis: true,
-                // 关联字段设置为只读，不可编辑
-                editable: isRelationField ? false : undefined,
-            };
-
-            // 根据字段类型设置 valueType
-            switch (fieldConfig.type) {
-                case 'CharField':
-                case 'TextField':
-                    column.valueType = 'text';
-                    if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-                        column.valueType = 'select';
-                        column.valueEnum = fieldConfig.choices.reduce((acc, [value, label]) => {
-                            acc[value] = { text: label };
-                            return acc;
-                        }, {} as Record<string, { text: string }>);
-                    }
-                    break;
-                case 'IntegerField':
-                    column.valueType = 'digit';
-                    break;
-                case 'FloatField':
-                    column.valueType = 'digit';
-                    break;
-                case 'BooleanField':
-                    column.valueType = 'switch';
-                    break;
-                case 'DateField':
-                    column.valueType = 'date';
-                    break;
-                case 'DatetimeField':
-                    column.valueType = 'dateTime';
-                    break;
-                case 'TimeField':
-                    column.valueType = 'time';
-                    break;
-                default:
-                    column.valueType = 'text';
             }
-
-            // 如果是关联字段，添加只读状态提示
-            if (isRelationField) {
-                column.render = (text, record) => (
-                    <span style={{ color: '#666', fontStyle: 'italic' }}>
-                        {text}
-                    </span>
-                );
-            }
-
-            columns.push(column);
         });
+    };
 
-        // 添加操作列
-        if (inlineDesc.attrs?.can_edit || inlineDesc.attrs?.can_delete) {
-            columns.push({
-                title: 'Actions',
-                dataIndex: 'option',
-                valueType: 'option',
-                width: 120,
-                render: (_, record) => {
-                    const actions = [];
 
-                    if (inlineDesc.attrs?.can_edit) {
-                        actions.push(
-                            <Button
-                                key="edit"
-                                type="link"
-                                size="small"
-                                icon={<EditOutlined />}
-                            >
-                                Edit
-                            </Button>
-                        );
-                    }
-
-                    if (inlineDesc.attrs?.can_delete) {
-                        actions.push(
-                            <Button
-                                key="delete"
-                                type="link"
-                                size="small"
-                                danger
-                                icon={<DeleteOutlined />}
-                            >
-                                Delete
-                            </Button>
-                        );
-                    }
-
-                    return actions;
-                },
-            });
-        }
-
-        return columns;
-    }, [inlineDescs]);
 
     // 根据关系类型渲染不同的组件
     const renderInlineComponent = useCallback((inlineName: string) => {
         const inlineDesc = inlineDescs[inlineName];
         const data = inlineData[inlineName] || [];
         const relationType = (inlineDesc as any)?.relation?.relation;
+        const isLoaded = loadedTabs.has(inlineName);
 
         if (!inlineDesc) return null;
 
+        // 如果数据还没有加载，显示加载状态
+        if (!isLoaded) {
+            return (
+                <Card>
+                    <div style={{ textAlign: 'center', padding: '50px' }}>
+                        <span>Loading...</span>
+                    </div>
+                </Card>
+            );
+        }
+
         switch (relationType) {
             case 'm2m':
-                // 多对多关系使用穿梭框
+                // 多对多关系使用模态框 + 表格选择
+                const selectedCount = data.filter(item => item.selected).length;
+                const totalCount = data.length;
+
                 return (
                     <Card>
-                        <Transfer
-                            dataSource={data}
-                            showSearch
-                            filterOption={(search, item) =>
-                                item.name?.toLowerCase().includes(search.toLowerCase()) ||
-                                item.description?.toLowerCase().includes(search.toLowerCase())
-                            }
-                            targetKeys={data.filter(item => item.selected).map(item => item.id)}
-                            onChange={(targetKeys) => {
-                                // 处理选择变化
-                                const newData = data.map(item => ({
-                                    ...item,
-                                    selected: targetKeys.includes(item.id)
-                                }));
-                                setInlineData(prev => ({
-                                    ...prev,
-                                    [inlineName]: newData
-                                }));
-                            }}
-                            render={item => `${item.name} - ${item.description}`}
-                            titles={['Available Tags', 'Selected Tags']}
-                            listStyle={{
-                                width: 300,
-                                height: 300,
-                            }}
-                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div>
+                                <span style={{ color: '#666' }}>
+                                    Selected {selectedCount} / {totalCount} items
+                                </span>
+                            </div>
+                            <Button
+                                type="primary"
+                                icon={<EditOutlined />}
+                                onClick={() => setM2MModalVisible(prev => ({ ...prev, [inlineName]: true }))}
+                            >
+                                Manage Relation
+                            </Button>
+                        </div>
+
+                        {/* 使用表格显示已选择的项目 */}
+                        {selectedCount > 0 && (
+                            <div style={{ marginTop: 16 }}>
+                                <ProTable
+                                    dataSource={data.filter(item => item.selected)}
+                                    columns={[
+                                        // 动态生成列
+                                        ...Object.entries(inlineDesc.fields || {})
+                                            .filter(([fieldName, fieldConfig]) => (fieldConfig as any).show !== false)
+                                            .slice(0, 3) // 只显示前3个字段
+                                            .map(([fieldName, fieldConfig]) => ({
+                                                title: (fieldConfig as any).name || fieldName,
+                                                dataIndex: fieldName,
+                                                key: fieldName,
+                                                width: 120,
+                                                ellipsis: true,
+                                                render: (value: any) => {
+                                                    if (value === null || value === undefined) return '-';
+                                                    if (typeof value === 'string' && value.length > 20) {
+                                                        return `${value.substring(0, 20)}...`;
+                                                    }
+                                                    return value;
+                                                }
+                                            })),
+                                        // 操作列
+                                        {
+                                            title: 'Actions',
+                                            key: 'actions',
+                                            width: 80,
+                                            render: (_, record) => (
+                                                <Button
+                                                    type="link"
+                                                    size="small"
+                                                    danger
+                                                    onClick={async () => {
+                                                        await handleM2MRemove(inlineName, inlineDesc, record);
+                                                    }}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            )
+                                        }
+                                    ]}
+                                    rowKey="id"
+                                    size="small"
+                                    scroll={{ y: 200 }}
+                                    pagination={{
+                                        pageSize: 5,
+                                        size: 'small',
+                                        showSizeChanger: false,
+                                        showQuickJumper: false
+                                    }}
+                                    search={false}
+                                    options={false}
+                                    toolBarRender={false}
+                                />
+                            </div>
+                        )}
                     </Card>
                 );
 
             case 'fk':
             case 'o2o':
-                // 外键和一对一关系使用可编辑表格
+                // 外键和一对一关系使用普通表格
                 return (
                     <Card>
-                        <EditableProTable<Record<string, any>>
-                            headerTitle={inlineDesc.attrs?.help_text || capitalizeFirstLetter(inlineName)}
-                            columns={generateInlineColumns(inlineName)}
-                            value={data}
-                            onChange={(newData) => {
-                                setInlineData(prev => ({
-                                    ...prev,
-                                    [inlineName]: [...(newData || [])]
-                                }));
-                            }}
-                            rowKey="id"
-                            recordCreatorProps={
-                                inlineDesc.attrs?.can_add ? {
-                                    newRecordType: 'dataSource',
-                                    record: () => {
-                                        const sourceField = (inlineDesc as any)?.relation?.source_field || 'crown_id';
-                                        return {
-                                            id: Date.now(),
-                                            [sourceField]: record.id,
-                                        };
-                                    },
-                                } : false
-                            }
-                            editable={{
-                                type: 'multiple',
-                                editableKeys: [],
-                                onDelete: async (key) => {
-                                    console.log('Delete row:', key);
-                                    // 从数据中移除对应的记录
-                                    const newData = data.filter(item => item.id !== key);
+                        <CommonProTable
+                            modelDesc={inlineDesc}
+                            modelName={inlineName}
+                            data={data}
+                            onAction={(actionKey: string, action: any, record?: any, isBatch?: boolean, records?: any[]) => {
+                                if (actionKey === 'add') {
+                                    const destField = (inlineDesc as any)?.relation?.dest_field || 'crown_id';
+                                    const newRecord = {
+                                        id: -1,
+                                        [destField]: record.id,
+                                    };
                                     setInlineData(prev => ({
                                         ...prev,
-                                        [inlineName]: newData
+                                        [inlineName]: [...(prev[inlineName] || []), newRecord]
                                     }));
-                                },
-                                actionRender: (row, config, defaultDom) => [
-                                    defaultDom.delete,
-                                ],
+                                    // 立即进入编辑模式
+                                    setEditingKeys(prev => ({
+                                        ...prev,
+                                        [inlineName]: [...(prev[inlineName] || []), newRecord.id]
+                                    }));
+                                } else {
+                                    // 处理其他自定义 actions
+                                    handleInlineAction(inlineName, actionKey, action, record, isBatch, records);
+                                }
                             }}
-                            pagination={{
-                                pageSize: inlineDesc.attrs?.list_per_page || 10,
-                                showSizeChanger: true,
+                            onSave={async (record: any) => {
+                                await handleInlineSave(inlineName, record);
+                            }}
+                            onDelete={async (record: any) => {
+                                await handleInlineDelete(inlineName, record);
+                            }}
+                            tableProps={{
+                                pagination: {
+                                    pageSize: inlineDesc.attrs?.list_per_page || 10,
+                                    showSizeChanger: true,
+                                    showQuickJumper: true,
+                                }
                             }}
                         />
                     </Card>
                 );
 
             default:
-                // 默认使用只读表格
+                // 不支持的关系类型
+                console.error(`Unsupported relation type: ${(inlineDesc as any)?.relation?.relation}`);
                 return (
                     <Card>
-                        <ProTable
-                            headerTitle={inlineDesc.attrs?.help_text || capitalizeFirstLetter(inlineName)}
-                            columns={generateInlineColumns(inlineName)}
-                            dataSource={data}
-                            rowKey={(record) => record.id || record.key || JSON.stringify(record)}
-                            search={false}
-                            pagination={{
-                                pageSize: 10,
-                                showSizeChanger: true,
-                            }}
-                            toolBarRender={() => [
-                                inlineDesc.attrs?.can_add && (
-                                    <Button
-                                        key="add"
-                                        type="primary"
-                                        icon={<EditOutlined />}
-                                    >
-                                        Add {capitalizeFirstLetter(inlineName)}
-                                    </Button>
-                                ),
-                            ]}
-                        />
+                        <div style={{ padding: 16, textAlign: 'center', color: '#ff4d4f' }}>
+                            Unsupported relation type: {(inlineDesc as any)?.relation?.relation}
+                        </div>
                     </Card>
                 );
         }
-    }, [inlineDescs, inlineData, record, generateInlineColumns, capitalizeFirstLetter]);
+    }, [inlineDescs, inlineData, record, capitalizeFirstLetter, editingKeys, handleInlineSave, handleInlineDelete, loadedTabs, handleInlineAction]);
 
-    if (descLoading || detailLoading || !modelDesc) {
+    if (detailLoading || !modelDesc) {
         return <div>Loading...</div>;
     }
 
@@ -529,27 +587,38 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) 
     const tabItems = [
         {
             key: 'main',
-            label: 'Main Data',
+            label: 'Main',
             children: (
                 <Card>
                     <ProForm
                         formRef={formRef}
                         layout="horizontal"
-                        labelCol={{ span: 4, offset: 0 }}
-                        wrapperCol={{ span: 20, offset: 0 }}
+                        labelCol={{ span: 6 }}
+                        wrapperCol={{ span: 18 }}
                         initialValues={record}
-                        style={{ textAlign: 'left' }}
                         onFinish={async (values) => {
                             try {
+                                // 新建模式下，不包含 id 字段
+                                const dataToSave = isCreateMode
+                                    ? values
+                                    : { ...record, ...values };
+
                                 const response = await saveModelData({
                                     name: modelName,
-                                    data: { ...record, ...values },
-                                    inlines: inlineData,
+                                    data: dataToSave,
                                 });
 
                                 if (response?.code === 0) {
-                                    messageApi.success('Saved successfully');
-                                    // 可以选择是否返回列表或保持在详情页
+                                    messageApi.success(isCreateMode ? 'Created successfully' : 'Saved successfully');
+
+                                    // 新建模式下，保存成功后启用 inline tabs
+                                    if (isCreateMode) {
+                                        setHasMainDataSaved(true);
+                                        // 更新 record 以包含新创建的 ID
+                                        if (response.data?.saved_data?.id) {
+                                            record.id = response.data.saved_data.id;
+                                        }
+                                    }
                                 } else {
                                     messageApi.error(response?.message || 'Save failed');
                                 }
@@ -559,59 +628,43 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) 
                             }
                         }}
                         submitter={{
-                            searchConfig: {
-                                submitText: 'Save',
-                                resetText: 'Reset',
-                            },
-                            submitButtonProps: {
-                                size: 'large',
-                                type: 'primary',
-                            },
-                            resetButtonProps: {
-                                size: 'large',
-                            },
-                            render: (props, dom) => {
-                                return (
-                                    <div style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        marginTop: '24px',
-                                        paddingTop: '16px',
-                                        borderTop: '1px solid #f0f0f0',
-                                        textAlign: 'right'
-                                    }}>
-                                        <div style={{
-                                            display: 'flex',
-                                            gap: '12px',
-                                            alignItems: 'center',
-                                            justifyContent: 'flex-end'
-                                        }}>
-                                            {dom}
-                                        </div>
-                                    </div>
-                                );
-                            },
+                            render: () => (
+                                <Space>
+                                    <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+                                        Save
+                                    </Button>
+                                </Space>
+                            )
                         }}
                     >
-                        {Object.entries(modelDesc.fields)
-                            .filter(([_, fieldConfig]) => fieldConfig.show !== false)
-                            .map(([fieldName, fieldConfig]) => renderFormField(fieldName, fieldConfig))
-                        }
+                        <Divider orientation="left">Basic Information</Divider>
+                        {Object.entries(modelDesc.fields).map(([fieldName, fieldConfig]: [string, any]) => {
+                            if (!fieldConfig.show) return null;
+                            return renderFormField(fieldName, fieldConfig, formRef, {
+                                commonProps: {
+                                    readonly: fieldConfig.readonly,
+                                    rules: fieldConfig.required ? [{ required: true, message: `${fieldConfig.name || fieldName} is required` }] : [],
+                                }
+                            });
+                        })}
                     </ProForm>
                 </Card>
             ),
         },
-        ...Object.keys(inlineData).map(inlineName => ({
+        // 只有在非新建模式或主数据已保存的情况下才显示 inline tabs
+        ...(hasMainDataSaved ? Object.keys(inlineDescs).map(inlineName => ({
             key: inlineName,
-            label: inlineDescs[inlineName]?.attrs?.help_text || capitalizeFirstLetter(inlineName),
+            label: capitalizeFirstLetter(inlineName),
             children: renderInlineComponent(inlineName),
-        })),
+        })) : []),
     ];
 
     return (
         <PageContainer
             header={{
-                title: `${modelDesc.attrs.help_text || modelName} Detail`,
+                title: isCreateMode
+                    ? `Create New ${modelDesc.attrs.help_text || modelName}`
+                    : `${modelDesc.attrs.help_text || modelName} Detail`,
                 breadcrumb: {},
                 extra: [
                     <Button
@@ -621,7 +674,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) 
                     >
                         Back
                     </Button>,
-                    modelDesc.attrs.can_delete && (
+                    modelDesc.attrs.can_delete && !isCreateMode && (
                         <Button
                             key="delete"
                             danger
@@ -638,10 +691,275 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, record, onBack }) 
 
             <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 items={tabItems}
             />
+
+            {/* M2M 关系选择模态框 */}
+            {Object.entries(m2mModalVisible).map(([inlineName, visible]) => {
+                if (!visible || !inlineDescs[inlineName]) return null;
+
+                const inlineDesc = inlineDescs[inlineName];
+                const data = inlineData[inlineName] || [];
+                const selectedIds = data.filter(item => item.selected).map(item => item.id);
+
+                return (
+                    <M2MSelectionModal
+                        key={inlineName}
+                        visible={visible}
+                        title={inlineDesc.attrs?.verbose_name || inlineName}
+                        modelDesc={inlineDesc}
+                        data={data}
+                        selectedIds={selectedIds}
+                        onCancel={() => {
+                            setM2MModalVisible(prev => ({ ...prev, [inlineName]: false }));
+                        }}
+                        onOk={async (newSelectedIds) => {
+                            const inlineDesc = inlineDescs[inlineName];
+                            const data = inlineData[inlineName] || [];
+                            const currentSelectedIds = data.filter(item => item.selected).map(item => item.id);
+
+                            // 找出新添加的项目
+                            const addedIds = newSelectedIds.filter(id => !currentSelectedIds.includes(id));
+                            // 找出被移除的项目
+                            const removedIds = currentSelectedIds.filter(id => !newSelectedIds.includes(id));
+
+                            try {
+                                // 处理新添加的项目
+                                for (const addedId of addedIds) {
+                                    const targetRecord = data.find(item => item.id === addedId);
+                                    if (targetRecord) {
+                                        await handleM2MAdd(inlineName, inlineDesc, targetRecord);
+                                    }
+                                }
+
+                                // 处理被移除的项目
+                                for (const removedId of removedIds) {
+                                    const targetRecord = data.find(item => item.id === removedId);
+                                    if (targetRecord) {
+                                        await handleM2MRemove(inlineName, inlineDesc, targetRecord);
+                                    }
+                                }
+
+                                // 重新加载数据确保一致性
+                                await loadInlineData(inlineName, inlineDesc, record);
+                            } catch (error) {
+                                console.error('M2M batch operation error:', error);
+                                messageApi.error('批量操作失败');
+                            }
+                        }}
+                    />
+                );
+            })}
         </PageContainer>
+    );
+};
+
+// M2M 关系选择模态框组件
+interface M2MSelectionModalProps {
+    visible: boolean;
+    onCancel: () => void;
+    onOk: (selectedIds: React.Key[]) => void;
+    title: string;
+    modelDesc: any;
+    data: any[];
+    selectedIds: React.Key[];
+}
+
+const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
+    visible,
+    onCancel,
+    onOk,
+    title,
+    modelDesc,
+    data,
+    selectedIds: initialSelectedIds
+}) => {
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>(initialSelectedIds);
+    const [totalCount, setTotalCount] = useState<number>(data.length);
+
+    // 当模态框打开时重置选择状态
+    React.useEffect(() => {
+        if (visible) {
+            setSelectedRowKeys(initialSelectedIds);
+            setTotalCount(data.length);
+        }
+    }, [visible, initialSelectedIds, data.length]);
+
+    const handleOk = () => {
+        onOk(selectedRowKeys);
+        onCancel();
+    };
+
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+        getCheckboxProps: (record: any) => ({
+            name: record.name,
+        }),
+    };
+
+    return (
+        <Modal
+            title={`Manage ${title} relations`}
+            open={visible}
+            onCancel={onCancel}
+            onOk={handleOk}
+            width={1000}
+            style={{ top: 20 }}
+            okText="Confirm"
+            cancelText="Cancel"
+        >
+            <div style={{ marginBottom: 16 }}>
+                <span style={{ color: '#666' }}>
+                    Selected {selectedRowKeys.length} / {totalCount} items
+                </span>
+            </div>
+
+            <ProTable
+                rowKey="id"
+                size="small"
+                scroll={{ y: 400 }}
+                rowSelection={rowSelection}
+                request={async (params) => {
+                    try {
+                        // 构建搜索条件
+                        const conditions: any[] = [];
+
+                        // 处理表单搜索条件，只对 search_fields 中的字段进行搜索
+                        const searchFields = modelDesc.attrs?.search_fields || [];
+                        Object.entries(params).forEach(([key, value]) => {
+                            if (value && key !== 'current' && key !== 'pageSize' && searchFields.includes(key)) {
+                                conditions.push({
+                                    field: key,
+                                    icontains: String(value) // 使用模糊搜索
+                                });
+                            }
+                        });
+
+                        // 对于 M2M 关系，应该请求目标模型的数据
+                        const targetModelName = modelDesc.relation?.to || modelDesc.name || title;
+
+                        const response = await getModelData({
+                            name: targetModelName,
+                            page: params.current || 1,
+                            size: params.pageSize || 10,
+                            cond: conditions
+                        });
+
+                        if (response?.code === 0) {
+                            const responseData = response.data?.data || [];
+                            const total = response.data?.count || 0;
+
+                            // 更新总数（仅在搜索为空时，即显示所有数据时）
+                            if (conditions.length === 0) {
+                                setTotalCount(total);
+                            }
+
+                            return {
+                                data: responseData,
+                                total: total,
+                                success: true
+                            };
+                        }
+
+                        return {
+                            data: [],
+                            total: 0,
+                            success: false
+                        };
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        return {
+                            data: [],
+                            total: 0,
+                            success: false
+                        };
+                    }
+                }}
+                columns={
+                    // 动态生成列
+                    Object.entries(modelDesc.fields || {})
+                        .filter(([fieldName, fieldConfig]) => (fieldConfig as any).show !== false)
+                        .map(([fieldName, fieldConfig]) => {
+                            const fieldConf = fieldConfig as any;
+                            const attrs = modelDesc.attrs || {};
+
+                            const column: any = {
+                                title: fieldConf.name || fieldName,
+                                dataIndex: fieldName,
+                                key: fieldName,
+                                width: 150,
+                                ellipsis: true,
+                                // 根据 search_fields 和 can_search 确定是否在搜索面板中显示
+                                hideInSearch: !attrs.can_search || !attrs.search_fields?.includes(fieldName),
+                                render: (value: any) => {
+                                    if (value === null || value === undefined) return '-';
+
+                                    // 处理选择字段
+                                    if (fieldConf.choices && fieldConf.choices.length > 0) {
+                                        const choice = fieldConf.choices.find(([choiceValue]: [string, string]) => choiceValue === value);
+                                        return choice ? choice[1] : value;
+                                    }
+
+                                    // 处理布尔字段
+                                    if (fieldConf.type === 'BooleanField') {
+                                        return value ? '✓' : '✗';
+                                    }
+
+                                    // 处理文本截断
+                                    if (typeof value === 'string' && value.length > 30) {
+                                        return `${value.substring(0, 30)}...`;
+                                    }
+
+                                    return value;
+                                }
+                            };
+
+                            // 根据 list_sort 添加排序功能
+                            if (attrs.list_sort?.includes(fieldName)) {
+                                column.sorter = true;
+                            }
+
+                            // 根据 list_filter 添加筛选功能
+                            if (attrs.list_filter?.includes(fieldName)) {
+                                if (fieldConf.choices && fieldConf.choices.length > 0) {
+                                    column.filters = fieldConf.choices.map(([value, label]: [string, string]) => ({
+                                        text: label,
+                                        value: value
+                                    }));
+                                    column.onFilter = (value: any, record: any) => {
+                                        return record[fieldName] === value;
+                                    };
+                                }
+                            }
+
+                            return column;
+                        })
+                }
+                search={
+                    // 根据 can_search 和 search_fields 控制搜索面板显示
+                    modelDesc.attrs?.can_search && modelDesc.attrs?.search_fields?.length > 0 ? {
+                        labelWidth: 120,
+                        defaultCollapsed: false,
+                    } : false
+                }
+                pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                }}
+                options={{
+                    search: false,
+                    reload: true,
+                    density: true,
+                    setting: false,
+                }}
+                toolBarRender={false}
+            />
+        </Modal>
     );
 };
 

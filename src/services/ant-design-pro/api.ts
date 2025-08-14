@@ -2,15 +2,7 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** 获取当前的用户 GET /api/currentUser */
-export async function currentUser(options?: { [key: string]: any }) {
-  return request<{
-    data: API.CurrentUser;
-  }>('/api/currentUser', {
-    method: 'GET',
-    ...(options || {}),
-  });
-}
+// 注释：currentUser API 已删除，改为使用本地存储的用户信息
 
 /** 退出登录接口 POST /api/auth/logout */
 export async function outLogin(options?: { [key: string]: any }) {
@@ -106,9 +98,9 @@ export async function getModelData(params: API.ModelDataRequest, options?: { [ke
   });
 }
 
-/** 获取模型详情 POST /api/admin/model-detail */
-export async function getModelDetail(params: API.ModelDetailRequest, options?: { [key: string]: any }) {
-  return request<API.ModelDetailResponse>('/api/admin/model-detail', {
+/** 获取模型内联信息 POST /api/admin/model-inlines */
+export async function getModelInlines(params: API.ModelInlinesRequest, options?: { [key: string]: any }) {
+  return request<API.ModelInlinesResponse>('/api/admin/model-inlines', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -95,27 +95,21 @@ export default [
       },
     ],
   },
+
+
+  // 动态路由：支持 ModelAdmin、ModelCustom 等组件的动态渲染
   {
-    name: 'welcome',
-    icon: 'smile',
-    path: '/welcome',
-    component: './Welcome',
-  },
-  {
-    name: 'admin',
-    icon: 'crown',
-    path: '/admin',
-    component: './Admin',
-  },
-  {
-    name: 'crown-management',
-    icon: 'crown',
     path: '/crown',
-    component: './crown',
+    component: './DynamicRoute',
   },
+  {
+    path: '/tools',
+    component: './DynamicRoute',
+  },
+
   {
     path: '/',
-    redirect: '/welcome',
+    redirect: '/crown',
   },
   {
     component: '404',

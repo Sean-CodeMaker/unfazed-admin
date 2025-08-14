@@ -149,49 +149,106 @@ export const useModelOperations = ({ modelName, onSuccess, onError }: UseModelOp
         [modelName, messageApi, onError, getStoredSettings, buildSearchConditions]
     );
 
+    // 处理action响应结果
+    const handleActionResponse = useCallback((response: any, actionConfig: any) => {
+        if (!response || response.code !== 0) {
+            messageApi.error(response?.message || 'Operation failed');
+            return;
+        }
+
+        // 根据action的output类型处理响应
+        switch (actionConfig?.output) {
+            case 'toast':
+                messageApi.success(response.message || 'Operation successful');
+                break;
+            case 'download':
+                // 处理文件下载
+                if (response.data && response.data.url) {
+                    const link = document.createElement('a');
+                    link.href = response.data.url;
+                    link.download = response.data.filename || 'download';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else if (response.data && response.data.content) {
+                    // 如果返回的是文件内容，创建blob下载
+                    const blob = new Blob([response.data.content], {
+                        type: response.data.contentType || 'application/octet-stream'
+                    });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = response.data.filename || 'download';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                }
+                break;
+            case 'refresh':
+                messageApi.success(response.message || 'Operation successful');
+                onSuccess?.(); // 触发页面刷新
+                break;
+            case 'display':
+                // display类型的处理在调用处进行，这里只返回数据
+                return response.data;
+            default:
+                messageApi.success(response.message || 'Operation successful');
+        }
+
+        return response.data;
+    }, [messageApi, onSuccess]);
+
     // 执行批量操作
     const executeBatchAction = useCallback(
-        async (actionKey: string, records: Record<string, any>[], modelDesc?: API.AdminSerializeModel) => {
-            if (!records.length) {
-                messageApi.warning('Please select records to operate');
-                return false;
-            }
-
+        async (actionKey: string, records: Record<string, any>[], modelDesc?: API.AdminSerializeModel, extra?: any) => {
             try {
                 // 获取当前搜索条件
                 const searchConditions = buildSearchConditions(currentSearchParams, modelDesc);
 
-                // 根据 records 生成选中记录的条件
-                const recordConditions: API.Condition[] = records.map(record => ({
-                    field: 'id',
-                    eq: record.id
-                }));
+                let allConditions: API.Condition[] = [...searchConditions];
 
-                // 合并搜索条件和选中记录条件
-                const allConditions = [...searchConditions, ...recordConditions];
+                // 如果提供了records，则为基于选中记录的操作
+                if (records.length > 0) {
+                    // 根据 records 生成选中记录的条件
+                    const recordConditions: API.Condition[] = records.map(record => ({
+                        field: 'id',
+                        eq: record.id
+                    }));
+                    // 合并搜索条件和选中记录条件
+                    allConditions = [...searchConditions, ...recordConditions];
+                }
+                // 如果records为空，则为基于搜索条件的批量操作，只使用搜索条件
 
-                await executeModelAction({
+                const response = await executeModelAction({
                     name: modelName,
                     action: actionKey,
                     cond: allConditions.length > 0 ? allConditions : undefined,
+                    extra: extra || {},
                 });
 
-                messageApi.success('Operation successful');
-                onSuccess?.();
-                return true;
+                // 获取action配置
+                const actionConfig = modelDesc?.actions?.[actionKey];
+                const result = handleActionResponse(response, actionConfig);
+
+                if ((actionConfig as any)?.output !== 'display') {
+                    onSuccess?.();
+                }
+
+                return { success: true, data: result, actionConfig };
             } catch (error) {
                 messageApi.error('Operation failed');
                 onError?.(error);
                 console.error('Batch action error:', error);
-                return false;
+                return { success: false, data: null, actionConfig: null };
             }
         },
-        [modelName, messageApi, buildSearchConditions, currentSearchParams, onSuccess, onError]
+        [modelName, messageApi, buildSearchConditions, currentSearchParams, onSuccess, onError, handleActionResponse]
     );
 
     // 执行行级操作
     const executeRowAction = useCallback(
-        async (actionKey: string, record: Record<string, any>) => {
+        async (actionKey: string, record: Record<string, any>, modelDesc?: API.AdminSerializeModel, extra?: any) => {
             try {
                 // 为单个记录生成条件，只需要当前行的 ID
                 const conditions: API.Condition[] = [{
@@ -199,32 +256,39 @@ export const useModelOperations = ({ modelName, onSuccess, onError }: UseModelOp
                     eq: record.id
                 }];
 
-                await executeModelAction({
+                const response = await executeModelAction({
                     name: modelName,
                     action: actionKey,
                     cond: conditions,
+                    extra: extra || {},
                 });
-                messageApi.success('Operation successful');
-                onSuccess?.();
-                return true;
+
+                // 获取action配置
+                const actionConfig = modelDesc?.actions?.[actionKey];
+                const result = handleActionResponse(response, actionConfig);
+
+                if ((actionConfig as any)?.output !== 'display') {
+                    onSuccess?.();
+                }
+
+                return { success: true, data: result, actionConfig };
             } catch (error) {
                 messageApi.error('Operation failed');
                 onError?.(error);
                 console.error('Row action error:', error);
-                return false;
+                return { success: false, data: null, actionConfig: null };
             }
         },
-        [modelName, messageApi, onSuccess, onError]
+        [modelName, messageApi, onSuccess, onError, handleActionResponse]
     );
 
     // 保存模型数据
     const saveData = useCallback(
-        async (data: Record<string, any>, inlines: Record<string, Record<string, any>[]> = {}) => {
+        async (data: Record<string, any>) => {
             try {
                 await saveModelData({
                     name: modelName,
                     data,
-                    inlines,
                 });
                 messageApi.success('Saved successfully');
                 onSuccess?.();
@@ -251,5 +315,6 @@ export const useModelOperations = ({ modelName, onSuccess, onError }: UseModelOp
         executeBatchAction,
         executeRowAction,
         saveData,
+        handleActionResponse,
     };
 };

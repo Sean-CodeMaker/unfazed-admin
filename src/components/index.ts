@@ -11,5 +11,7 @@ import { AvatarDropdown, AvatarName } from './RightContent/AvatarDropdown';
 import ModelList from './ModelList';
 import ModelDetail from './ModelDetail';
 import ModelAdmin from './ModelAdmin';
+import CommonProTable from './CommonProTable';
+import ModelCustom from './ModelCustom';
 
-export { AvatarDropdown, AvatarName, Footer, Question, SelectLang, ModelList, ModelDetail, ModelAdmin };
+export { AvatarDropdown, AvatarName, Footer, Question, SelectLang, ModelList, ModelDetail, ModelAdmin, CommonProTable, ModelCustom };

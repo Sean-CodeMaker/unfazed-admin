@@ -8,10 +8,10 @@ interface ModelAdminProps {
 const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
     const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
     const [currentRecord, setCurrentRecord] = useState<Record<string, any> | null>(null);
+    const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
 
     // 处理查看详情操作
     const handleDetail = (record: Record<string, any>) => {
-        console.log('Detail clicked for record:', record);
         setCurrentRecord(record);
         setCurrentView('detail');
     };
@@ -26,6 +26,11 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
     const handleBackToList = () => {
         setCurrentView('list');
         setCurrentRecord(null);
+    };
+
+    // 处理模型描述加载
+    const handleModelDescLoaded = (loadedModelDesc: API.AdminSerializeModel) => {
+        setModelDesc(loadedModelDesc);
     };
 
     if (!modelName) {
@@ -44,14 +49,18 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
                     modelName={modelName}
                     onDetail={handleDetail}
                     onAdd={handleAdd}
+                    onModelDescLoaded={handleModelDescLoaded}
                 />
             ) : (
-                currentRecord && (
+                currentRecord && modelDesc ? (
                     <ModelDetail
                         modelName={modelName}
+                        modelDesc={modelDesc}
                         record={currentRecord}
                         onBack={handleBackToList}
                     />
+                ) : (
+                    <div>Loading detail... currentRecord: {!!currentRecord}, modelDesc: {!!modelDesc}</div>
                 )
             )}
         </>

@@ -8,8 +8,10 @@ import {
   AvatarDropdown,
   AvatarName,
   Footer,
+  SelectLang,
+  Question,
 } from '@/components';
-import { currentUser as queryCurrentUser, getAdminSettings, getRouteList } from '@/services/ant-design-pro/api';
+import { getAdminSettings, getRouteList } from '@/services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
@@ -24,7 +26,7 @@ const loginPath = '/user/login';
 function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
   const transformRoute = (route: API.AdminRoute): any => {
     const menuItem: any = {
-      name: route.name,
+      name: route.label || route.name,  // 使用 label 作为显示名称，fallback 到 name
       path: route.path,
     };
 
@@ -83,14 +85,22 @@ export async function getInitialState(): Promise<{
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
   menuData?: any[];
+  routeList?: API.AdminRoute[];  // 添加原始路由数据
 }> {
   const fetchUserInfo = async () => {
     try {
-      const msg = await queryCurrentUser({
-        skipErrorHandler: true,
-      });
-      return msg.data;
+      // 从本地存储获取用户信息，而不是调用 currentUser API
+      const userInfo = localStorage.getItem('userInfo');
+      if (userInfo) {
+        return JSON.parse(userInfo) as API.CurrentUser;
+      }
     } catch (_error) {
+      console.warn('Failed to parse user info from localStorage:', _error);
+    }
+
+    // 如果没有用户信息且不在登录相关页面，才跳转到登录页
+    const { location } = history;
+    if (![loginPath, '/user/register', '/user/register-result'].includes(location.pathname)) {
       history.push(loginPath);
     }
     return undefined;
@@ -153,12 +163,14 @@ export async function getInitialState(): Promise<{
         skipErrorHandler: true,
       });
       if (response.code === 0) {
-        return transformApiRoutesToMenuData(response.data);
+        const routeList = response.data;
+        const menuData = transformApiRoutesToMenuData(routeList);
+        return { routeList, menuData };
       }
     } catch (_error) {
       console.warn('Failed to fetch menu data, using default menu');
     }
-    return [];
+    return { routeList: [], menuData: [] };
   };
 
   // 如果不是登录页面，执行
@@ -172,12 +184,13 @@ export async function getInitialState(): Promise<{
     if (currentUser) {
       // 用户已登录，获取API设置和菜单数据
       const settings = await fetchSettings();
-      const menuData = await fetchMenuData();
+      const { routeList, menuData } = await fetchMenuData();
       return {
         fetchUserInfo,
         currentUser,
         settings,
         menuData,
+        routeList,
       };
     }
     return {
@@ -185,12 +198,14 @@ export async function getInitialState(): Promise<{
       currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
       menuData: [],
+      routeList: [],
     };
   }
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
     menuData: [],
+    routeList: [],
   };
 }
 
@@ -200,7 +215,10 @@ export const layout: RunTimeLayoutConfig = ({
   setInitialState,
 }) => {
   return {
-    actionsRender: () => [],
+    actionsRender: () => [
+      <Question key="question" />,
+      <SelectLang key="selectLang" />,
+    ],
     avatarProps: {
       src: initialState?.currentUser?.avatar,
       title: <AvatarName />,

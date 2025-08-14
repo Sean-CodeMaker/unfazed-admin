@@ -156,7 +156,8 @@ declare namespace API {
 
   // 路由相关类型定义，基于 OpenAPI 规范
   type AdminRoute = {
-    name: string;
+    name: string;           // 模型名称，用于 model-desc/model-data API
+    label?: string;         // 显示名称，用于侧边栏菜单
     path: string;
     component?: string | null;
     routes?: AdminRoute[];
@@ -173,7 +174,7 @@ declare namespace API {
 
   // Model Admin 相关类型定义，基于 OpenAPI 规范
   type AdminField = {
-    type: 'CharField' | 'IntegerField' | 'BooleanField' | 'FloatField' | 'DateField' | 'DatetimeField' | 'TimeField' | 'TextField';
+    type: 'CharField' | 'IntegerField' | 'BooleanField' | 'FloatField' | 'DateField' | 'DatetimeField' | 'TimeField' | 'TextField' | 'EditorField' | 'ImageField';
     readonly?: boolean;
     show?: boolean;
     blank?: boolean;
@@ -216,10 +217,21 @@ declare namespace API {
     attrs: AdminAttrs;
   };
 
+  type AdminToolAttrs = {
+    help_text: string;
+    output_field: string;
+  };
+
+  type AdminToolSerializeModel = {
+    fields: Record<string, AdminField>;
+    actions: Record<string, AdminAction>;
+    attrs: AdminToolAttrs;
+  };
+
   type ModelDescResponse = {
     code: number;
     message: string;
-    data: AdminSerializeModel;
+    data: AdminSerializeModel | AdminToolSerializeModel;
   };
 
   type Condition = {
@@ -272,7 +284,6 @@ declare namespace API {
   type ModelSaveRequest = {
     name: string;
     data: Record<string, any>;
-    inlines: Record<string, Record<string, any>[]>;
   };
 
   type ModelDeleteRequest = {
@@ -281,6 +292,11 @@ declare namespace API {
   };
 
   type ModelDetailRequest = {
+    name: string;
+    data: Record<string, any>;
+  };
+
+  type ModelInlinesRequest = {
     name: string;
     data: Record<string, any>;
   };
@@ -316,13 +332,13 @@ declare namespace API {
     relation?: Relation | null;
   };
 
-  type DetailData = {
+  type InlinesData = {
     inlines: Record<string, AdminInlineSerializeModel>;
   };
 
-  type ModelDetailResponse = {
+  type ModelInlinesResponse = {
     code: number;
     message: string;
-    data: DetailData;
+    data: InlinesData;
   };
 }

@@ -72,6 +72,10 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
   const onMenuClick: MenuProps['onClick'] = (event) => {
     const { key } = event;
     if (key === 'logout') {
+      // 清除本地存储的用户信息
+      localStorage.removeItem('userInfo');
+      localStorage.removeItem('userSettings');
+
       flushSync(() => {
         setInitialState((s) => ({ ...s, currentUser: undefined }));
       });
@@ -106,20 +110,20 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
   const menuItems = [
     ...(menu
       ? [
-          {
-            key: 'center',
-            icon: <UserOutlined />,
-            label: '个人中心',
-          },
-          {
-            key: 'settings',
-            icon: <SettingOutlined />,
-            label: '个人设置',
-          },
-          {
-            type: 'divider' as const,
-          },
-        ]
+        {
+          key: 'center',
+          icon: <UserOutlined />,
+          label: '个人中心',
+        },
+        {
+          key: 'settings',
+          icon: <SettingOutlined />,
+          label: '个人设置',
+        },
+        {
+          type: 'divider' as const,
+        },
+      ]
       : []),
     {
       key: 'logout',

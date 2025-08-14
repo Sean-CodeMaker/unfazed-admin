@@ -104,9 +104,22 @@ const Login: React.FC = () => {
   const { message } = App.useApp();
   const intl = useIntl();
 
-  const fetchUserInfo = async () => {
-    const userInfo = await initialState?.fetchUserInfo?.();
-    if (userInfo) {
+  const updateUserInfoAndSettings = async (loginData: API.LoginResult['data']) => {
+    if (loginData) {
+      // 转换登录返回的数据为 CurrentUser 格式
+      const userInfo: API.CurrentUser = {
+        name: loginData.extra?.nickname || loginData.extra?.username || loginData.account,
+        avatar: loginData.extra?.avatar,
+        userid: loginData.account,
+        email: loginData.email,
+        account: loginData.account,
+        roles: loginData.roles,
+        groups: loginData.groups,
+        extra: loginData.extra,
+        // 设置访问权限
+        access: loginData.roles?.[0]?.name || 'user',
+      };
+
       // 获取用户设置
       let settings = Settings;
       try {
@@ -125,6 +138,10 @@ const Login: React.FC = () => {
       } catch (_error) {
         console.warn('Failed to fetch settings after login, using default settings');
       }
+
+      // 保存用户信息到本地存储
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      localStorage.setItem('userSettings', JSON.stringify(settings));
 
       flushSync(() => {
         setInitialState((s) => ({
@@ -147,7 +164,10 @@ const Login: React.FC = () => {
           defaultMessage: '登录成功！',
         });
         message.success(defaultLoginSuccessMessage);
-        await fetchUserInfo();
+
+        // 直接使用登录返回的用户信息，不再调用 fetchUserInfo
+        await updateUserInfoAndSettings(msg.data);
+
         const urlParams = new URL(window.location.href).searchParams;
         window.location.href = urlParams.get('redirect') || '/';
         return;
