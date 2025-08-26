@@ -1,5 +1,10 @@
 
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
+
+// 扩展 LayoutSettings 以包含我们的自定义字段
+interface ExtendedLayoutSettings extends LayoutSettings {
+  showWatermark?: boolean;
+}
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
@@ -11,7 +16,7 @@ import {
   SelectLang,
   Question,
 } from '@/components';
-import { getAdminSettings, getRouteList } from '@/services/ant-design-pro/api';
+import { getAdminSettings, getRouteList } from '@/services/api';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
@@ -32,7 +37,7 @@ function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
 
     // 设置图标
     if (route.icon) {
-      menuItem.icon = extractIconNameFromUrl(route.icon);
+      menuItem.icon = getIconComponent(route.icon);
     }
 
     // 设置菜单隐藏属性
@@ -56,31 +61,46 @@ function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
 }
 
 /**
- * 从 CDN 图标 URL 中提取图标名称
+ * 根据图标名称获取对应的 Ant Design 图标组件
  */
-function extractIconNameFromUrl(iconUrl: string): string {
-  const iconMap: Record<string, string> = {
-    'SmileOutlined': 'smile',
-    'CheckCircleOutlined': 'CheckCircleOutlined',
-    'WarningOutlined': 'warning',
-    'CrownOutlined': 'crown',
-    'UserOutlined': 'user',
+function getIconComponent(iconName: string): React.ReactNode {
+  // 创建图标组件的映射
+  const iconMap: Record<string, () => React.ReactNode> = {
+    CrownOutlined: () => React.createElement(require('@ant-design/icons').CrownOutlined),
+    ToolOutlined: () => React.createElement(require('@ant-design/icons').ToolOutlined),
+    UserOutlined: () => React.createElement(require('@ant-design/icons').UserOutlined),
+    HomeOutlined: () => React.createElement(require('@ant-design/icons').HomeOutlined),
+    SettingOutlined: () => React.createElement(require('@ant-design/icons').SettingOutlined),
+    DashboardOutlined: () => React.createElement(require('@ant-design/icons').DashboardOutlined),
+    TableOutlined: () => React.createElement(require('@ant-design/icons').TableOutlined),
+    FormOutlined: () => React.createElement(require('@ant-design/icons').FormOutlined),
+    FileOutlined: () => React.createElement(require('@ant-design/icons').FileOutlined),
+    DatabaseOutlined: () => React.createElement(require('@ant-design/icons').DatabaseOutlined),
+    ApiOutlined: () => React.createElement(require('@ant-design/icons').ApiOutlined),
+    BugOutlined: () => React.createElement(require('@ant-design/icons').BugOutlined),
+    BellOutlined: () => React.createElement(require('@ant-design/icons').BellOutlined),
+    CalendarOutlined: () => React.createElement(require('@ant-design/icons').CalendarOutlined),
+    CloudOutlined: () => React.createElement(require('@ant-design/icons').CloudOutlined),
+    CodeOutlined: () => React.createElement(require('@ant-design/icons').CodeOutlined),
+    SmileOutlined: () => React.createElement(require('@ant-design/icons').SmileOutlined),
   };
 
-  for (const [key, value] of Object.entries(iconMap)) {
-    if (iconUrl.includes(key)) {
-      return value;
-    }
+  // 获取对应的图标创建函数
+  const iconCreator = iconMap[iconName];
+
+  if (iconCreator) {
+    return iconCreator();
   }
 
-  return 'smile';
+  // 如果找不到对应图标，返回默认图标
+  return React.createElement(require('@ant-design/icons').SmileOutlined);
 }
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
  * */
 export async function getInitialState(): Promise<{
-  settings?: Partial<LayoutSettings>;
+  settings?: Partial<ExtendedLayoutSettings>;
   currentUser?: API.CurrentUser;
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
@@ -129,6 +149,8 @@ export async function getInitialState(): Promise<{
           // 前端特有字段
           pwa: apiData.pwa ?? defaultSettings.pwa,
           iconfontUrl: apiData.iconfontUrl ?? defaultSettings.iconfontUrl,
+          // 水印控制字段
+          showWatermark: apiData.showWatermark ?? true,
         };
 
         // 应用级别的配置存储到localStorage
@@ -154,7 +176,7 @@ export async function getInitialState(): Promise<{
     } catch (_error) {
       console.warn('Failed to fetch settings, using default settings');
     }
-    return defaultSettings as Partial<LayoutSettings>;
+    return defaultSettings as Partial<ExtendedLayoutSettings>;
   };
 
   const fetchMenuData = async () => {
@@ -196,7 +218,7 @@ export async function getInitialState(): Promise<{
     return {
       fetchUserInfo,
       currentUser,
-      settings: defaultSettings as Partial<LayoutSettings>,
+      settings: defaultSettings as Partial<ExtendedLayoutSettings>,
       menuData: [],
       routeList: [],
     };
@@ -232,9 +254,9 @@ export const layout: RunTimeLayoutConfig = ({
         return initialState?.menuData || [];
       },
     },
-    waterMarkProps: {
+    waterMarkProps: initialState?.settings?.showWatermark !== false ? {
       content: initialState?.currentUser?.name,
-    },
+    } : undefined,
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;

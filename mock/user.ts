@@ -150,6 +150,7 @@ export default {
         iconfontUrl: '',
         colorWeak: false,
         logo: '/logo.svg',
+        showWatermark: false,  // 水印开关控制
         pageSize: 20,
         timeZone: 'Asia/Shanghai',
         apiPrefix: '/api',
@@ -172,7 +173,7 @@ export default {
           label: 'Crown Management',  // 显示名称，用于侧边栏
           path: '/crown',
           component: 'ModelAdmin',
-          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/CrownOutlined.js',
+          icon: 'CrownOutlined',
           hideInMenu: false,
           hideChildrenInMenu: false,
         },
@@ -181,7 +182,7 @@ export default {
           label: 'Custom Tools',  // 显示名称，用于侧边栏
           path: '/tools',
           component: 'ModelCustom',
-          icon: 'https://cdn.jsdelivr.net/npm/@ant-design/icons@5.0.1/lib/outlined/ToolOutlined.js',
+          icon: 'ToolOutlined',
           hideInMenu: false,
           hideChildrenInMenu: false,
         }

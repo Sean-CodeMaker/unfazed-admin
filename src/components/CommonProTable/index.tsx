@@ -121,9 +121,65 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                         const content = record[fieldName] || '';
                         if (!content) return '-';
 
-                        // 移除HTML标签，只显示纯文本预览
-                        const textContent = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
-                        const preview = textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent;
+                        let preview = '';
+                        let displayContent = '';
+
+                        try {
+                            // 尝试解析 Editor.js JSON 数据
+                            const editorData = JSON.parse(content);
+                            if (editorData && editorData.blocks) {
+                                // 提取所有文本块的内容
+                                const textBlocks = editorData.blocks
+                                    .filter((block: any) => block.data && typeof block.data === 'object')
+                                    .map((block: any) => {
+                                        if (block.type === 'paragraph' || block.type === 'header') {
+                                            return block.data.text || '';
+                                        } else if (block.type === 'list') {
+                                            return block.data.items?.join(', ') || '';
+                                        } else if (block.type === 'quote') {
+                                            return block.data.text || '';
+                                        } else if (block.type === 'code') {
+                                            return block.data.code || '';
+                                        }
+                                        return '';
+                                    })
+                                    .filter(Boolean);
+
+                                const allText = textBlocks.join(' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                                preview = allText.length > 50 ? `${allText.substring(0, 50)}...` : allText;
+
+                                // 为悬停显示创建简化的预览
+                                displayContent = editorData.blocks.map((block: any, index: number) => {
+                                    const blockType = block.type || 'paragraph';
+                                    const blockData = block.data || {};
+
+                                    switch (blockType) {
+                                        case 'header':
+                                            const level = blockData.level || 2;
+                                            return `<h${level}>${blockData.text || ''}</h${level}>`;
+                                        case 'paragraph':
+                                            return `<p>${blockData.text || ''}</p>`;
+                                        case 'list':
+                                            const items = blockData.items || [];
+                                            const listItems = items.map((item: string) => `<li>${item}</li>`).join('');
+                                            return blockData.style === 'ordered'
+                                                ? `<ol>${listItems}</ol>`
+                                                : `<ul>${listItems}</ul>`;
+                                        case 'quote':
+                                            return `<blockquote><p>${blockData.text || ''}</p>${blockData.caption ? `<cite>${blockData.caption}</cite>` : ''}</blockquote>`;
+                                        case 'code':
+                                            return `<pre><code>${blockData.code || ''}</code></pre>`;
+                                        default:
+                                            return `<p>${JSON.stringify(blockData)}</p>`;
+                                    }
+                                }).join('');
+                            }
+                        } catch (error) {
+                            // 如果不是 JSON 格式，可能是 HTML 内容，回退到原来的处理方式
+                            const textContent = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                            preview = textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent;
+                            displayContent = content;
+                        }
 
                         return (
                             <Tooltip
@@ -136,7 +192,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                                             padding: '8px',
                                             backgroundColor: '#fff'
                                         }}
-                                        dangerouslySetInnerHTML={{ __html: content }}
+                                        dangerouslySetInnerHTML={{ __html: displayContent }}
                                     />
                                 }
                                 placement="topLeft"
@@ -148,9 +204,9 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                                         color: '#1677ff',
                                         fontSize: '12px'
                                     }}
-                                    title="Hover to view full HTML content"
+                                    title="Hover to view formatted content"
                                 >
-                                    📝 {preview || 'HTML content'}
+                                    ✍️ {preview || 'Rich content'}
                                 </span>
                             </Tooltip>
                         );

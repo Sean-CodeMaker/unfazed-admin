@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { message } from 'antd';
-import { getModelDesc, getModelData, executeModelAction, saveModelData } from '@/services/ant-design-pro/api';
+import { getModelDesc, getModelData, executeModelAction, saveModelData } from '@/services/api';
 import dayjs from 'dayjs';
 
 interface UseModelOperationsOptions {
@@ -223,8 +223,8 @@ export const useModelOperations = ({ modelName, onSuccess, onError }: UseModelOp
                 const response = await executeModelAction({
                     name: modelName,
                     action: actionKey,
-                    cond: allConditions.length > 0 ? allConditions : undefined,
-                    extra: extra || {},
+                    search_condition: allConditions.length > 0 ? allConditions : undefined,
+                    form_data: extra || {},
                 });
 
                 // 获取action配置
@@ -259,8 +259,8 @@ export const useModelOperations = ({ modelName, onSuccess, onError }: UseModelOp
                 const response = await executeModelAction({
                     name: modelName,
                     action: actionKey,
-                    cond: conditions,
-                    extra: extra || {},
+                    search_condition: conditions,
+                    form_data: extra || {},
                 });
 
                 // 获取action配置

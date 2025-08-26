@@ -11,6 +11,7 @@ import {
     ProFormTextArea,
 } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
+import { ProFormEditorJS } from '@/components';
 
 /**
  * 渲染表单字段的公共工具函数
@@ -97,15 +98,14 @@ export const renderFormField = (
 
         case 'EditorField':
             return (
-                <ProFormTextArea
+                <ProFormEditorJS
                     key={fieldName}
                     {...commonProps}
                     fieldProps={{
-                        rows: 6,
-                        placeholder: 'Enter rich text content (HTML supported)...',
-                        style: {
-                            resize: 'vertical',
-                            fontFamily: 'monospace' // 使用等宽字体便于编辑HTML
+                        height: 300,
+                        readOnly: readonly,
+                        config: {
+                            placeholder: commonProps.tooltip || 'Start writing your story...',
                         }
                     }}
                 />

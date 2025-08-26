@@ -20,7 +20,7 @@ import { createStyles } from 'antd-style';
 import React, { useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
-import { login, getAdminSettings } from '@/services/ant-design-pro/api';
+import { login, getAdminSettings } from '@/services/api';
 
 import Settings from '../../../../config/defaultSettings';
 

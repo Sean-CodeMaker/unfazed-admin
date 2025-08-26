@@ -13,5 +13,7 @@ import ModelDetail from './ModelDetail';
 import ModelAdmin from './ModelAdmin';
 import CommonProTable from './CommonProTable';
 import ModelCustom from './ModelCustom';
+import EditorJS from './EditorJS';
+import ProFormEditorJS from './ProFormEditorJS';
 
-export { AvatarDropdown, AvatarName, Footer, Question, SelectLang, ModelList, ModelDetail, ModelAdmin, CommonProTable, ModelCustom };
+export { AvatarDropdown, AvatarName, Footer, Question, SelectLang, ModelList, ModelDetail, ModelAdmin, CommonProTable, ModelCustom, EditorJS, ProFormEditorJS };

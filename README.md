@@ -104,11 +104,7 @@ unfazed-admin/
 │   │   ├── Welcome.tsx       # 欢迎页面
 │   │   └── 404.tsx           # 全局 404 页面
 │   ├── services/             # API 服务
-│   │   ├── ant-design-pro/   # Ant Design Pro 相关 API
-│   │   │   ├── api.ts        # 主要 API 接口
-│   │   │   ├── login.ts      # 登录相关 API
-│   │   │   └── typings.d.ts  # 类型定义
-│   │   └── swagger/          # Swagger 生成的 API
+│   │   └── api.ts            # 所有 API 接口
 │   ├── access.ts             # 权限配置
 │   ├── app.tsx               # 应用入口配置（运行时配置）
 │   ├── global.tsx            # 全局配置（PWA、Service Worker）

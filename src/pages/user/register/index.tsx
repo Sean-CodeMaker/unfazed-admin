@@ -14,7 +14,7 @@ import {
 import type { Store } from 'antd/es/form/interface';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
-import { register } from '@/services/ant-design-pro/api';
+import { register } from '@/services/api';
 import useStyles from './styles';
 
 export interface StateType {

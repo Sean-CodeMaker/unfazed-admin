@@ -6,7 +6,7 @@ import {
 } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { Button, Space, Card, Divider, message, Modal, Spin } from 'antd';
-import { executeModelAction, getModelDesc } from '@/services/ant-design-pro/api';
+import { executeModelAction, getModelDesc } from '@/services/api';
 import { renderFormField } from '@/utils/formFieldRenderer';
 
 interface ModelCustomProps {
@@ -46,8 +46,8 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
             const response = await executeModelAction({
                 name: toolName,
                 action: actionKey,
-                extra: formData || {},
-                cond: []
+                form_data: formData || {},
+                search_condition: []
             });
 
             if (response?.code === 0) {

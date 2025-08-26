@@ -17,7 +17,7 @@ import {
     saveModelData,
     deleteModelData,
     executeModelAction
-} from '@/services/ant-design-pro/api';
+} from '@/services/api';
 import { renderFormField } from '@/utils/formFieldRenderer';
 
 interface ModelDetailProps {
@@ -53,8 +53,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
             const response = await executeModelAction({
                 name: inlineName,
                 action: actionKey,
-                extra: {},
-                cond: isBatch ? [] : cond
+                form_data: {},
+                search_condition: isBatch ? [] : cond
             });
 
             if (response?.code === 0) {

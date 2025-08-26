@@ -75,7 +75,7 @@ const crownData = [
         is_active: true,
         created_at: '2024-01-15T10:30:00Z',
         updated_at: '2024-01-20T14:20:00Z',
-        rich_description: '<h2>Golden Crown of Arthur</h2><p>This magnificent <strong>Golden Crown of Arthur</strong> represents the pinnacle of medieval craftsmanship.</p><h3>Features:</h3><ul><li>Crafted from <span style="color: #d4af37;"><strong>24-karat pure gold</strong></span></li><li>Adorned with precious gems: <em>diamonds, rubies, emeralds</em></li><li>Historical significance dating back to <u>6th century</u></li><li>Weight: <code>2.5 kg</code></li></ul><blockquote><p>A truly <em>legendary</em> piece of royal heritage that has witnessed countless coronations.</p></blockquote><p><strong>Note:</strong> This crown is currently on display at the Royal Museum.',
+        rich_description: '{"time":1703097600000,"blocks":[{"id":"heading","type":"header","data":{"text":"Golden Crown of Arthur","level":2}},{"id":"intro","type":"paragraph","data":{"text":"This magnificent <strong>Golden Crown of Arthur</strong> represents the pinnacle of medieval craftsmanship."}},{"id":"features-header","type":"header","data":{"text":"Features:","level":3}},{"id":"features-list","type":"list","data":{"style":"unordered","items":["Crafted from <mark>24-karat pure gold</mark>","Adorned with precious gems: <em>diamonds, rubies, emeralds</em>","Historical significance dating back to <u>6th century</u>","Weight: <code>2.5 kg</code>"]}},{"id":"quote","type":"quote","data":{"text":"A truly <em>legendary</em> piece of royal heritage that has witnessed countless coronations.","caption":"Royal Heritage Museum"}},{"id":"note","type":"paragraph","data":{"text":"<strong>Note:</strong> This crown is currently on display at the Royal Museum."}}],"version":"2.28.2"}',
         image_url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
         owner: 'King Arthur',
         weight: 2.5,
@@ -93,7 +93,7 @@ const crownData = [
         is_active: true,
         created_at: '2024-01-16T09:15:00Z',
         updated_at: '2024-01-22T16:45:00Z',
-        rich_description: '<h2 style="color: #4169e1;">Diamond Crown Excellence</h2><p>Exquisite <strong>Diamond Crown</strong> featuring <span style="background-color: #f0f8ff;">99 flawless diamonds</span>.</p><blockquote><p><em>"A masterpiece of modern royal jewelry design that captures light like no other."</em></p></blockquote><h3>Technical Specifications:</h3><ol><li><strong>Diamonds:</strong> 99 premium cut stones</li><li><strong>Setting:</strong> Platinum framework</li><li><strong>Weight:</strong> 1.8 kg</li><li><strong>Design:</strong> Contemporary minimalist approach</li></ol><p>Perfect for <u>ceremonial occasions</u> and <u>state functions</u>.</p>',
+        rich_description: '{"time":1703184000000,"blocks":[{"id":"title","type":"header","data":{"text":"Diamond Crown Excellence","level":2}},{"id":"intro","type":"paragraph","data":{"text":"Exquisite <strong>Diamond Crown</strong> featuring <mark>99 flawless diamonds</mark>."}},{"id":"quote","type":"quote","data":{"text":"A masterpiece of modern royal jewelry design that captures light like no other.","caption":"Chief Designer, Royal Jewelers"}},{"id":"specs-header","type":"header","data":{"text":"Technical Specifications:","level":3}},{"id":"specs-list","type":"list","data":{"style":"ordered","items":["<strong>Diamonds:</strong> 99 premium cut stones","<strong>Setting:</strong> Platinum framework","<strong>Weight:</strong> 1.8 kg","<strong>Design:</strong> Contemporary minimalist approach"]}},{"id":"usage","type":"paragraph","data":{"text":"Perfect for <u>ceremonial occasions</u> and <u>state functions</u>."}}],"version":"2.28.2"}',
         image_url: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=300&fit=crop',
         owner: 'Queen Elizabeth',
         weight: 1.8,
@@ -1017,13 +1017,13 @@ const userModelDesc = {
 };
 
 // Crown actions处理函数
-const handleCrownActions = async (req: Request, res: Response, action: string, extra: any, cond: any[]) => {
+const handleCrownActions = async (req: Request, res: Response, action: string, form_data: any, input_data: any, search_condition: any[]) => {
     // 模拟根据条件计算影响的记录数
     const getAffectedCount = () => {
-        if (cond.length === 0) return crownData.length;
+        if (!search_condition || search_condition.length === 0) return crownData.length;
 
         // 简单模拟：根据条件类型返回不同数量
-        const hasIdCondition = cond.some((c: any) => c.field === 'id');
+        const hasIdCondition = search_condition.some((c: any) => c.field === 'id');
         if (hasIdCondition) return 1;
 
         // 其他条件模拟返回部分记录
@@ -1049,7 +1049,7 @@ const handleCrownActions = async (req: Request, res: Response, action: string, e
             break;
 
         case 'add_note':
-            const note = extra.input || 'No note provided';
+            const note = input_data?.note || form_data?.note || 'No note provided';
             responseMessage = `Added note "${note}" to ${affectedCount} crown(s)`;
             result = { affected: affectedCount, note };
             break;
@@ -1091,14 +1091,14 @@ const handleCrownActions = async (req: Request, res: Response, action: string, e
             break;
 
         case 'upload_certificate':
-            const files = extra.files || [];
+            const files = input_data?.files || form_data?.files || [];
             responseMessage = `Successfully uploaded ${files.length} certificate file(s) for ${affectedCount} crown(s)`;
             result = { affected: affectedCount, uploaded_files: files.length };
             break;
 
         // Refresh output actions
         case 'set_owner':
-            const newOwner = extra.input || 'Unknown Owner';
+            const newOwner = input_data?.owner || form_data?.owner || 'Unknown Owner';
             responseMessage = `Changed owner to "${newOwner}" for ${affectedCount} crown(s)`;
             result = { affected: affectedCount, new_owner: newOwner };
             break;
@@ -1128,7 +1128,7 @@ const handleCrownActions = async (req: Request, res: Response, action: string, e
             break;
 
         case 'export_pdf':
-            const reportTitle = extra.input || 'Crown Report';
+            const reportTitle = input_data?.title || form_data?.title || 'Crown Report';
             responseMessage = 'PDF report generated successfully';
             result = {
                 affected: affectedCount,
@@ -1192,7 +1192,7 @@ const handleCrownActions = async (req: Request, res: Response, action: string, e
             break;
 
         case 'upload_and_analyze':
-            const uploadedFiles = extra.files || [];
+            const uploadedFiles = input_data?.files || form_data?.files || [];
             responseMessage = `Analyzed ${uploadedFiles.length} appraisal document(s)`;
             result = [
                 {
@@ -1231,13 +1231,13 @@ const handleCrownActions = async (req: Request, res: Response, action: string, e
 };
 
 // Crown History actions处理函数
-const handleCrownHistoryActions = async (req: Request, res: Response, action: string, extra: any, cond: any[]) => {
+const handleCrownHistoryActions = async (req: Request, res: Response, action: string, form_data: any, input_data: any, search_condition: any[]) => {
     // 模拟根据条件计算影响的记录数
     const getAffectedCount = () => {
-        if (cond.length === 0) return crownHistoryData.length;
+        if (!search_condition || search_condition.length === 0) return crownHistoryData.length;
 
         // 简单模拟：根据条件类型返回不同数量
-        const hasIdCondition = cond.some((c: any) => c.field === 'id');
+        const hasIdCondition = search_condition.some((c: any) => c.field === 'id');
         if (hasIdCondition) return 1;
 
         // 其他条件模拟返回部分记录
@@ -1311,13 +1311,13 @@ const handleCrownHistoryActions = async (req: Request, res: Response, action: st
             break;
 
         case 'add_note':
-            const note = extra.input || 'No note provided';
+            const note = input_data?.note || form_data?.note || 'No note provided';
             responseMessage = `Added note "${note}" to history record`;
             result = { affected: 1, note, added_at: new Date().toISOString() };
             break;
 
         case 'upload_evidence':
-            const files = extra.files || [];
+            const files = input_data?.files || form_data?.files || [];
             responseMessage = `Successfully uploaded ${files.length} evidence file(s) for history record`;
             result = { affected: 1, uploaded_files: files.length, files_info: files };
             break;
@@ -1362,7 +1362,7 @@ const handleCrownHistoryActions = async (req: Request, res: Response, action: st
 };
 
 // Tools actions处理函数
-const handleToolsActions = async (req: Request, res: Response, action: string, extra: any, cond: any[]) => {
+const handleToolsActions = async (req: Request, res: Response, action: string, form_data: any, input_data: any, search_condition: any[]) => {
     let responseMessage = '';
     let result: any = null;
 
@@ -1371,8 +1371,8 @@ const handleToolsActions = async (req: Request, res: Response, action: string, e
             responseMessage = 'Report preview generated successfully';
             result = {
                 preview_data: {
-                    title: `${extra.report_type || 'Daily'} Crown Management Report`,
-                    date_range: `${extra.start_date || '2024-01-01'} to ${extra.end_date || '2024-01-31'}`,
+                    title: `${form_data?.report_type || input_data?.report_type || 'Daily'} Crown Management Report`,
+                    date_range: `${form_data?.start_date || input_data?.start_date || '2024-01-01'} to ${form_data?.end_date || input_data?.end_date || '2024-01-31'}`,
                     summary: {
                         total_crowns: 156,
                         active_crowns: 142,
@@ -1392,12 +1392,14 @@ const handleToolsActions = async (req: Request, res: Response, action: string, e
 
         case 'generate':
             responseMessage = 'Report generated and ready for download';
+            const reportType = form_data?.report_type || input_data?.report_type || 'daily';
+            const exportFormat = form_data?.export_format || input_data?.export_format || 'pdf';
             result = {
                 download: {
-                    url: `/api/download/crown_report_${extra.report_type || 'daily'}_${new Date().getTime()}.${extra.export_format || 'pdf'}`,
-                    filename: `crown_report_${extra.report_type || 'daily'}_${new Date().toISOString().split('T')[0]}.${extra.export_format || 'pdf'}`,
-                    contentType: extra.export_format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
-                        extra.export_format === 'csv' ? 'text/csv' : 'application/pdf',
+                    url: `/api/download/crown_report_${reportType}_${new Date().getTime()}.${exportFormat}`,
+                    filename: `crown_report_${reportType}_${new Date().toISOString().split('T')[0]}.${exportFormat}`,
+                    contentType: exportFormat === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+                        exportFormat === 'csv' ? 'text/csv' : 'application/pdf',
                     size: Math.floor(Math.random() * 5000) + 1000, // Random size in KB
                     generated_at: new Date().toISOString()
                 }
@@ -1405,7 +1407,7 @@ const handleToolsActions = async (req: Request, res: Response, action: string, e
             break;
 
         case 'send_email':
-            const recipients = extra.email_recipients || 'admin@example.com';
+            const recipients = form_data?.email_recipients || input_data?.email_recipients || 'admin@example.com';
             const recipientList = recipients.split(',').map((email: string) => email.trim()).filter(Boolean);
             responseMessage = `Report successfully sent to ${recipientList.length} recipient(s)`;
             result = {
@@ -1413,21 +1415,22 @@ const handleToolsActions = async (req: Request, res: Response, action: string, e
                 recipients: recipientList,
                 sent_at: new Date().toISOString(),
                 email_id: `EMAIL_${new Date().getTime()}`,
-                report_type: extra.report_type || 'daily'
+                report_type: form_data?.report_type || input_data?.report_type || 'daily'
             };
             break;
 
         case 'schedule':
             responseMessage = 'Report scheduling configured successfully';
+            const emailRecipients = form_data?.email_recipients || input_data?.email_recipients;
             result = {
                 scheduled: true,
                 schedule_id: `SCHEDULE_${new Date().getTime()}`,
-                report_type: extra.report_type || 'daily',
-                frequency: extra.frequency || 'daily',
+                report_type: form_data?.report_type || input_data?.report_type || 'daily',
+                frequency: form_data?.frequency || input_data?.frequency || 'daily',
                 next_run: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
-                recipients: extra.email_recipients ? extra.email_recipients.split(',').map((email: string) => email.trim()) : ['admin@example.com'],
-                export_format: extra.export_format || 'pdf',
-                include_details: extra.include_details || false
+                recipients: emailRecipients ? emailRecipients.split(',').map((email: string) => email.trim()) : ['admin@example.com'],
+                export_format: form_data?.export_format || input_data?.export_format || 'pdf',
+                include_details: form_data?.include_details || input_data?.include_details || false
             };
             break;
 
@@ -1789,15 +1792,15 @@ export default {
 
     // 模型操作
     'POST /api/admin/model-action': async (req: Request, res: Response) => {
-        const { name, action, extra = {}, cond = [] } = req.body;
+        const { name, action, search_condition = [], form_data = {}, input_data = {} } = req.body;
         await waitTime(800);
 
         if (name === 'crown') {
-            return handleCrownActions(req, res, action, extra, cond);
+            return handleCrownActions(req, res, action, form_data, input_data, search_condition);
         } else if (name === 'crown_history') {
-            return handleCrownHistoryActions(req, res, action, extra, cond);
+            return handleCrownHistoryActions(req, res, action, form_data, input_data, search_condition);
         } else if (name === 'tools') {
-            return handleToolsActions(req, res, action, extra, cond);
+            return handleToolsActions(req, res, action, form_data, input_data, search_condition);
         } else {
             res.send({
                 code: 1,
