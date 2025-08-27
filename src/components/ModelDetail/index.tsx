@@ -218,11 +218,13 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
 
         switch (relation.relation) {
             case 'fk':
-                return [{ field: relation.source_field, eq: mainRecord[relation.dest_field] }];
+                return [{ field: relation.source_field, eq: mainRecord[relation.target_field] }];
             case 'o2o':
-                return [{ field: relation.source_field, eq: mainRecord[relation.dest_field] }];
-            case 'm2m':
-                return [{ field: 'id', in: mainRecord[relation.dest_field] || [] }];
+                return [{ field: relation.source_field, eq: mainRecord[relation.target_field] }];
+            case 'bk_fk':
+                return [{ field: relation.target_field, eq: mainRecord[relation.source_field] }];
+            case 'bk_o2o':
+                return [{ field: relation.target_field, eq: mainRecord[relation.source_field] }];
             default:
                 console.error(`Unsupported relation type: ${relation.relation}`);
                 return [];
@@ -240,7 +242,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
 
                 // 1. 加载中间表数据（用于确定已选择的关系）
                 const throughResponse = await getModelData({
-                    name: through.mid_model,
+                    name: through.through,
                     page: 1,
                     size: 1000,
                     cond: [{
@@ -251,7 +253,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
 
                 // 2. 加载目标表所有数据（用于显示可选择的项目）
                 const targetResponse = await getModelData({
-                    name: relation.to,
+                    name: relation.target,
                     page: 1,
                     size: 1000,
                     cond: []
@@ -277,6 +279,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
             } else {
                 // 普通关系的处理逻辑保持不变
                 const conditions = buildConditions(inlineDesc, mainRecord);
+                console.log('inlineDesc', inlineDesc);
+                console.log('conditions', conditions);
                 const response = await getModelData({
                     name: inlineName,
                     cond: conditions,
@@ -312,7 +316,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
                 };
 
                 const response = await saveModelData({
-                    name: through.mid_model,
+                    name: through.through,
                     data: throughData
                 });
 
@@ -346,7 +350,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
 
                 if (throughRecord) {
                     const response = await deleteModelData({
-                        name: through.mid_model,
+                        name: through.through,
                         data: [throughRecord]
                     } as any);
 
@@ -521,6 +525,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
 
             case 'fk':
             case 'o2o':
+            case 'bk_fk':
+            case 'bk_o2o':
                 // 外键和一对一关系使用普通表格
                 return (
                     <Card>
@@ -530,7 +536,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({ modelName, modelDesc, record,
                             data={data}
                             onAction={(actionKey: string, action: any, record?: any, isBatch?: boolean, records?: any[]) => {
                                 if (actionKey === 'add') {
-                                    const destField = (inlineDesc as any)?.relation?.dest_field || 'crown_id';
+                                    const destField = (inlineDesc as any)?.relation?.target_field || 'crown_id';
                                     const newRecord = {
                                         id: -1,
                                         [destField]: record.id,

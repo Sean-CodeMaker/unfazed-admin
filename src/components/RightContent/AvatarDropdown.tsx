@@ -49,7 +49,20 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
    * 退出登录，并且将当前的 url 保存
    */
   const loginOut = async () => {
-    await outLogin();
+    // 从localStorage获取用户信息，确定登录平台
+    let platform: string | undefined;
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        // 从用户的extra信息中获取platform
+        platform = user.extra?.platform;
+      }
+    } catch (error) {
+      console.warn('Failed to get user platform info:', error);
+    }
+
+    await outLogin(platform);
     const { search, pathname } = window.location;
     const urlParams = new URL(window.location.href).searchParams;
     const searchParams = new URLSearchParams({

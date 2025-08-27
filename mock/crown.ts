@@ -2056,7 +2056,7 @@ export default {
                         export_history: {
                             name: 'export_history',
                             label: 'Export History',
-                            help_text: 'Export selected history records to Excel',
+                            description: 'Export selected history records to Excel',
                             batch: true,
                             input: 'empty',
                             output: 'download'
@@ -2064,7 +2064,7 @@ export default {
                         mark_verified: {
                             name: 'mark_verified',
                             label: 'Mark as Verified',
-                            help_text: 'Mark selected history records as verified',
+                            description: 'Mark selected history records as verified',
                             batch: true,
                             input: 'empty',
                             output: 'toast'
@@ -2072,7 +2072,7 @@ export default {
                         bulk_delete: {
                             name: 'bulk_delete',
                             label: 'Bulk Delete',
-                            help_text: 'Delete multiple history records at once',
+                            description: 'Delete multiple history records at once',
                             batch: true,
                             input: 'empty',
                             output: 'refresh'
@@ -2081,7 +2081,7 @@ export default {
                         view_details: {
                             name: 'view_details',
                             label: 'View Details',
-                            help_text: 'View detailed information about this history record',
+                            description: 'View detailed information about this history record',
                             batch: false,
                             input: 'empty',
                             output: 'display'
@@ -2089,7 +2089,7 @@ export default {
                         add_note: {
                             name: 'add_note',
                             label: 'Add Note',
-                            help_text: 'Add a note to this history record',
+                            description: 'Add a note to this history record',
                             batch: false,
                             input: 'string',
                             output: 'toast'
@@ -2097,7 +2097,7 @@ export default {
                         upload_evidence: {
                             name: 'upload_evidence',
                             label: 'Upload Evidence',
-                            help_text: 'Upload supporting documents for this event',
+                            description: 'Upload supporting documents for this event',
                             batch: false,
                             input: 'file',
                             output: 'toast'
@@ -2105,7 +2105,7 @@ export default {
                         generate_report: {
                             name: 'generate_report',
                             label: 'Generate Report',
-                            help_text: 'Generate a detailed report for this history event',
+                            description: 'Generate a detailed report for this history event',
                             batch: false,
                             input: 'empty',
                             output: 'download'
@@ -2113,7 +2113,7 @@ export default {
                         duplicate_event: {
                             name: 'duplicate_event',
                             label: 'Duplicate Event',
-                            help_text: 'Create a copy of this history event with current date',
+                            description: 'Create a copy of this history event with current date',
                             batch: false,
                             input: 'empty',
                             output: 'refresh'
@@ -2136,10 +2136,10 @@ export default {
                         min_num: 0
                     },
                     relation: {
-                        to: 'crown_history',
+                        target: 'crown_history',
                         source_field: 'id',
-                        dest_field: 'crown_id',
-                        relation: 'fk' as const
+                        target_field: 'crown_id',
+                        relation: 'bk_fk' as const
                     }
                 },
                 // fk关系：皇冠证书 (一对多)
@@ -2243,10 +2243,10 @@ export default {
                         min_num: 0
                     },
                     relation: {
-                        to: 'crown_certificates',
+                        target: 'crown_certificates',
                         source_field: 'id',
-                        dest_field: 'crown_id',
-                        relation: 'fk' as const
+                        target_field: 'crown_id',
+                        relation: 'bk_fk' as const
                     }
                 },
                 // o2o关系：皇冠保险 (一对一)
@@ -2370,10 +2370,10 @@ export default {
                         min_num: 0
                     },
                     relation: {
-                        to: 'crown_insurance',
+                        target: 'crown_insurance',
                         source_field: 'id',
-                        dest_field: 'crown_id',
-                        relation: 'o2o' as const
+                        target_field: 'crown_id',
+                        relation: 'bk_o2o' as const
                     }
                 },
                 // m2m关系：皇冠标签 (多对多)
@@ -2428,12 +2428,12 @@ export default {
                         min_num: 0
                     },
                     relation: {
-                        to: 'crown_tags',
+                        target: 'crown_tags',
                         source_field: 'id',
-                        dest_field: 'id',
+                        target_field: 'id',
                         relation: 'm2m' as const,
                         through: {
-                            mid_model: 'crown_tag_relations',
+                            through: 'crown_tag_relations',
                             source_field: 'id',
                             source_to_through_field: 'crown_id',
                             target_field: 'id',

@@ -1,1 +1,2293 @@
-{"openapi":"3.1.1","info":{"title":"myprj","description":"API for myprj","version":"1.0.0"},"servers":[{"url":"http://127.0.0.1:9527","description":"Local dev"}],"paths":{"/api/admin/route-list":{"get":{"tags":["unfazed.contrib.admin"],"operationId":"listRoute","parameters":[],"requestBody":{"content":{},"required":false},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.list_route.RouteResp"}}}}},"deprecated":false}},"/api/admin/settings":{"get":{"tags":["unfazed.contrib.admin"],"operationId":"adminSettings","parameters":[],"requestBody":{"content":{},"required":false},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.settings.SiteSettingsResp"}}}}},"deprecated":false}},"/api/admin/model-desc":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelDesc","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.Model_descBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.DescResp"}}}}},"deprecated":false}},"/api/admin/model-inlines":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelInlines","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.Model_inlinesBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.InlinesResp"}}}}},"deprecated":false}},"/api/admin/model-action":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelAction","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_action.Model_actionBodyModel"}}},"required":true},"responses":{},"deprecated":false}},"/api/admin/model-save":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelSave","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_save.Model_saveBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_save.SaveResp"}}}}},"deprecated":false}},"/api/admin/model-delete":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelDelete","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_delete.Model_deleteBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_delete.DeleteResp"}}}}},"deprecated":false}},"/api/admin/model-data":{"post":{"tags":["unfazed.contrib.admin"],"operationId":"modelData","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Model_dataBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_data.DataResp"}}}}},"deprecated":false}},"/api/auth/login":{"post":{"tags":["unfazed.contrib.auth"],"operationId":"login","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginSucceedResponse"}}}}},"deprecated":false}},"/api/auth/logout":{"post":{"tags":["unfazed.contrib.auth"],"operationId":"logout","parameters":[],"requestBody":{"content":{},"required":false},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.logout.LogoutSucceedResponse"}}}}},"deprecated":false}},"/api/auth/register":{"post":{"tags":["unfazed.contrib.auth"],"operationId":"register","parameters":[],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.register.RegisterBodyModel"}}},"required":true},"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.register.RegisterSucceedResponse"}}}}},"deprecated":false}},"/api/auth/oauth-login-redirect":{"get":{"tags":["unfazed.contrib.auth"],"operationId":"oauth_login_redirect","parameters":[{"required":true,"deprecated":false,"style":"form","schema":{"type":"string","title":"platform"},"name":"platform","in":"query","allowEmptyValue":false,"allowReserved":false}],"requestBody":{"content":{},"required":false},"responses":{},"deprecated":false}},"/api/auth/oauth-logout-redirect":{"get":{"tags":["unfazed.contrib.auth"],"operationId":"oauth_logout_redirect","parameters":[{"required":true,"deprecated":false,"style":"form","schema":{"type":"string","title":"platform"},"name":"platform","in":"query","allowEmptyValue":false,"allowReserved":false}],"requestBody":{"content":{},"required":false},"responses":{},"deprecated":false}}},"components":{"schemas":{"unfazed.contrib.admin.endpoints.list_route.AdminRoute":{"properties":{"name":{"type":"string","title":"Name","description":"name of this route"},"label":{"type":"string","title":"Label","description":"label of this route"},"path":{"type":"string","title":"Path","description":"path of this route"},"component":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Component","description":"component of this route"},"routes":{"items":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.list_route.AdminRoute"},"type":"array","title":"Routes","description":"children routes of this route"},"icon":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Icon","description":"icon for this route from ant design","examples":["table","user","setting","home","dashboard","file","folder"]},"hideInMenu":{"type":"boolean","title":"Hideinmenu","description":"hide this route in frontend admin","default":false},"hideChildrenInMenu":{"type":"boolean","title":"Hidechildreninmenu","description":"hide children routes in frontend admin","default":false}},"type":"object","required":["name","label","path"],"title":"AdminRoute"},"unfazed.contrib.admin.endpoints.list_route.RouteResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"items":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.list_route.AdminRoute"},"type":"array"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"RouteResp"},"unfazed.contrib.admin.endpoints.settings.AdminSite":{"properties":{"title":{"type":"string","title":"Title","description":"title of this admin site"},"navTheme":{"type":"string","title":"Navtheme","description":"nav theme of this admin site"},"colorPrimary":{"type":"string","title":"Colorprimary","description":"color primary of this admin site"},"layout":{"type":"string","title":"Layout","description":"layout of this admin site"},"contentWidth":{"type":"string","title":"Contentwidth","description":"content width of this admin site"},"fixedHeader":{"type":"boolean","title":"Fixedheader","description":"fixed header of this admin site"},"fixSiderbar":{"type":"boolean","title":"Fixsiderbar","description":"fix siderbar of this admin site"},"pwa":{"type":"boolean","title":"Pwa","description":"pwa of this admin site"},"iconfontUrl":{"type":"string","title":"Iconfonturl","description":"iconfont url of this admin site"},"colorWeak":{"type":"boolean","title":"Colorweak","description":"color weak of this admin site"},"logo":{"type":"string","title":"Logo","description":"logo of this admin site"},"pageSize":{"type":"integer","title":"Pagesize","description":"page size of this admin site"},"timeZone":{"type":"string","title":"Timezone","description":"time zone of this admin site"},"apiPrefix":{"type":"string","title":"Apiprefix","description":"api prefix of this admin site"},"debug":{"type":"boolean","title":"Debug","description":"debug of this admin site"},"version":{"type":"string","title":"Version","description":"version of this admin site"},"showWatermark":{"type":"boolean","title":"Showwatermark","description":"show watermark of this admin site"},"extra":{"additionalProperties":true,"type":"object","title":"Extra","description":"extra data for this admin site"},"authPlugins":{"items":{"additionalProperties":true,"type":"object"},"type":"array","title":"Authplugins","description":"auth plugins of this admin site"}},"type":"object","required":["title","navTheme","colorPrimary","layout","contentWidth","fixedHeader","fixSiderbar","pwa","iconfontUrl","colorWeak","logo","pageSize","timeZone","apiPrefix","debug","version","showWatermark"],"title":"AdminSite"},"unfazed.contrib.admin.endpoints.settings.SiteSettingsResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.settings.AdminSite"},{"type":"null"}],"description":"response data","default":{}}},"type":"object","title":"SiteSettingsResp"},"unfazed.contrib.admin.endpoints.model_desc.ActionInput":{"type":"string","enum":["empty","string","file"],"title":"ActionInput"},"unfazed.contrib.admin.endpoints.model_desc.ActionOutput":{"type":"string","enum":["download","refresh","toast","display"],"title":"ActionOutput"},"unfazed.contrib.admin.endpoints.model_desc.AdminAction":{"properties":{"name":{"type":"string","title":"Name","description":"name of this action"},"label":{"type":"string","title":"Label","description":"label of this action, displayed in frontend admin"},"output":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.ActionOutput","description":"output of this action","default":"toast"},"input":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.ActionInput","description":"input of this action","default":"empty"},"confirm":{"type":"boolean","title":"Confirm","description":"whether to confirm this action","default":false},"description":{"type":"string","title":"Description","description":"description of this action"},"batch":{"type":"boolean","title":"Batch","description":"whether a batch action"},"extra":{"additionalProperties":true,"type":"object","title":"Extra","description":"extra data for this action, extention for future use"}},"type":"object","required":["name","label","description","batch"],"title":"AdminAction"},"unfazed.contrib.admin.endpoints.model_desc.AdminAttrs":{"properties":{"help_text":{"type":"string","title":"Help Text","description":"help text for this attribute, frontend admin will show the help text","default":""},"can_search":{"type":"boolean","title":"Can Search","description":"can search in frontend admin, the search will call the model_data endpoint","default":true},"search_fields":{"items":{"type":"string"},"type":"array","title":"Search Fields","description":"list of fields to search in frontend admin"},"can_add":{"type":"boolean","title":"Can Add","description":"Will show a Add button in frontend admin if can_add is True","default":true},"can_delete":{"type":"boolean","title":"Can Delete","description":"Will show a Delete button in frontend admin if can_delete is True","default":true},"can_edit":{"type":"boolean","title":"Can Edit","description":"the data can be edited inlines","default":true},"can_show_all":{"type":"boolean","title":"Can Show All","description":"whether to show all items in frontend admin","default":true},"list_per_page":{"type":"integer","title":"List Per Page","description":"number of items to display per page in frontend admin","default":20},"list_search":{"items":{"type":"string"},"type":"array","title":"List Search","description":"list of fields to search in frontend admin, frontend behavior"},"list_filter":{"items":{"type":"string"},"type":"array","title":"List Filter","description":"list of fields to filter in frontend admin, frontend behavior"},"list_sort":{"items":{"type":"string"},"type":"array","title":"List Sort","description":"list of fields to sort in frontend admin, frontend behavior"},"list_order":{"items":{"type":"string"},"type":"array","title":"List Order","description":"list of fields to order in frontend admin, frontend behavior"},"editable":{"type":"boolean","title":"Editable","description":"whether to edit the data in frontend admin","default":true},"detail_display":{"items":{"type":"string"},"type":"array","title":"Detail Display","description":"list of fields to display in frontend admin, frontend behavior"}},"type":"object","title":"AdminAttrs"},"unfazed.contrib.admin.endpoints.model_desc.AdminCustomAttrs":{"properties":{"help_text":{"type":"string","title":"Help Text","description":"help text for this tool, frontend admin will show the help text","default":""}},"type":"object","title":"AdminCustomAttrs"},"unfazed.contrib.admin.endpoints.model_desc.AdminCustomSerializeModel":{"properties":{"fields":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminField"},"type":"object","title":"Fields","description":"fields of this model, frontend admin will show the fields"},"actions":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAction"},"type":"object","title":"Actions","description":"actions of this model, frontend admin will show the actions"},"attrs":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminCustomAttrs","description":"attrs of this model, frontend admin will build the page according to the attrs"}},"type":"object","required":["fields","actions","attrs"],"title":"AdminCustomSerializeModel"},"unfazed.contrib.admin.endpoints.model_desc.AdminField":{"properties":{"type":{"type":"string","enum":["CharField","IntegerField","BooleanField","FloatField","DateField","DatetimeField","TimeField","TextField","EditorField","ImageField","UploadField","JsonField"],"title":"Type","description":"type of this field, different field types map to different frontend components"},"readonly":{"type":"boolean","title":"Readonly","description":"readonly for this field, frontend admin will not allow user to edit this field","default":false},"show":{"type":"boolean","title":"Show","description":"show in frontend admin","default":true},"blank":{"type":"boolean","title":"Blank","description":"frontend admin will not require this field if blank is True","default":true},"choices":{"items":{"prefixItems":[{},{}],"type":"array","maxItems":2,"minItems":2},"type":"array","title":"Choices","description":"choices for this field, frontend admin will show the show value"},"help_text":{"type":"string","title":"Help Text","description":"help text for this field, frontend admin will show the help text"},"default":{"title":"Default","description":"default value for this field, frontend admin will show the show value"},"name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Name","description":"name of this field"}},"type":"object","required":["type","help_text"],"title":"AdminField"},"unfazed.contrib.admin.endpoints.model_desc.AdminSerializeModel":{"properties":{"fields":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminField"},"type":"object","title":"Fields","description":"fields of this model, frontend admin will show the fields"},"actions":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAction"},"type":"object","title":"Actions","description":"actions of this model, frontend admin will show the actions"},"attrs":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAttrs","description":"attrs of this model, frontend admin will build the page according to the attrs"}},"type":"object","required":["fields","actions","attrs"],"title":"AdminSerializeModel"},"unfazed.contrib.admin.endpoints.model_desc.DescResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminSerializeModel"},{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminCustomSerializeModel"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"DescResp"},"unfazed.contrib.admin.endpoints.model_desc.Model_descBodyModel":{"properties":{"name":{"type":"string","title":"name"}},"type":"object","required":["name"],"title":"Model_descBodyModel","media_type":"application/json"},"unfazed.contrib.admin.endpoints.model_inlines.ActionInput":{"type":"string","enum":["empty","string","file"],"title":"ActionInput"},"unfazed.contrib.admin.endpoints.model_inlines.ActionOutput":{"type":"string","enum":["download","refresh","toast","display"],"title":"ActionOutput"},"unfazed.contrib.admin.endpoints.model_inlines.AdminAction":{"properties":{"name":{"type":"string","title":"Name","description":"name of this action"},"label":{"type":"string","title":"Label","description":"label of this action, displayed in frontend admin"},"output":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.ActionOutput","description":"output of this action","default":"toast"},"input":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.ActionInput","description":"input of this action","default":"empty"},"confirm":{"type":"boolean","title":"Confirm","description":"whether to confirm this action","default":false},"description":{"type":"string","title":"Description","description":"description of this action"},"batch":{"type":"boolean","title":"Batch","description":"whether a batch action"},"extra":{"additionalProperties":true,"type":"object","title":"Extra","description":"extra data for this action, extention for future use"}},"type":"object","required":["name","label","description","batch"],"title":"AdminAction"},"unfazed.contrib.admin.endpoints.model_inlines.AdminField":{"properties":{"type":{"type":"string","enum":["CharField","IntegerField","BooleanField","FloatField","DateField","DatetimeField","TimeField","TextField","EditorField","ImageField","UploadField","JsonField"],"title":"Type","description":"type of this field, different field types map to different frontend components"},"readonly":{"type":"boolean","title":"Readonly","description":"readonly for this field, frontend admin will not allow user to edit this field","default":false},"show":{"type":"boolean","title":"Show","description":"show in frontend admin","default":true},"blank":{"type":"boolean","title":"Blank","description":"frontend admin will not require this field if blank is True","default":true},"choices":{"items":{"prefixItems":[{},{}],"type":"array","maxItems":2,"minItems":2},"type":"array","title":"Choices","description":"choices for this field, frontend admin will show the show value"},"help_text":{"type":"string","title":"Help Text","description":"help text for this field, frontend admin will show the help text"},"default":{"title":"Default","description":"default value for this field, frontend admin will show the show value"},"name":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Name","description":"name of this field"}},"type":"object","required":["type","help_text"],"title":"AdminField"},"unfazed.contrib.admin.endpoints.model_inlines.AdminInlineAttrs":{"properties":{"help_text":{"type":"string","title":"Help Text","description":"help text for this attribute, frontend admin will show the help text","default":""},"can_search":{"type":"boolean","title":"Can Search","description":"can search in frontend admin, the search will call the model_data endpoint","default":true},"search_fields":{"items":{"type":"string"},"type":"array","title":"Search Fields","description":"list of fields to search in frontend admin"},"can_add":{"type":"boolean","title":"Can Add","description":"Will show a Add button in frontend admin if can_add is True","default":true},"can_delete":{"type":"boolean","title":"Can Delete","description":"Will show a Delete button in frontend admin if can_delete is True","default":true},"can_edit":{"type":"boolean","title":"Can Edit","description":"the data can be edited inlines","default":true},"can_show_all":{"type":"boolean","title":"Can Show All","description":"whether to show all items in frontend admin","default":true},"list_per_page":{"type":"integer","title":"List Per Page","description":"number of items to display per page in frontend admin","default":20},"list_search":{"items":{"type":"string"},"type":"array","title":"List Search","description":"list of fields to search in frontend admin, frontend behavior"},"list_filter":{"items":{"type":"string"},"type":"array","title":"List Filter","description":"list of fields to filter in frontend admin, frontend behavior"},"list_sort":{"items":{"type":"string"},"type":"array","title":"List Sort","description":"list of fields to sort in frontend admin, frontend behavior"},"list_order":{"items":{"type":"string"},"type":"array","title":"List Order","description":"list of fields to order in frontend admin, frontend behavior"},"max_num":{"type":"integer","title":"Max Num","description":"max number of items to edit in frontend admin","default":0},"min_num":{"type":"integer","title":"Min Num","description":"min number of items to edit in frontend admin","default":0}},"type":"object","title":"AdminInlineAttrs"},"unfazed.contrib.admin.endpoints.model_inlines.AdminInlineSerializeModel":{"properties":{"fields":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminField"},"type":"object","title":"Fields","description":"fields of this model, frontend admin will show the fields"},"actions":{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminAction"},"type":"object","title":"Actions","description":"actions of this model, frontend admin will show the actions"},"attrs":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminInlineAttrs","description":"attrs of this model, frontend admin will build the page according to the attrs"},"relation":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminRelation"},{"type":"null"}],"description":"relation of this model, frontend admin will show the relation"}},"type":"object","required":["fields","actions","attrs"],"title":"AdminInlineSerializeModel"},"unfazed.contrib.admin.endpoints.model_inlines.AdminRelation":{"properties":{"target":{"type":"string","title":"Target","description":"target Admin name"},"source_field":{"type":"string","title":"Source Field","description":"source field name"},"target_field":{"type":"string","title":"Target Field","description":"target field name"},"relation":{"type":"string","enum":["fk","o2o","m2m","bk_fk","bk_o2o"],"title":"Relation","description":"relation type"},"through":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminThrough"},{"type":"null"}],"description":"through model name"}},"type":"object","required":["target"],"title":"AdminRelation"},"unfazed.contrib.admin.endpoints.model_inlines.AdminThrough":{"properties":{"through":{"type":"string","title":"Through","description":"mid model name"},"source_field":{"type":"string","title":"Source Field","description":"source field name"},"source_to_through_field":{"type":"string","title":"Source To Through Field","description":"source to through field name"},"target_field":{"type":"string","title":"Target Field","description":"target field name"},"target_to_through_field":{"type":"string","title":"Target To Through Field","description":"target to through field name"}},"type":"object","required":["through","source_field","source_to_through_field","target_field","target_to_through_field"],"title":"AdminThrough"},"unfazed.contrib.admin.endpoints.model_inlines.InlinesResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"additionalProperties":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminInlineSerializeModel"},"type":"object"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"InlinesResp"},"unfazed.contrib.admin.endpoints.model_inlines.Model_inlinesBodyModel":{"properties":{"name":{"type":"string","title":"name","description":"name of the model"},"data":{"additionalProperties":true,"type":"object","title":"data","description":"one line data of the model","examples":[{"id":1,"name":"admin"}]}},"type":"object","required":["name","data"],"title":"Model_inlinesBodyModel","media_type":"application/json"},"unfazed.contrib.admin.endpoints.model_action.Condition":{"properties":{"field":{"type":"string","title":"Field","description":"field name"},"eq":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"string"},{"type":"null"}],"title":"Eq","description":"equal to this value","examples":["age__eq=18","name__eq=admin"]},"lt":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Lt","description":"less than this value","examples":["age__lt=18"]},"lte":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Lte","description":"less than or equal to this value","examples":["age__lte=18"]},"gt":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Gt","description":"greater than this value","examples":["age__gt=18"]},"gte":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Gte","description":"greater than or equal to this value","examples":["age__gte=18"]},"contains":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Contains","description":"contains this value","examples":["name__contains=admin"]},"icontains":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Icontains","description":"case insensitive contains this value","examples":["name__icontains=admin"]}},"type":"object","required":["field"],"title":"Condition"},"unfazed.contrib.admin.endpoints.model_action.Model_actionBodyModel":{"properties":{"name":{"type":"string","title":"name","description":"name of the model"},"action":{"type":"string","title":"action","description":"action of the action"},"search_condition":{"items":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_action.Condition"},"type":"array","title":"search_condition","description":"conditions to filter the data","examples":[{"eq":"admin","field":"name"}]},"form_data":{"additionalProperties":true,"type":"object","title":"form_data","description":"form data for the action"},"input_data":{"additionalProperties":true,"type":"object","title":"input_data","description":"input data for the action"}},"type":"object","required":["name","action"],"title":"Model_actionBodyModel","media_type":"application/json"},"unfazed.contrib.admin.endpoints.model_save.SaveResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"SaveResp"},"unfazed.contrib.admin.endpoints.model_save.Model_saveBodyModel":{"properties":{"name":{"type":"string","title":"name","description":"name of the model"},"data":{"additionalProperties":true,"type":"object","title":"data","description":"depends on the tortoise model, use unfazed.contrib.auth.models.User as example","examples":[{"created_at":12345,"email":"","id":1,"updated_at":12345,"username":"admin"}]}},"type":"object","required":["name","data"],"title":"Model_saveBodyModel","media_type":"application/json"},"unfazed.contrib.admin.endpoints.model_delete.DeleteResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"DeleteResp"},"unfazed.contrib.admin.endpoints.model_delete.Model_deleteBodyModel":{"properties":{"name":{"type":"string","title":"name","description":"name of the model"},"data":{"additionalProperties":true,"type":"object","title":"data","description":"one line data of the model","examples":[{"id":1,"name":"admin"}]},"strategy":{"type":"string","enum":["set_null","delete","do_nothing"],"title":"strategy","description":"strategy to delete the related data","default":"do_nothing","examples":["set_null","delete","do_nothing"]}},"type":"object","required":["name","data"],"title":"Model_deleteBodyModel","media_type":"application/json"},"unfazed.contrib.admin.endpoints.model_data.Result_TypeVar_":{"properties":{"count":{"type":"integer","title":"Count","description":"total number of items"},"data":{"items":{"additionalProperties":true,"type":"object"},"type":"array","title":"Data","description":"list of items"}},"type":"object","required":["count","data"],"title":"Result[TypeVar]"},"unfazed.contrib.admin.endpoints.model_data.DataResp":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Result_TypeVar_"},{"type":"null"}],"description":"response data","default":{}}},"type":"object","title":"DataResp"},"unfazed.contrib.admin.endpoints.model_data.Condition":{"properties":{"field":{"type":"string","title":"Field","description":"field name"},"eq":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"string"},{"type":"null"}],"title":"Eq","description":"equal to this value","examples":["age__eq=18","name__eq=admin"]},"lt":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Lt","description":"less than this value","examples":["age__lt=18"]},"lte":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Lte","description":"less than or equal to this value","examples":["age__lte=18"]},"gt":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Gt","description":"greater than this value","examples":["age__gt=18"]},"gte":{"anyOf":[{"type":"number"},{"type":"integer"},{"type":"null"}],"title":"Gte","description":"greater than or equal to this value","examples":["age__gte=18"]},"contains":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Contains","description":"contains this value","examples":["name__contains=admin"]},"icontains":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Icontains","description":"case insensitive contains this value","examples":["name__icontains=admin"]}},"type":"object","required":["field"],"title":"Condition"},"unfazed.contrib.admin.endpoints.model_data.Model_dataBodyModel":{"properties":{"cond":{"items":{"$ref":"#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Condition"},"type":"array","title":"cond","description":"conditions to filter the data","examples":[{"eq":"admin","field":"name"},{"field":"age","gt":18}]},"name":{"type":"string","title":"name","description":"name of the model"},"page":{"type":"integer","title":"page","description":"page number"},"size":{"type":"integer","title":"size","description":"page size"}},"type":"object","required":["name","page","size"],"title":"Model_dataBodyModel","media_type":"application/json"},"unfazed.contrib.auth.endpoints.login.Group":{"properties":{"id":{"type":"integer","title":"Id"},"name":{"type":"string","title":"Name"}},"type":"object","required":["id","name"],"title":"Group"},"unfazed.contrib.auth.endpoints.login.LoginResponse":{"properties":{"account":{"type":"string","title":"Account"},"email":{"type":"string","title":"Email"},"roles":{"items":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.login.Role"},"type":"array","title":"Roles"},"groups":{"items":{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.login.Group"},"type":"array","title":"Groups"},"extra":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Extra"}},"type":"object","required":["account","email","roles","groups"],"title":"LoginResponse"},"unfazed.contrib.auth.endpoints.login.Role":{"properties":{"id":{"type":"integer","title":"Id"},"name":{"type":"string","title":"Name"}},"type":"object","required":["id","name"],"title":"Role"},"unfazed.contrib.auth.endpoints.login.LoginSucceedResponse":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"$ref":"#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginResponse"},{"type":"null"}],"description":"response data","default":{}}},"type":"object","title":"LoginSucceedResponse"},"unfazed.contrib.auth.endpoints.login.LoginBodyModel":{"properties":{"account":{"type":"string","title":"account","default":""},"password":{"type":"string","title":"password","default":""},"platform":{"type":"string","title":"platform","default":"default"},"extra":{"additionalProperties":true,"type":"object","title":"extra","default":{}}},"type":"object","title":"LoginBodyModel","media_type":"application/json"},"unfazed.contrib.auth.endpoints.logout.LogoutSucceedResponse":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"LogoutSucceedResponse"},"unfazed.contrib.auth.endpoints.register.RegisterSucceedResponse":{"properties":{"code":{"type":"integer","title":"Code","description":"response code, 0 for success, other for error","default":0},"message":{"type":"string","title":"Message","description":"response message","default":"success"},"data":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"title":"Data","description":"response data","default":{}}},"type":"object","title":"RegisterSucceedResponse"},"unfazed.contrib.auth.endpoints.register.RegisterBodyModel":{"properties":{"account":{"type":"string","title":"account","default":""},"password":{"type":"string","title":"password","default":""},"platform":{"type":"string","title":"platform","default":"default"},"extra":{"additionalProperties":true,"type":"object","title":"extra","default":{}}},"type":"object","title":"RegisterBodyModel","media_type":"application/json"}}},"tags":[{"name":"unfazed.contrib.admin"},{"name":"unfazed.contrib.auth"}]}
+{
+    "openapi": "3.1.1",
+    "info": {
+        "title": "myprj",
+        "description": "API for myprj",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:9527",
+            "description": "Local dev"
+        }
+    ],
+    "paths": {
+        "/api/admin/route-list": {
+            "get": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "listRoute",
+                "parameters": [],
+                "requestBody": {
+                    "content": {},
+                    "required": false
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.list_route.RouteResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/settings": {
+            "get": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "adminSettings",
+                "parameters": [],
+                "requestBody": {
+                    "content": {},
+                    "required": false
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.settings.SiteSettingsResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-desc": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelDesc",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.Model_descBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.DescResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-inlines": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelInlines",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.Model_inlinesBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.InlinesResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-action": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelAction",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_action.Model_actionBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {},
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-save": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelSave",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_save.Model_saveBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_save.SaveResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-delete": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelDelete",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_delete.Model_deleteBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_delete.DeleteResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/admin/model-data": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.admin"
+                ],
+                "operationId": "modelData",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Model_dataBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_data.DataResp"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.auth"
+                ],
+                "operationId": "login",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginSucceedResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.auth"
+                ],
+                "operationId": "logout",
+                "parameters": [],
+                "requestBody": {
+                    "content": {},
+                    "required": false
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.logout.LogoutSucceedResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "unfazed.contrib.auth"
+                ],
+                "operationId": "register",
+                "parameters": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.register.RegisterBodyModel"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.register.RegisterSucceedResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": false
+            }
+        },
+        "/api/auth/oauth-login-redirect": {
+            "get": {
+                "tags": [
+                    "unfazed.contrib.auth"
+                ],
+                "operationId": "oauth_login_redirect",
+                "parameters": [
+                    {
+                        "required": true,
+                        "deprecated": false,
+                        "style": "form",
+                        "schema": {
+                            "type": "string",
+                            "title": "platform"
+                        },
+                        "name": "platform",
+                        "in": "query",
+                        "allowEmptyValue": false,
+                        "allowReserved": false
+                    }
+                ],
+                "requestBody": {
+                    "content": {},
+                    "required": false
+                },
+                "responses": {},
+                "deprecated": false
+            }
+        },
+        "/api/auth/oauth-logout-redirect": {
+            "get": {
+                "tags": [
+                    "unfazed.contrib.auth"
+                ],
+                "operationId": "oauth_logout_redirect",
+                "parameters": [
+                    {
+                        "required": true,
+                        "deprecated": false,
+                        "style": "form",
+                        "schema": {
+                            "type": "string",
+                            "title": "platform"
+                        },
+                        "name": "platform",
+                        "in": "query",
+                        "allowEmptyValue": false,
+                        "allowReserved": false
+                    }
+                ],
+                "requestBody": {
+                    "content": {},
+                    "required": false
+                },
+                "responses": {},
+                "deprecated": false
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "unfazed.contrib.admin.endpoints.list_route.AdminRoute": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "name of this route"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label",
+                        "description": "label of this route"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path",
+                        "description": "path of this route"
+                    },
+                    "component": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Component",
+                        "description": "component of this route"
+                    },
+                    "routes": {
+                        "items": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.list_route.AdminRoute"
+                        },
+                        "type": "array",
+                        "title": "Routes",
+                        "description": "children routes of this route"
+                    },
+                    "icon": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Icon",
+                        "description": "icon for this route from ant design",
+                        "examples": [
+                            "table",
+                            "user",
+                            "setting",
+                            "home",
+                            "dashboard",
+                            "file",
+                            "folder"
+                        ]
+                    },
+                    "hideInMenu": {
+                        "type": "boolean",
+                        "title": "Hideinmenu",
+                        "description": "hide this route in frontend admin",
+                        "default": false
+                    },
+                    "hideChildrenInMenu": {
+                        "type": "boolean",
+                        "title": "Hidechildreninmenu",
+                        "description": "hide children routes in frontend admin",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "label",
+                    "path"
+                ],
+                "title": "AdminRoute"
+            },
+            "unfazed.contrib.admin.endpoints.list_route.RouteResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.list_route.AdminRoute"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "RouteResp"
+            },
+            "unfazed.contrib.admin.endpoints.settings.AdminSite": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "title": "Title",
+                        "description": "title of this admin site"
+                    },
+                    "navTheme": {
+                        "type": "string",
+                        "title": "Navtheme",
+                        "description": "nav theme of this admin site"
+                    },
+                    "colorPrimary": {
+                        "type": "string",
+                        "title": "Colorprimary",
+                        "description": "color primary of this admin site"
+                    },
+                    "layout": {
+                        "type": "string",
+                        "title": "Layout",
+                        "description": "layout of this admin site"
+                    },
+                    "contentWidth": {
+                        "type": "string",
+                        "title": "Contentwidth",
+                        "description": "content width of this admin site"
+                    },
+                    "fixedHeader": {
+                        "type": "boolean",
+                        "title": "Fixedheader",
+                        "description": "fixed header of this admin site"
+                    },
+                    "fixSiderbar": {
+                        "type": "boolean",
+                        "title": "Fixsiderbar",
+                        "description": "fix siderbar of this admin site"
+                    },
+                    "pwa": {
+                        "type": "boolean",
+                        "title": "Pwa",
+                        "description": "pwa of this admin site"
+                    },
+                    "iconfontUrl": {
+                        "type": "string",
+                        "title": "Iconfonturl",
+                        "description": "iconfont url of this admin site"
+                    },
+                    "colorWeak": {
+                        "type": "boolean",
+                        "title": "Colorweak",
+                        "description": "color weak of this admin site"
+                    },
+                    "logo": {
+                        "type": "string",
+                        "title": "Logo",
+                        "description": "logo of this admin site"
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "title": "Pagesize",
+                        "description": "page size of this admin site"
+                    },
+                    "timeZone": {
+                        "type": "string",
+                        "title": "Timezone",
+                        "description": "time zone of this admin site"
+                    },
+                    "apiPrefix": {
+                        "type": "string",
+                        "title": "Apiprefix",
+                        "description": "api prefix of this admin site"
+                    },
+                    "debug": {
+                        "type": "boolean",
+                        "title": "Debug",
+                        "description": "debug of this admin site"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version",
+                        "description": "version of this admin site"
+                    },
+                    "showWatermark": {
+                        "type": "boolean",
+                        "title": "Showwatermark",
+                        "description": "show watermark of this admin site"
+                    },
+                    "extra": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Extra",
+                        "description": "extra data for this admin site"
+                    },
+                    "authPlugins": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Authplugins",
+                        "description": "auth plugins of this admin site"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "navTheme",
+                    "colorPrimary",
+                    "layout",
+                    "contentWidth",
+                    "fixedHeader",
+                    "fixSiderbar",
+                    "pwa",
+                    "iconfontUrl",
+                    "colorWeak",
+                    "logo",
+                    "pageSize",
+                    "timeZone",
+                    "apiPrefix",
+                    "debug",
+                    "version",
+                    "showWatermark"
+                ],
+                "title": "AdminSite"
+            },
+            "unfazed.contrib.admin.endpoints.settings.SiteSettingsResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.settings.AdminSite"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "SiteSettingsResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.ActionInput": {
+                "type": "string",
+                "enum": [
+                    "empty",
+                    "string",
+                    "file"
+                ],
+                "title": "ActionInput"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.ActionOutput": {
+                "type": "string",
+                "enum": [
+                    "download",
+                    "refresh",
+                    "toast",
+                    "display"
+                ],
+                "title": "ActionOutput"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminAction": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "name of this action"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label",
+                        "description": "label of this action, displayed in frontend admin"
+                    },
+                    "output": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.ActionOutput",
+                        "description": "output of this action",
+                        "default": "toast"
+                    },
+                    "input": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.ActionInput",
+                        "description": "input of this action",
+                        "default": "empty"
+                    },
+                    "confirm": {
+                        "type": "boolean",
+                        "title": "Confirm",
+                        "description": "whether to confirm this action",
+                        "default": false
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "description of this action"
+                    },
+                    "batch": {
+                        "type": "boolean",
+                        "title": "Batch",
+                        "description": "whether a batch action"
+                    },
+                    "extra": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Extra",
+                        "description": "extra data for this action, extention for future use"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "label",
+                    "description",
+                    "batch"
+                ],
+                "title": "AdminAction"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminAttrs": {
+                "properties": {
+                    "help_text": {
+                        "type": "string",
+                        "title": "Help Text",
+                        "description": "help text for this attribute, frontend admin will show the help text",
+                        "default": ""
+                    },
+                    "can_search": {
+                        "type": "boolean",
+                        "title": "Can Search",
+                        "description": "can search in frontend admin, the search will call the model_data endpoint",
+                        "default": true
+                    },
+                    "search_fields": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Search Fields",
+                        "description": "list of fields to search in frontend admin"
+                    },
+                    "can_add": {
+                        "type": "boolean",
+                        "title": "Can Add",
+                        "description": "Will show a Add button in frontend admin if can_add is True",
+                        "default": true
+                    },
+                    "can_delete": {
+                        "type": "boolean",
+                        "title": "Can Delete",
+                        "description": "Will show a Delete button in frontend admin if can_delete is True",
+                        "default": true
+                    },
+                    "can_edit": {
+                        "type": "boolean",
+                        "title": "Can Edit",
+                        "description": "the data can be edited inlines",
+                        "default": true
+                    },
+                    "can_show_all": {
+                        "type": "boolean",
+                        "title": "Can Show All",
+                        "description": "whether to show all items in frontend admin",
+                        "default": true
+                    },
+                    "list_per_page": {
+                        "type": "integer",
+                        "title": "List Per Page",
+                        "description": "number of items to display per page in frontend admin",
+                        "default": 20
+                    },
+                    "list_search": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Search",
+                        "description": "list of fields to search in frontend admin, frontend behavior"
+                    },
+                    "list_filter": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Filter",
+                        "description": "list of fields to filter in frontend admin, frontend behavior"
+                    },
+                    "list_sort": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Sort",
+                        "description": "list of fields to sort in frontend admin, frontend behavior"
+                    },
+                    "list_order": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Order",
+                        "description": "list of fields to order in frontend admin, frontend behavior"
+                    },
+                    "editable": {
+                        "type": "boolean",
+                        "title": "Editable",
+                        "description": "whether to edit the data in frontend admin",
+                        "default": true
+                    },
+                    "detail_display": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Detail Display",
+                        "description": "list of fields to display in frontend admin, frontend behavior"
+                    }
+                },
+                "type": "object",
+                "title": "AdminAttrs"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminCustomAttrs": {
+                "properties": {
+                    "help_text": {
+                        "type": "string",
+                        "title": "Help Text",
+                        "description": "help text for this tool, frontend admin will show the help text",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "title": "AdminCustomAttrs"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminCustomSerializeModel": {
+                "properties": {
+                    "fields": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminField"
+                        },
+                        "type": "object",
+                        "title": "Fields",
+                        "description": "fields of this model, frontend admin will show the fields"
+                    },
+                    "actions": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAction"
+                        },
+                        "type": "object",
+                        "title": "Actions",
+                        "description": "actions of this model, frontend admin will show the actions"
+                    },
+                    "attrs": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminCustomAttrs",
+                        "description": "attrs of this model, frontend admin will build the page according to the attrs"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "fields",
+                    "actions",
+                    "attrs"
+                ],
+                "title": "AdminCustomSerializeModel"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminField": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "CharField",
+                            "IntegerField",
+                            "BooleanField",
+                            "FloatField",
+                            "DateField",
+                            "DatetimeField",
+                            "TimeField",
+                            "TextField",
+                            "EditorField",
+                            "ImageField",
+                            "UploadField",
+                            "JsonField"
+                        ],
+                        "title": "Type",
+                        "description": "type of this field, different field types map to different frontend components"
+                    },
+                    "readonly": {
+                        "type": "boolean",
+                        "title": "Readonly",
+                        "description": "readonly for this field, frontend admin will not allow user to edit this field",
+                        "default": false
+                    },
+                    "show": {
+                        "type": "boolean",
+                        "title": "Show",
+                        "description": "show in frontend admin",
+                        "default": true
+                    },
+                    "blank": {
+                        "type": "boolean",
+                        "title": "Blank",
+                        "description": "frontend admin will not require this field if blank is True",
+                        "default": true
+                    },
+                    "choices": {
+                        "items": {
+                            "prefixItems": [
+                                {},
+                                {}
+                            ],
+                            "type": "array",
+                            "maxItems": 2,
+                            "minItems": 2
+                        },
+                        "type": "array",
+                        "title": "Choices",
+                        "description": "choices for this field, frontend admin will show the show value"
+                    },
+                    "help_text": {
+                        "type": "string",
+                        "title": "Help Text",
+                        "description": "help text for this field, frontend admin will show the help text"
+                    },
+                    "default": {
+                        "title": "Default",
+                        "description": "default value for this field, frontend admin will show the show value"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name",
+                        "description": "name of this field"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "help_text"
+                ],
+                "title": "AdminField"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.AdminSerializeModel": {
+                "properties": {
+                    "fields": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminField"
+                        },
+                        "type": "object",
+                        "title": "Fields",
+                        "description": "fields of this model, frontend admin will show the fields"
+                    },
+                    "actions": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAction"
+                        },
+                        "type": "object",
+                        "title": "Actions",
+                        "description": "actions of this model, frontend admin will show the actions"
+                    },
+                    "attrs": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminAttrs",
+                        "description": "attrs of this model, frontend admin will build the page according to the attrs"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "fields",
+                    "actions",
+                    "attrs"
+                ],
+                "title": "AdminSerializeModel"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.DescResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminSerializeModel"
+                            },
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_desc.AdminCustomSerializeModel"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "DescResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_desc.Model_descBodyModel": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "Model_descBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.ActionInput": {
+                "type": "string",
+                "enum": [
+                    "empty",
+                    "string",
+                    "file"
+                ],
+                "title": "ActionInput"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.ActionOutput": {
+                "type": "string",
+                "enum": [
+                    "download",
+                    "refresh",
+                    "toast",
+                    "display"
+                ],
+                "title": "ActionOutput"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminAction": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "name of this action"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label",
+                        "description": "label of this action, displayed in frontend admin"
+                    },
+                    "output": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.ActionOutput",
+                        "description": "output of this action",
+                        "default": "toast"
+                    },
+                    "input": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.ActionInput",
+                        "description": "input of this action",
+                        "default": "empty"
+                    },
+                    "confirm": {
+                        "type": "boolean",
+                        "title": "Confirm",
+                        "description": "whether to confirm this action",
+                        "default": false
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "description of this action"
+                    },
+                    "batch": {
+                        "type": "boolean",
+                        "title": "Batch",
+                        "description": "whether a batch action"
+                    },
+                    "extra": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Extra",
+                        "description": "extra data for this action, extention for future use"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "label",
+                    "description",
+                    "batch"
+                ],
+                "title": "AdminAction"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminField": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "CharField",
+                            "IntegerField",
+                            "BooleanField",
+                            "FloatField",
+                            "DateField",
+                            "DatetimeField",
+                            "TimeField",
+                            "TextField",
+                            "EditorField",
+                            "ImageField",
+                            "UploadField",
+                            "JsonField"
+                        ],
+                        "title": "Type",
+                        "description": "type of this field, different field types map to different frontend components"
+                    },
+                    "readonly": {
+                        "type": "boolean",
+                        "title": "Readonly",
+                        "description": "readonly for this field, frontend admin will not allow user to edit this field",
+                        "default": false
+                    },
+                    "show": {
+                        "type": "boolean",
+                        "title": "Show",
+                        "description": "show in frontend admin",
+                        "default": true
+                    },
+                    "blank": {
+                        "type": "boolean",
+                        "title": "Blank",
+                        "description": "frontend admin will not require this field if blank is True",
+                        "default": true
+                    },
+                    "choices": {
+                        "items": {
+                            "prefixItems": [
+                                {},
+                                {}
+                            ],
+                            "type": "array",
+                            "maxItems": 2,
+                            "minItems": 2
+                        },
+                        "type": "array",
+                        "title": "Choices",
+                        "description": "choices for this field, frontend admin will show the show value"
+                    },
+                    "help_text": {
+                        "type": "string",
+                        "title": "Help Text",
+                        "description": "help text for this field, frontend admin will show the help text"
+                    },
+                    "default": {
+                        "title": "Default",
+                        "description": "default value for this field, frontend admin will show the show value"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name",
+                        "description": "name of this field"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "help_text"
+                ],
+                "title": "AdminField"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminInlineAttrs": {
+                "properties": {
+                    "help_text": {
+                        "type": "string",
+                        "title": "Help Text",
+                        "description": "help text for this attribute, frontend admin will show the help text",
+                        "default": ""
+                    },
+                    "can_search": {
+                        "type": "boolean",
+                        "title": "Can Search",
+                        "description": "can search in frontend admin, the search will call the model_data endpoint",
+                        "default": true
+                    },
+                    "search_fields": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Search Fields",
+                        "description": "list of fields to search in frontend admin"
+                    },
+                    "can_add": {
+                        "type": "boolean",
+                        "title": "Can Add",
+                        "description": "Will show a Add button in frontend admin if can_add is True",
+                        "default": true
+                    },
+                    "can_delete": {
+                        "type": "boolean",
+                        "title": "Can Delete",
+                        "description": "Will show a Delete button in frontend admin if can_delete is True",
+                        "default": true
+                    },
+                    "can_edit": {
+                        "type": "boolean",
+                        "title": "Can Edit",
+                        "description": "the data can be edited inlines",
+                        "default": true
+                    },
+                    "can_show_all": {
+                        "type": "boolean",
+                        "title": "Can Show All",
+                        "description": "whether to show all items in frontend admin",
+                        "default": true
+                    },
+                    "list_per_page": {
+                        "type": "integer",
+                        "title": "List Per Page",
+                        "description": "number of items to display per page in frontend admin",
+                        "default": 20
+                    },
+                    "list_search": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Search",
+                        "description": "list of fields to search in frontend admin, frontend behavior"
+                    },
+                    "list_filter": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Filter",
+                        "description": "list of fields to filter in frontend admin, frontend behavior"
+                    },
+                    "list_sort": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Sort",
+                        "description": "list of fields to sort in frontend admin, frontend behavior"
+                    },
+                    "list_order": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "List Order",
+                        "description": "list of fields to order in frontend admin, frontend behavior"
+                    },
+                    "max_num": {
+                        "type": "integer",
+                        "title": "Max Num",
+                        "description": "max number of items to edit in frontend admin",
+                        "default": 0
+                    },
+                    "min_num": {
+                        "type": "integer",
+                        "title": "Min Num",
+                        "description": "min number of items to edit in frontend admin",
+                        "default": 0
+                    }
+                },
+                "type": "object",
+                "title": "AdminInlineAttrs"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminInlineSerializeModel": {
+                "properties": {
+                    "fields": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminField"
+                        },
+                        "type": "object",
+                        "title": "Fields",
+                        "description": "fields of this model, frontend admin will show the fields"
+                    },
+                    "actions": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminAction"
+                        },
+                        "type": "object",
+                        "title": "Actions",
+                        "description": "actions of this model, frontend admin will show the actions"
+                    },
+                    "attrs": {
+                        "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminInlineAttrs",
+                        "description": "attrs of this model, frontend admin will build the page according to the attrs"
+                    },
+                    "relation": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminRelation"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "relation of this model, frontend admin will show the relation"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "fields",
+                    "actions",
+                    "attrs"
+                ],
+                "title": "AdminInlineSerializeModel"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminRelation": {
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "title": "Target",
+                        "description": "target Admin name"
+                    },
+                    "source_field": {
+                        "type": "string",
+                        "title": "Source Field",
+                        "description": "source field name"
+                    },
+                    "target_field": {
+                        "type": "string",
+                        "title": "Target Field",
+                        "description": "target field name"
+                    },
+                    "relation": {
+                        "type": "string",
+                        "enum": [
+                            "fk",
+                            "o2o",
+                            "m2m",
+                            "bk_fk",
+                            "bk_o2o"
+                        ],
+                        "title": "Relation",
+                        "description": "relation type"
+                    },
+                    "through": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminThrough"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "through model name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "target"
+                ],
+                "title": "AdminRelation"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.AdminThrough": {
+                "properties": {
+                    "through": {
+                        "type": "string",
+                        "title": "Through",
+                        "description": "mid model name"
+                    },
+                    "source_field": {
+                        "type": "string",
+                        "title": "Source Field",
+                        "description": "source field name"
+                    },
+                    "source_to_through_field": {
+                        "type": "string",
+                        "title": "Source To Through Field",
+                        "description": "source to through field name"
+                    },
+                    "target_field": {
+                        "type": "string",
+                        "title": "Target Field",
+                        "description": "target field name"
+                    },
+                    "target_to_through_field": {
+                        "type": "string",
+                        "title": "Target To Through Field",
+                        "description": "target to through field name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "through",
+                    "source_field",
+                    "source_to_through_field",
+                    "target_field",
+                    "target_to_through_field"
+                ],
+                "title": "AdminThrough"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.InlinesResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": {
+                                    "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_inlines.AdminInlineSerializeModel"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "InlinesResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_inlines.Model_inlinesBodyModel": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name",
+                        "description": "name of the model"
+                    },
+                    "data": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "data",
+                        "description": "one line data of the model",
+                        "examples": [
+                            {
+                                "id": 1,
+                                "name": "admin"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "data"
+                ],
+                "title": "Model_inlinesBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.admin.endpoints.model_action.Condition": {
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "title": "Field",
+                        "description": "field name"
+                    },
+                    "eq": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Eq",
+                        "description": "equal to this value",
+                        "examples": [
+                            "age__eq=18",
+                            "name__eq=admin"
+                        ]
+                    },
+                    "lt": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Lt",
+                        "description": "less than this value",
+                        "examples": [
+                            "age__lt=18"
+                        ]
+                    },
+                    "lte": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Lte",
+                        "description": "less than or equal to this value",
+                        "examples": [
+                            "age__lte=18"
+                        ]
+                    },
+                    "gt": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gt",
+                        "description": "greater than this value",
+                        "examples": [
+                            "age__gt=18"
+                        ]
+                    },
+                    "gte": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gte",
+                        "description": "greater than or equal to this value",
+                        "examples": [
+                            "age__gte=18"
+                        ]
+                    },
+                    "contains": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Contains",
+                        "description": "contains this value",
+                        "examples": [
+                            "name__contains=admin"
+                        ]
+                    },
+                    "icontains": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Icontains",
+                        "description": "case insensitive contains this value",
+                        "examples": [
+                            "name__icontains=admin"
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "field"
+                ],
+                "title": "Condition"
+            },
+            "unfazed.contrib.admin.endpoints.model_action.Model_actionBodyModel": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name",
+                        "description": "name of the model"
+                    },
+                    "action": {
+                        "type": "string",
+                        "title": "action",
+                        "description": "action of the action"
+                    },
+                    "search_condition": {
+                        "items": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_action.Condition"
+                        },
+                        "type": "array",
+                        "title": "search_condition",
+                        "description": "conditions to filter the data",
+                        "examples": [
+                            {
+                                "eq": "admin",
+                                "field": "name"
+                            }
+                        ]
+                    },
+                    "form_data": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "form_data",
+                        "description": "form data for the action"
+                    },
+                    "input_data": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "input_data",
+                        "description": "input data for the action"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "action"
+                ],
+                "title": "Model_actionBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.admin.endpoints.model_save.SaveResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "SaveResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_save.Model_saveBodyModel": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name",
+                        "description": "name of the model"
+                    },
+                    "data": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "data",
+                        "description": "depends on the tortoise model, use unfazed.contrib.auth.models.User as example",
+                        "examples": [
+                            {
+                                "created_at": 12345,
+                                "email": "",
+                                "id": 1,
+                                "updated_at": 12345,
+                                "username": "admin"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "data"
+                ],
+                "title": "Model_saveBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.admin.endpoints.model_delete.DeleteResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "DeleteResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_delete.Model_deleteBodyModel": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name",
+                        "description": "name of the model"
+                    },
+                    "data": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "data",
+                        "description": "one line data of the model",
+                        "examples": [
+                            {
+                                "id": 1,
+                                "name": "admin"
+                            }
+                        ]
+                    },
+                    "strategy": {
+                        "type": "string",
+                        "enum": [
+                            "set_null",
+                            "delete",
+                            "do_nothing"
+                        ],
+                        "title": "strategy",
+                        "description": "strategy to delete the related data",
+                        "default": "do_nothing",
+                        "examples": [
+                            "set_null",
+                            "delete",
+                            "do_nothing"
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "data"
+                ],
+                "title": "Model_deleteBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.admin.endpoints.model_data.Result_TypeVar_": {
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "title": "Count",
+                        "description": "total number of items"
+                    },
+                    "data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Data",
+                        "description": "list of items"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "count",
+                    "data"
+                ],
+                "title": "Result[TypeVar]"
+            },
+            "unfazed.contrib.admin.endpoints.model_data.DataResp": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Result_TypeVar_"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "DataResp"
+            },
+            "unfazed.contrib.admin.endpoints.model_data.Condition": {
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "title": "Field",
+                        "description": "field name"
+                    },
+                    "eq": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Eq",
+                        "description": "equal to this value",
+                        "examples": [
+                            "age__eq=18",
+                            "name__eq=admin"
+                        ]
+                    },
+                    "lt": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Lt",
+                        "description": "less than this value",
+                        "examples": [
+                            "age__lt=18"
+                        ]
+                    },
+                    "lte": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Lte",
+                        "description": "less than or equal to this value",
+                        "examples": [
+                            "age__lte=18"
+                        ]
+                    },
+                    "gt": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gt",
+                        "description": "greater than this value",
+                        "examples": [
+                            "age__gt=18"
+                        ]
+                    },
+                    "gte": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Gte",
+                        "description": "greater than or equal to this value",
+                        "examples": [
+                            "age__gte=18"
+                        ]
+                    },
+                    "contains": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Contains",
+                        "description": "contains this value",
+                        "examples": [
+                            "name__contains=admin"
+                        ]
+                    },
+                    "icontains": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Icontains",
+                        "description": "case insensitive contains this value",
+                        "examples": [
+                            "name__icontains=admin"
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "field"
+                ],
+                "title": "Condition"
+            },
+            "unfazed.contrib.admin.endpoints.model_data.Model_dataBodyModel": {
+                "properties": {
+                    "cond": {
+                        "items": {
+                            "$ref": "#/components/schemas/unfazed.contrib.admin.endpoints.model_data.Condition"
+                        },
+                        "type": "array",
+                        "title": "cond",
+                        "description": "conditions to filter the data",
+                        "examples": [
+                            {
+                                "eq": "admin",
+                                "field": "name"
+                            },
+                            {
+                                "field": "age",
+                                "gt": 18
+                            }
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "name",
+                        "description": "name of the model"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "title": "page",
+                        "description": "page number"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "title": "size",
+                        "description": "page size"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "page",
+                    "size"
+                ],
+                "title": "Model_dataBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.auth.endpoints.login.Group": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "title": "Group"
+            },
+            "unfazed.contrib.auth.endpoints.login.LoginResponse": {
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "title": "Account"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "roles": {
+                        "items": {
+                            "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.login.Role"
+                        },
+                        "type": "array",
+                        "title": "Roles"
+                    },
+                    "groups": {
+                        "items": {
+                            "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.login.Group"
+                        },
+                        "type": "array",
+                        "title": "Groups"
+                    },
+                    "extra": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Extra"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "account",
+                    "email",
+                    "roles",
+                    "groups"
+                ],
+                "title": "LoginResponse"
+            },
+            "unfazed.contrib.auth.endpoints.login.Role": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "title": "Role"
+            },
+            "unfazed.contrib.auth.endpoints.login.LoginSucceedResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/unfazed.contrib.auth.endpoints.login.LoginResponse"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "LoginSucceedResponse"
+            },
+            "unfazed.contrib.auth.endpoints.login.LoginBodyModel": {
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "title": "account",
+                        "default": ""
+                    },
+                    "password": {
+                        "type": "string",
+                        "title": "password",
+                        "default": ""
+                    },
+                    "platform": {
+                        "type": "string",
+                        "title": "platform",
+                        "default": "default"
+                    },
+                    "extra": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "extra",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "LoginBodyModel",
+                "media_type": "application/json"
+            },
+            "unfazed.contrib.auth.endpoints.logout.LogoutSucceedResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "LogoutSucceedResponse"
+            },
+            "unfazed.contrib.auth.endpoints.register.RegisterSucceedResponse": {
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "title": "Code",
+                        "description": "response code, 0 for success, other for error",
+                        "default": 0
+                    },
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "description": "response message",
+                        "default": "success"
+                    },
+                    "data": {
+                        "anyOf": [
+                            {
+                                "additionalProperties": true,
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Data",
+                        "description": "response data",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "RegisterSucceedResponse"
+            },
+            "unfazed.contrib.auth.endpoints.register.RegisterBodyModel": {
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "title": "account",
+                        "default": ""
+                    },
+                    "password": {
+                        "type": "string",
+                        "title": "password",
+                        "default": ""
+                    },
+                    "platform": {
+                        "type": "string",
+                        "title": "platform",
+                        "default": "default"
+                    },
+                    "extra": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "extra",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "title": "RegisterBodyModel",
+                "media_type": "application/json"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "unfazed.contrib.admin"
+        },
+        {
+            "name": "unfazed.contrib.auth"
+        }
+    ]
+}

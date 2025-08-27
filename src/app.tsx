@@ -16,7 +16,8 @@ import {
   SelectLang,
   Question,
 } from '@/components';
-import { getAdminSettings, getRouteList } from '@/services/api';
+import { getAdminSettings } from '@/services/api';
+import { getRouteAndMenuData } from '@/utils/routeManager';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
@@ -25,76 +26,7 @@ const isDev =
   process.env.NODE_ENV === 'development' || process.env.CI;
 const loginPath = '/user/login';
 
-/**
- * 将 API 路由数据转换为 ProLayout 菜单数据格式
- */
-function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
-  const transformRoute = (route: API.AdminRoute): any => {
-    const menuItem: any = {
-      name: route.label || route.name,  // 使用 label 作为显示名称，fallback 到 name
-      path: route.path,
-    };
-
-    // 设置图标
-    if (route.icon) {
-      menuItem.icon = getIconComponent(route.icon);
-    }
-
-    // 设置菜单隐藏属性
-    if (route.hideInMenu) {
-      menuItem.hideInMenu = route.hideInMenu;
-    }
-
-    if (route.hideChildrenInMenu) {
-      menuItem.hideChildrenInMenu = route.hideChildrenInMenu;
-    }
-
-    // 递归处理子路由
-    if (route.routes && route.routes.length > 0) {
-      menuItem.routes = route.routes.map(transformRoute);
-    }
-
-    return menuItem;
-  };
-
-  return routes.map(transformRoute);
-}
-
-/**
- * 根据图标名称获取对应的 Ant Design 图标组件
- */
-function getIconComponent(iconName: string): React.ReactNode {
-  // 创建图标组件的映射
-  const iconMap: Record<string, () => React.ReactNode> = {
-    CrownOutlined: () => React.createElement(require('@ant-design/icons').CrownOutlined),
-    ToolOutlined: () => React.createElement(require('@ant-design/icons').ToolOutlined),
-    UserOutlined: () => React.createElement(require('@ant-design/icons').UserOutlined),
-    HomeOutlined: () => React.createElement(require('@ant-design/icons').HomeOutlined),
-    SettingOutlined: () => React.createElement(require('@ant-design/icons').SettingOutlined),
-    DashboardOutlined: () => React.createElement(require('@ant-design/icons').DashboardOutlined),
-    TableOutlined: () => React.createElement(require('@ant-design/icons').TableOutlined),
-    FormOutlined: () => React.createElement(require('@ant-design/icons').FormOutlined),
-    FileOutlined: () => React.createElement(require('@ant-design/icons').FileOutlined),
-    DatabaseOutlined: () => React.createElement(require('@ant-design/icons').DatabaseOutlined),
-    ApiOutlined: () => React.createElement(require('@ant-design/icons').ApiOutlined),
-    BugOutlined: () => React.createElement(require('@ant-design/icons').BugOutlined),
-    BellOutlined: () => React.createElement(require('@ant-design/icons').BellOutlined),
-    CalendarOutlined: () => React.createElement(require('@ant-design/icons').CalendarOutlined),
-    CloudOutlined: () => React.createElement(require('@ant-design/icons').CloudOutlined),
-    CodeOutlined: () => React.createElement(require('@ant-design/icons').CodeOutlined),
-    SmileOutlined: () => React.createElement(require('@ant-design/icons').SmileOutlined),
-  };
-
-  // 获取对应的图标创建函数
-  const iconCreator = iconMap[iconName];
-
-  if (iconCreator) {
-    return iconCreator();
-  }
-
-  // 如果找不到对应图标，返回默认图标
-  return React.createElement(require('@ant-design/icons').SmileOutlined);
-}
+// 路由和图标转换函数已移动到 routeManager.ts 中
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -181,30 +113,25 @@ export async function getInitialState(): Promise<{
 
   const fetchMenuData = async () => {
     try {
-      const response = await getRouteList({
-        skipErrorHandler: true,
-      });
-      if (response.code === 0) {
-        const routeList = response.data;
-        const menuData = transformApiRoutesToMenuData(routeList);
-        return { routeList, menuData };
-      }
+      const { routeList, menuData } = await getRouteAndMenuData();
+      return { routeList, menuData };
     } catch (_error) {
       console.warn('Failed to fetch menu data, using default menu');
     }
     return { routeList: [], menuData: [] };
   };
 
-  // 如果不是登录页面，执行
+  // 如果不是登录相关页面，检查用户登录状态
   const { location } = history;
   if (
-    ![loginPath, '/user/register', '/user/register-result'].includes(
+    ![loginPath, '/user/register', '/user/register-result', '/oauth/login'].includes(
       location.pathname,
     )
   ) {
     const currentUser = await fetchUserInfo();
     if (currentUser) {
-      // 用户已登录，获取API设置和菜单数据
+      // 用户已登录，获取API设置和动态路由数据
+      // 注意：动态路由只在用户登录后获取，确保权限控制
       const settings = await fetchSettings();
       const { routeList, menuData } = await fetchMenuData();
       return {

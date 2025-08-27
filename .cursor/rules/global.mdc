@@ -1,0 +1,9 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+
+- always use english to complete code and comment;
+- dont use chinese to complete code and comment;

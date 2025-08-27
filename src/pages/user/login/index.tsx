@@ -17,10 +17,11 @@ import {
 } from '@umijs/max';
 import { Alert, App, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
-import { login, getAdminSettings } from '@/services/api';
+import { login, getAdminSettings, getOAuthRedirectUrl } from '@/services/api';
+import { getRouteAndMenuData } from '@/utils/routeManager';
 
 import Settings from '../../../../config/defaultSettings';
 
@@ -60,14 +61,68 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
-const ActionIcons = () => {
+const ActionIcons: React.FC<{ authPlugins: API.AdminSettings['authPlugins'] }> = ({ authPlugins }) => {
   const { styles } = useStyles();
 
+  const handleOAuthLogin = async (platform: string) => {
+    try {
+      // 在跳转前，先将platform存储到localStorage
+      localStorage.setItem('oauth_platform', platform);
+
+      // 先请求API获取OAuth跳转链接
+      const response = await getOAuthRedirectUrl(platform);
+      if (response.code === 0 && response.data?.redirect_url) {
+        // 跳转到第三方OAuth页面
+        window.location.href = response.data.redirect_url;
+      } else {
+        console.error('Failed to get OAuth redirect URL:', response.message);
+        // 失败时清除localStorage
+        localStorage.removeItem('oauth_platform');
+      }
+    } catch (error) {
+      console.error('OAuth redirect error:', error);
+      // 失败时清除localStorage
+      localStorage.removeItem('oauth_platform');
+    }
+  };
+
+  // 如果没有OAuth插件数据，不渲染任何内容
+  if (!authPlugins || authPlugins.length === 0) {
+    return null;
+  }
+
   return (
-    <AlipayCircleOutlined
-      key="AlipayCircleOutlined"
-      className={styles.action}
-    />
+    <>
+      {authPlugins.map((plugin, index) => (
+        <img
+          key={`oauth-${plugin.platform || index}`}
+          src={plugin.icon_url}
+          alt={plugin.platform || `OAuth Platform ${index + 1}`}
+          style={{
+            width: 24,
+            height: 24,
+            cursor: 'pointer',
+            borderRadius: '50%',
+            marginLeft: index > 0 ? 8 : 0,
+            objectFit: 'contain', // 确保图标比例不变形
+            backgroundColor: '#fff', // 添加白色背景，适配透明图标
+            border: '1px solid #f0f0f0', // 添加淡边框，增强视觉效果
+            padding: '2px', // 添加内边距，避免图标贴边
+            transition: 'all 0.3s ease' // 添加过渡动画
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.borderColor = '#1890ff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.borderColor = '#f0f0f0';
+          }}
+          onClick={() => handleOAuthLogin(plugin.platform)}
+          title={`使用 ${plugin.platform} 登录`}
+        />
+      ))}
+    </>
   );
 };
 
@@ -99,12 +154,39 @@ const LoginMessage: React.FC<{
 const Login: React.FC = () => {
   const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
+  const [authPlugins, setAuthPlugins] = useState<API.AdminSettings['authPlugins']>([]);
   const { initialState, setInitialState } = useModel('@@initialState');
   const { styles } = useStyles();
   const { message } = App.useApp();
   const intl = useIntl();
 
-  const updateUserInfoAndSettings = async (loginData: API.LoginResult['data']) => {
+  // 初始化获取OAuth认证插件信息
+  useEffect(() => {
+    const initAuthPlugins = async () => {
+      try {
+        // 先从localStorage获取
+        const savedAuthPlugins = localStorage.getItem('authPlugins');
+        if (savedAuthPlugins) {
+          setAuthPlugins(JSON.parse(savedAuthPlugins));
+        }
+
+        // 然后从API获取最新的
+        const response = await getAdminSettings({
+          skipErrorHandler: true,
+        });
+        if (response.code === 0 && response.data?.authPlugins) {
+          localStorage.setItem('authPlugins', JSON.stringify(response.data.authPlugins));
+          setAuthPlugins(response.data.authPlugins);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch auth plugins:', error);
+      }
+    };
+
+    initAuthPlugins();
+  }, []);
+
+  const updateUserInfoAndSettings = async (loginData: API.LoginResult['data'], platform?: string) => {
     if (loginData) {
       // 转换登录返回的数据为 CurrentUser 格式
       const userInfo: API.CurrentUser = {
@@ -115,7 +197,7 @@ const Login: React.FC = () => {
         account: loginData.account,
         roles: loginData.roles,
         groups: loginData.groups,
-        extra: loginData.extra,
+        extra: { ...loginData.extra, platform: platform || 'default' },
         // 设置访问权限
         access: loginData.roles?.[0]?.name || 'user',
       };
@@ -134,9 +216,26 @@ const Login: React.FC = () => {
             pwa: response.data.pwa ?? Settings.pwa,
             iconfontUrl: response.data.iconfontUrl ?? Settings.iconfontUrl,
           } as any;
+
+          // 保存OAuth认证插件信息到本地存储
+          if (response.data?.authPlugins) {
+            localStorage.setItem('authPlugins', JSON.stringify(response.data.authPlugins));
+          }
         }
       } catch (_error) {
         console.warn('Failed to fetch settings after login, using default settings');
+      }
+
+      // 获取动态路由和菜单数据（只有登录用户才能获取）
+      let routeList: API.AdminRoute[] = [];
+      let menuData: any[] = [];
+      try {
+        const routeAndMenuData = await getRouteAndMenuData();
+        routeList = routeAndMenuData.routeList;
+        menuData = routeAndMenuData.menuData;
+        console.log('登录成功，已获取动态路由:', routeList);
+      } catch (error) {
+        console.warn('获取动态路由失败，使用空路由:', error);
       }
 
       // 保存用户信息到本地存储
@@ -148,6 +247,8 @@ const Login: React.FC = () => {
           ...s,
           currentUser: userInfo,
           settings: settings as any,
+          menuData,
+          routeList,
         }));
       });
     }
@@ -166,7 +267,7 @@ const Login: React.FC = () => {
         message.success(defaultLoginSuccessMessage);
 
         // 直接使用登录返回的用户信息，不再调用 fetchUserInfo
-        await updateUserInfoAndSettings(msg.data);
+        await updateUserInfoAndSettings(msg.data, values.platform || 'default');
 
         const urlParams = new URL(window.location.href).searchParams;
         window.location.href = urlParams.get('redirect') || '/';
@@ -221,14 +322,16 @@ const Login: React.FC = () => {
           initialValues={{
             autoLogin: true,
           }}
-          actions={[
-            <FormattedMessage
-              key="loginWith"
-              id="pages.login.loginWith"
-              defaultMessage="其他登录方式"
-            />,
-            <ActionIcons key="icons" />,
-          ]}
+          actions={
+            authPlugins && authPlugins.length > 0 ? [
+              <FormattedMessage
+                key="loginWith"
+                id="pages.login.loginWith"
+                defaultMessage="其他登录方式"
+              />,
+              <ActionIcons key="icons" authPlugins={authPlugins} />,
+            ] : []
+          }
           onFinish={async (values) => {
             await handleSubmit(values as API.LoginParams);
           }}

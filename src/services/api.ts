@@ -5,10 +5,24 @@ import { request } from '@umijs/max';
 // 注释：currentUser API 已删除，改为使用本地存储的用户信息
 
 /** 退出登录接口 POST /api/auth/logout */
-export async function outLogin(options?: { [key: string]: any }) {
+export async function outLogin(platform?: string, options?: { [key: string]: any }) {
     return request<Record<string, any>>('/api/auth/logout', {
         method: 'POST',
+        data: platform ? { platform } : {},
         ...(options || {}),
+    });
+}
+
+/** OAuth登录重定向接口 GET /api/auth/oauth-redirect-login */
+export async function getOAuthRedirectUrl(platform: string) {
+    return request<{
+        code: number;
+        message: string;
+        data: {
+            redirect_url: string;
+        };
+    }>(`/api/auth/oauth-redirect-login?platform=${encodeURIComponent(platform)}`, {
+        method: 'GET',
     });
 }
 

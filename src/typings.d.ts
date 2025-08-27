@@ -327,9 +327,9 @@ declare namespace API {
     };
 
     type Relation = {
-        to: string;
+        target: string;
         source_field: string;
-        dest_field: string;
+        target_field: string;
         relation: 'm2m' | 'fk' | 'o2o' | 'bk_fk' | 'bk_o2o';
     };
 

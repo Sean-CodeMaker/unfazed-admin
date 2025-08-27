@@ -43,6 +43,13 @@ export default [
       },
     ],
   },
+  // OAuth 登录回调路由
+  {
+    path: '/oauth/login',
+    layout: false,
+    name: 'oauth-login',
+    component: './oauth/login',
+  },
   {
     name: 'result',
     icon: 'CheckCircleOutlined',
@@ -98,6 +105,7 @@ export default [
 
 
   // 动态路由：支持 ModelAdmin、ModelCustom 等组件的动态渲染
+  // 注意：这些路径需要与后端 /api/admin/route-list 返回的路径保持一致
   {
     path: '/crown',
     component: './DynamicRoute',
@@ -106,6 +114,7 @@ export default [
     path: '/tools',
     component: './DynamicRoute',
   },
+  // TODO: 当后端添加新的业务路由时，需要在这里添加对应的路由配置
 
   {
     path: '/',
