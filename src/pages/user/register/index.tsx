@@ -113,7 +113,7 @@ const Register: FC = () => {
     onError: (error) => {
       console.error('注册失败:', error);
       message.error('注册失败，请重试！');
-    }
+    },
   });
   const onFinish = (values: Store) => {
     registerUser(values);

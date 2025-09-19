@@ -1,320 +1,375 @@
-import React, { useCallback, useRef, useState } from 'react';
-import type {
-    ActionType,
-    ProFormInstance,
-} from '@ant-design/pro-components';
-import {
-    PageContainer,
-} from '@ant-design/pro-components';
-import { CommonProTable } from '../index';
+import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
+import { PageContainer } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { Modal, Table } from 'antd';
+import React, { useCallback, useRef, useState } from 'react';
+import { FileUploadModal, StringInputModal } from '@/components/ActionModals';
 import { useModelOperations } from '@/hooks/useModelOperations';
-import { StringInputModal, FileUploadModal } from '@/components/ActionModals';
+import { deleteModelData } from '@/services/api';
+import { CommonProTable } from '../index';
 
 interface ModelListProps {
-    modelName: string;
-    onDetail?: (record: Record<string, any>) => void;
-    onAdd?: () => void;
-    onModelDescLoaded?: (modelDesc: API.AdminSerializeModel) => void;
+  modelName: string;
+  onDetail?: (record: Record<string, any>) => void;
+  onAdd?: () => void;
+  onModelDescLoaded?: (modelDesc: API.AdminSerializeModel) => void;
 }
 
-const ModelList: React.FC<ModelListProps> = ({ modelName, onDetail, onAdd, onModelDescLoaded }) => {
-    const actionRef = useRef<ActionType>(null!);
-    const formRef = useRef<ProFormInstance>(null!);
+const ModelList: React.FC<ModelListProps> = ({
+  modelName,
+  onDetail,
+  onAdd: _onAdd,
+  onModelDescLoaded,
+}) => {
+  const actionRef = useRef<ActionType>(null!);
+  const _formRef = useRef<ProFormInstance>(null!);
 
-    // 使用自定义 Hook
-    const {
-        contextHolder,
-        messageApi,
-        fetchModelDesc,
-        fetchModelData,
-        executeBatchAction,
-        executeRowAction,
-        saveData,
-        getStoredSettings,
-    } = useModelOperations({
-        modelName,
-        onSuccess: () => {
-            actionRef.current?.reload?.();
-        },
-    });
+  // 使用自定义 Hook
+  const {
+    contextHolder,
+    messageApi,
+    fetchModelDesc,
+    fetchModelData,
+    executeBatchAction,
+    executeRowAction,
+    saveData,
+    getStoredSettings,
+  } = useModelOperations({
+    modelName,
+    onSuccess: () => {
+      actionRef.current?.reload?.();
+    },
+  });
 
-    // 状态管理
-    const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(null);
-    const [editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
+  // 状态管理
+  const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(
+    null,
+  );
+  const [_editableKeys, setEditableRowKeys] = useState<React.Key[]>([]);
 
-    // Action Modal 状态
-    const [stringModalVisible, setStringModalVisible] = useState(false);
-    const [fileModalVisible, setFileModalVisible] = useState(false);
-    const [currentAction, setCurrentAction] = useState<{
-        actionKey: string;
-        actionConfig: any;
-        record?: Record<string, any>;
-        isBatch?: boolean;
-        records?: Record<string, any>[];
-    } | null>(null);
-    const [actionLoading, setActionLoading] = useState(false);
+  // Action Modal 状态
+  const [stringModalVisible, setStringModalVisible] = useState(false);
+  const [fileModalVisible, setFileModalVisible] = useState(false);
+  const [currentAction, setCurrentAction] = useState<{
+    actionKey: string;
+    actionConfig: any;
+    record?: Record<string, any>;
+    isBatch?: boolean;
+    records?: Record<string, any>[];
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-    // 获取模型描述
-    const { loading: descLoading } = useRequest(
-        async () => {
-            const modelDescData = await fetchModelDesc();
-            if (modelDescData) {
-                setModelDesc(modelDescData);
-                onModelDescLoaded?.(modelDescData); // 通知父组件
-            }
-            return modelDescData;
-        },
-        {
-            manual: false,
-        }
-    );
+  // 获取模型描述
+  const { loading: descLoading } = useRequest(
+    async () => {
+      const modelDescData = await fetchModelDesc();
+      if (modelDescData) {
+        setModelDesc(modelDescData);
+        onModelDescLoaded?.(modelDescData); // 通知父组件
+      }
+      return modelDescData;
+    },
+    {
+      manual: false,
+    },
+  );
 
-    // 包装数据获取函数
-    const wrappedFetchModelData = useCallback(
-        async (params: any) => {
-            return await fetchModelData(params, modelDesc || undefined);
-        },
-        [fetchModelData, modelDesc]
-    );
+  // 包装数据获取函数
+  const wrappedFetchModelData = useCallback(
+    async (params: any) => {
+      return await fetchModelData(params, modelDesc || undefined);
+    },
+    [fetchModelData, modelDesc],
+  );
 
-    // 显示数据弹窗
-    const showDisplayModal = (data: any, actionConfig: any) => {
-        const displayData = Array.isArray(data) ? data : [data];
+  // 显示数据弹窗
+  const showDisplayModal = (data: any, actionConfig: any) => {
+    const displayData = Array.isArray(data) ? data : [data];
 
-        // 生成列配置
-        const columns = displayData.length > 0 ?
-            Object.keys(displayData[0]).map(key => ({
-                title: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-                dataIndex: key,
-                key,
-                ellipsis: true,
-                render: (value: any) => {
-                    if (value === null || value === undefined) return '-';
-                    if (typeof value === 'boolean') return value ? '✓' : '✗';
-                    if (typeof value === 'object') return JSON.stringify(value);
-                    return String(value);
-                }
-            })) : [];
-
-        Modal.info({
-            title: actionConfig?.description || 'Action Result',
-            width: Math.min(1000, window.innerWidth * 0.8),
-            content: (
-                <Table
-                    dataSource={displayData}
-                    columns={columns}
-                    pagination={{ pageSize: 10 }}
-                    size="small"
-                    rowKey={(record, index) => record.id || index}
-                    scroll={{ x: 'max-content' }}
-                />
-            ),
-            onOk() {
-                // Modal 关闭后的回调
+    // 生成列配置
+    const columns =
+      displayData.length > 0
+        ? Object.keys(displayData[0]).map((key) => ({
+            title:
+              key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+            dataIndex: key,
+            key,
+            ellipsis: true,
+            render: (value: any) => {
+              if (value === null || value === undefined) return '-';
+              if (typeof value === 'boolean') return value ? '✓' : '✗';
+              if (typeof value === 'object') return JSON.stringify(value);
+              return String(value);
             },
+          }))
+        : [];
+
+    Modal.info({
+      title: actionConfig?.description || 'Action Result',
+      width: Math.min(1000, window.innerWidth * 0.8),
+      content: (
+        <Table
+          dataSource={displayData}
+          columns={columns}
+          pagination={{ pageSize: 10 }}
+          size="small"
+          rowKey={(record, index) => record.id || index}
+          scroll={{ x: 'max-content' }}
+        />
+      ),
+      onOk() {
+        // Modal 关闭后的回调
+      },
+    });
+  };
+
+  // 触发Action（根据input类型）
+  const triggerAction = useCallback(
+    (
+      actionKey: string,
+      actionConfig: any,
+      record?: Record<string, any>,
+      isBatch = false,
+      records: Record<string, any>[] = [],
+    ) => {
+      setCurrentAction({
+        actionKey,
+        actionConfig,
+        record,
+        isBatch,
+        records,
+      });
+
+      switch (actionConfig.input) {
+        case 'string':
+          setStringModalVisible(true);
+          break;
+        case 'file':
+          setFileModalVisible(true);
+          break;
+        default:
+          // 直接执行
+          executeAction(actionKey, actionConfig, record, isBatch, records);
+          break;
+      }
+    },
+    [],
+  );
+
+  // 执行Action的核心逻辑
+  const executeAction = useCallback(
+    async (
+      actionKey: string,
+      _actionConfig: any,
+      record?: Record<string, any>,
+      isBatch = false,
+      records: Record<string, any>[] = [],
+      extra?: any,
+    ) => {
+      setActionLoading(true);
+      try {
+        let result: any;
+        if (isBatch) {
+          result = await executeBatchAction(
+            actionKey,
+            records,
+            modelDesc || undefined,
+            extra,
+          );
+        } else {
+          result = await executeRowAction(
+            actionKey,
+            record || {},
+            modelDesc || undefined,
+            extra,
+          );
+        }
+
+        if (result.success) {
+          // 处理display类型的输出
+          if (
+            (result.actionConfig as any)?.output === 'display' &&
+            result.data
+          ) {
+            showDisplayModal(result.data, result.actionConfig);
+          } else {
+            // 其他类型的输出已在hook中处理
+            actionRef.current?.reload?.();
+          }
+        }
+      } catch (error) {
+        console.error('Action execution error:', error);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [executeBatchAction, executeRowAction, modelDesc],
+  );
+
+  // 字符串输入Modal的确认处理
+  const handleStringInputConfirm = useCallback(
+    (inputValue: string) => {
+      if (currentAction) {
+        const extra = { input: inputValue };
+        executeAction(
+          currentAction.actionKey,
+          currentAction.actionConfig,
+          currentAction.record,
+          currentAction.isBatch,
+          currentAction.records || [],
+          extra,
+        );
+      }
+      setStringModalVisible(false);
+      setCurrentAction(null);
+    },
+    [currentAction, executeAction],
+  );
+
+  // 文件上传Modal的确认处理
+  const handleFileUploadConfirm = useCallback(
+    (files: File[]) => {
+      if (currentAction) {
+        // 这里应该将文件转换为后端需要的格式
+        // 可以是base64编码或者FormData，根据后端要求调整
+        const filePromises = files.map((file) => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                content: reader.result, // base64 data URL
+              });
+            };
+            reader.readAsDataURL(file);
+          });
         });
-    };
 
+        Promise.all(filePromises).then((filesData) => {
+          const extra = { files: filesData };
+          executeAction(
+            currentAction.actionKey,
+            currentAction.actionConfig,
+            currentAction.record,
+            currentAction.isBatch,
+            currentAction.records || [],
+            extra,
+          );
+        });
+      }
+      setFileModalVisible(false);
+      setCurrentAction(null);
+    },
+    [currentAction, executeAction],
+  );
 
+  // Modal取消处理
+  const handleModalCancel = useCallback(() => {
+    setStringModalVisible(false);
+    setFileModalVisible(false);
+    setCurrentAction(null);
+    setActionLoading(false);
+  }, []);
 
-    // 触发Action（根据input类型）
-    const triggerAction = useCallback(
-        (actionKey: string, actionConfig: any, record?: Record<string, any>, isBatch = false, records: Record<string, any>[] = []) => {
-            setCurrentAction({
-                actionKey,
-                actionConfig,
-                record,
-                isBatch,
-                records,
+  // 保存编辑的数据
+  const handleSave = useCallback(
+    async (key: React.Key, record: Record<string, any>) => {
+      const success = await saveData(record);
+      if (success) {
+        setEditableRowKeys((prevKeys) => prevKeys.filter((k) => k !== key));
+        actionRef.current?.reload?.();
+      }
+    },
+    [saveData],
+  );
+
+  if (descLoading || !modelDesc) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <PageContainer>
+      {contextHolder}
+
+      {/* Action Modals */}
+      <StringInputModal
+        visible={stringModalVisible}
+        title={(currentAction?.actionConfig as any)?.label || 'Input Required'}
+        description={currentAction?.actionConfig?.description}
+        onOk={handleStringInputConfirm}
+        onCancel={handleModalCancel}
+        loading={actionLoading}
+      />
+
+      <FileUploadModal
+        visible={fileModalVisible}
+        title={(currentAction?.actionConfig as any)?.label || 'Upload Files'}
+        description={currentAction?.actionConfig?.description}
+        onOk={handleFileUploadConfirm}
+        onCancel={handleModalCancel}
+        loading={actionLoading}
+      />
+
+      {/* 列表展示 */}
+      <CommonProTable
+        modelDesc={modelDesc}
+        modelName={modelName}
+        onDetail={onDetail}
+        actionRef={actionRef}
+        onAction={(
+          actionKey: string,
+          action: any,
+          record?: any,
+          isBatch?: boolean,
+          records?: any[],
+        ) => {
+          if (actionKey === 'add') {
+            // 处理新增操作：跳转到 ModelDetail，使用 id = -1 表示新建模式
+            const newRecord = { id: -1 };
+            onDetail?.(newRecord);
+          } else {
+            triggerAction(actionKey, action, record, isBatch, records || []);
+          }
+        }}
+        onSave={async (record: any) => {
+          await handleSave(
+            record.id || record.key || JSON.stringify(record),
+            record,
+          );
+        }}
+        onDelete={async (record: any) => {
+          try {
+            const response = await deleteModelData({
+              name: modelName,
+              data: record,
             });
 
-            switch (actionConfig.input) {
-                case 'string':
-                    setStringModalVisible(true);
-                    break;
-                case 'file':
-                    setFileModalVisible(true);
-                    break;
-                case 'empty':
-                default:
-                    // 直接执行
-                    executeAction(actionKey, actionConfig, record, isBatch, records);
-                    break;
+            if (response?.code === 0) {
+              messageApi.success('Deleted successfully');
+              actionRef.current?.reload?.();
+            } else {
+              messageApi.error(response?.message || 'Delete failed');
             }
-        },
-        []
-    );
-
-    // 执行Action的核心逻辑
-    const executeAction = useCallback(
-        async (actionKey: string, actionConfig: any, record?: Record<string, any>, isBatch = false, records: Record<string, any>[] = [], extra?: any) => {
-            setActionLoading(true);
-            try {
-                let result;
-                if (isBatch) {
-                    result = await executeBatchAction(actionKey, records, modelDesc || undefined, extra);
-                } else {
-                    result = await executeRowAction(actionKey, record!, modelDesc || undefined, extra);
-                }
-
-                if (result.success) {
-                    // 处理display类型的输出
-                    if ((result.actionConfig as any)?.output === 'display' && result.data) {
-                        showDisplayModal(result.data, result.actionConfig);
-                    } else {
-                        // 其他类型的输出已在hook中处理
-                        actionRef.current?.reload?.();
-                    }
-                }
-            } catch (error) {
-                console.error('Action execution error:', error);
-            } finally {
-                setActionLoading(false);
-            }
-        },
-        [executeBatchAction, executeRowAction, modelDesc]
-    );
-
-    // 字符串输入Modal的确认处理
-    const handleStringInputConfirm = useCallback(
-        (inputValue: string) => {
-            if (currentAction) {
-                const extra = { input: inputValue };
-                executeAction(
-                    currentAction.actionKey,
-                    currentAction.actionConfig,
-                    currentAction.record,
-                    currentAction.isBatch,
-                    currentAction.records || [],
-                    extra
-                );
-            }
-            setStringModalVisible(false);
-            setCurrentAction(null);
-        },
-        [currentAction, executeAction]
-    );
-
-    // 文件上传Modal的确认处理
-    const handleFileUploadConfirm = useCallback(
-        (files: File[]) => {
-            if (currentAction) {
-                // 这里应该将文件转换为后端需要的格式
-                // 可以是base64编码或者FormData，根据后端要求调整
-                const filePromises = files.map(file => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            resolve({
-                                name: file.name,
-                                size: file.size,
-                                type: file.type,
-                                content: reader.result, // base64 data URL
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                });
-
-                Promise.all(filePromises).then(filesData => {
-                    const extra = { files: filesData };
-                    executeAction(
-                        currentAction.actionKey,
-                        currentAction.actionConfig,
-                        currentAction.record,
-                        currentAction.isBatch,
-                        currentAction.records || [],
-                        extra
-                    );
-                });
-            }
-            setFileModalVisible(false);
-            setCurrentAction(null);
-        },
-        [currentAction, executeAction]
-    );
-
-    // Modal取消处理
-    const handleModalCancel = useCallback(() => {
-        setStringModalVisible(false);
-        setFileModalVisible(false);
-        setCurrentAction(null);
-        setActionLoading(false);
-    }, []);
-
-    // 保存编辑的数据
-    const handleSave = useCallback(
-        async (key: React.Key, record: Record<string, any>) => {
-            const success = await saveData(record);
-            if (success) {
-                setEditableRowKeys(prevKeys => prevKeys.filter(k => k !== key));
-                actionRef.current?.reload?.();
-            }
-        },
-        [saveData]
-    );
-
-    if (descLoading || !modelDesc) {
-        return <div>Loading...</div>;
-    }
-
-    return (
-        <PageContainer>
-            {contextHolder}
-
-            {/* Action Modals */}
-            <StringInputModal
-                visible={stringModalVisible}
-                title={(currentAction?.actionConfig as any)?.label || 'Input Required'}
-                description={currentAction?.actionConfig?.description}
-                onOk={handleStringInputConfirm}
-                onCancel={handleModalCancel}
-                loading={actionLoading}
-            />
-
-            <FileUploadModal
-                visible={fileModalVisible}
-                title={(currentAction?.actionConfig as any)?.label || 'Upload Files'}
-                description={currentAction?.actionConfig?.description}
-                onOk={handleFileUploadConfirm}
-                onCancel={handleModalCancel}
-                loading={actionLoading}
-            />
-
-            {/* 列表展示 */}
-            <CommonProTable
-                modelDesc={modelDesc}
-                modelName={modelName}
-                onDetail={onDetail}
-                onAction={(actionKey: string, action: any, record?: any, isBatch?: boolean, records?: any[]) => {
-                    if (actionKey === 'add') {
-                        // 处理新增操作：跳转到 ModelDetail，使用 id = -1 表示新建模式
-                        const newRecord = { id: -1 };
-                        onDetail?.(newRecord);
-                    } else {
-                        triggerAction(actionKey, action, record, isBatch, records || []);
-                    }
-                }}
-                onSave={async (record: any) => {
-                    await handleSave(record.id || record.key || JSON.stringify(record), record);
-                }}
-                onDelete={async (record: any) => {
-                    // 这里可以实现删除逻辑
-                    console.log('Delete record:', record);
-                }}
-                onRequest={wrappedFetchModelData}
-                tableProps={{
-                    pagination: {
-                        pageSize: getStoredSettings().pageSize || modelDesc.attrs.list_per_page || 20,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                    }
-                }}
-            />
-        </PageContainer>
-    );
+          } catch (_error) {
+            messageApi.error('Delete failed');
+          }
+        }}
+        onRequest={wrappedFetchModelData}
+        tableProps={{
+          pagination: {
+            pageSize:
+              getStoredSettings().pageSize ||
+              modelDesc.attrs.list_per_page ||
+              20,
+            showSizeChanger: true,
+            showQuickJumper: true,
+          },
+        }}
+      />
+    </PageContainer>
+  );
 };
 
 export default ModelList;

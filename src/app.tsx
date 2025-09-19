@@ -9,13 +9,7 @@ import { SettingDrawer } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
 import React from 'react';
-import {
-  AvatarDropdown,
-  AvatarName,
-  Footer,
-  Question,
-  SelectLang,
-} from '@/components';
+import { AvatarDropdown, AvatarName, Footer, SelectLang } from '@/components';
 import { getAdminSettings } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
 import defaultSettings from '../config/defaultSettings';

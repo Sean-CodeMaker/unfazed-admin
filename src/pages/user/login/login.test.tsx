@@ -48,9 +48,7 @@ describe('Login Page', () => {
     expect(
       rootContainer.baseElement?.querySelector('.ant-pro-form-login-desc')
         ?.textContent,
-    ).toBe(
-      'Unfazed Admin is the admin panel for Unfazed Web framework',
-    );
+    ).toBe('Unfazed Admin is the admin panel for Unfazed Web framework');
 
     expect(rootContainer.asFragment()).toMatchSnapshot();
 

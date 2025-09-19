@@ -103,11 +103,62 @@ export default [
     ],
   },
 
-
   // 动态路由：支持 ModelAdmin、ModelCustom 等组件的动态渲染
   // 注意：这些路径需要与后端 /api/admin/route-list 返回的路径保持一致
   {
-    path: '/crown',
+    path: '/CrawlyUser',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/Category',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/APIUser',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/APIUserCategoryRelation',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/UserCategoryRelation',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/UserAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/GroupAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/RoleAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/PermissionAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/LogEntryAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/PeriodicTaskAdmin',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/CleanedData',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/CrawledData',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/StudentAdmin',
     component: './DynamicRoute',
   },
   {

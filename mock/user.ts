@@ -199,6 +199,7 @@ export default {
         colorWeak: false,
         logo: '/logo.svg',
         showWatermark: false,  // 水印开关控制
+        defaultLoginType: true,
         pageSize: 20,
         timeZone: 'Asia/Shanghai',
         apiPrefix: '/api',
