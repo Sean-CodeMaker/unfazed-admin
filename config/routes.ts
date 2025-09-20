@@ -158,18 +158,8 @@ export default [
     component: './DynamicRoute',
   },
   {
-    path: '/StudentAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/tools',
-    component: './DynamicRoute',
-  },
-  // TODO: 当后端添加新的业务路由时，需要在这里添加对应的路由配置
-
-  {
     path: '/',
-    redirect: '/crown',
+    redirect: '/LogEntryAdmin',
   },
   {
     component: '404',

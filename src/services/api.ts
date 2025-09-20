@@ -21,7 +21,7 @@ export async function getOAuthRedirectUrl(platform: string) {
         data: {
             redirect_url: string;
         };
-    }>(`/api/auth/oauth-redirect-login?platform=${encodeURIComponent(platform)}`, {
+    }>(`/api/auth/oauth-login-redirect?platform=${encodeURIComponent(platform)}`, {
         method: 'GET',
     });
 }

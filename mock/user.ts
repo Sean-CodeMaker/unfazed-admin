@@ -222,7 +222,7 @@ export default {
   },
 
   // OAuth登录重定向接口 - 符合 OpenAPI 规范
-  'GET /api/auth/oauth-redirect-login': (req: Request, res: Response) => {
+  'GET /api/auth/oauth-login-redirect': (req: Request, res: Response) => {
     const { platform } = req.query;
 
     if (!platform) {
