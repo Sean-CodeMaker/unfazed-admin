@@ -14,7 +14,7 @@ const { REACT_APP_ENV = 'dev' } = process.env;
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
  */
-const PUBLIC_PATH: string = '/';
+const PUBLIC_PATH: string = '/admin/';
 
 export default defineConfig({
   /**
@@ -23,9 +23,25 @@ export default defineConfig({
    * @doc https://umijs.org/docs/api/config#hash
    */
   hash: true,
-
+  /**
+   * @name 设置公共路径
+   * @description 设置公共路径，通常用于部署到非根目录
+   * @doc https://umijs.org/docs/api/config#publicpath
+   */
   publicPath: PUBLIC_PATH,
+  /**
+   * @name 设置路由 base
+   * @description 设置路由前缀，通常用于部署到非根目录
+   * @doc https://umijs.org/docs/api/config#base
+   */
+  base: PUBLIC_PATH,
 
+  /**
+   * @name 设置构建输出目录
+   * @description 设置构建输出目录，与 publicPath 保持一致
+   * @doc https://umijs.org/docs/api/config#outputpath
+   */
+  outputPath: `dist${PUBLIC_PATH}`,
   /**
    * @name 兼容性设置
    * @description 设置 ie11 不一定完美兼容，需要检查自己使用的所有依赖

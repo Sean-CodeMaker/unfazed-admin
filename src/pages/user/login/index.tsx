@@ -287,7 +287,7 @@ const Login: React.FC = () => {
         await updateUserInfoAndSettings(msg.data, values.platform || 'default');
 
         const urlParams = new URL(window.location.href).searchParams;
-        window.location.href = urlParams.get('redirect') || '/';
+        window.location.href = urlParams.get('redirect') || '/admin/';
         return;
       }
       console.log(msg);

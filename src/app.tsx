@@ -17,7 +17,7 @@ import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.CI;
-const loginPath = '/user/login';
+const loginPath = '/admin/user/login';
 
 // 路由和图标转换函数已移动到 routeManager.ts 中
 
@@ -46,9 +46,11 @@ export async function getInitialState(): Promise<{
     // 如果没有用户信息且不在登录相关页面，才跳转到登录页
     const { location } = history;
     if (
-      ![loginPath, '/user/register', '/user/register-result'].includes(
-        location.pathname,
-      )
+      ![
+        loginPath,
+        '/admin/user/register',
+        '/admin/user/register-result',
+      ].includes(location.pathname)
     ) {
       history.push(loginPath);
     }
@@ -126,9 +128,9 @@ export async function getInitialState(): Promise<{
   if (
     ![
       loginPath,
-      '/user/register',
-      '/user/register-result',
-      '/oauth/login',
+      '/admin/user/register',
+      '/admin/user/register-result',
+      '/admin/oauth/login',
     ].includes(location.pathname)
   ) {
     const currentUser = await fetchUserInfo();

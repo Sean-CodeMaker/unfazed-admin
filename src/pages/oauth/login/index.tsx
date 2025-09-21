@@ -107,7 +107,7 @@ const OAuthLogin: React.FC = () => {
         message.error(`OAuth登录失败: ${error}`);
         // 清理localStorage并跳转回登录页面
         localStorage.removeItem('oauth_platform');
-        window.location.href = '/user/login';
+        window.location.href = '/admin/user/login';
         return;
       }
 
@@ -163,14 +163,14 @@ const OAuthLogin: React.FC = () => {
           localStorage.removeItem('oauth_platform');
 
           // 成功后跳转到首页
-          window.location.href = '/';
+          window.location.href = '/admin/';
         } else {
           message.error(loginResult.message || 'OAuth登录失败');
           // 清理localStorage
           localStorage.removeItem('oauth_platform');
           // 失败后跳转回登录页面
           setTimeout(() => {
-            window.location.href = '/user/login';
+            window.location.href = '/admin/user/login';
           }, 2000);
         }
       } catch (error) {
@@ -181,7 +181,7 @@ const OAuthLogin: React.FC = () => {
         localStorage.removeItem('oauth_platform');
         // 错误后跳转回登录页面
         setTimeout(() => {
-          window.location.href = '/user/login';
+          window.location.href = '/admin/user/login';
         }, 2000);
       }
     };
