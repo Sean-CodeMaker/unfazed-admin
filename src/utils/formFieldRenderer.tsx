@@ -50,7 +50,7 @@ export const renderFormField = (
   };
 
   // 根据字段类型渲染不同的组件
-  switch (fieldConfig.type) {
+  switch (fieldConfig.field_type) {
     case 'CharField':
       if (fieldConfig.choices && fieldConfig.choices.length > 0) {
         return (

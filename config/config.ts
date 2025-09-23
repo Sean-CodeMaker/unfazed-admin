@@ -178,4 +178,10 @@ export default defineConfig({
   define: {
     'process.env.CI': process.env.CI,
   },
+  links: [
+    {
+      rel: 'icon',
+      href: 'https://unfazed-eco.github.io/images/uz-logo.png',
+    },
+  ],
 });

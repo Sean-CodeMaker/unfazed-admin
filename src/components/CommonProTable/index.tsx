@@ -86,7 +86,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         };
 
         // 根据字段类型设置 valueType 和渲染逻辑
-        switch (fieldConfig.type) {
+        switch (fieldConfig.field_type) {
           case 'BooleanField':
             column.valueType = 'switch';
             column.render = (_, record) => (

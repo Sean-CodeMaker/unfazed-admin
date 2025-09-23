@@ -1090,7 +1090,7 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
                   }
 
                   // 处理布尔字段
-                  if (fieldConf.type === 'BooleanField') {
+                  if (fieldConf.field_type === 'BooleanField') {
                     return value ? '✓' : '✗';
                   }
 

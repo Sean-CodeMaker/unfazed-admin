@@ -193,7 +193,7 @@ declare namespace API {
 
   // Model Admin 相关类型定义，基于 OpenAPI 规范
   type AdminField = {
-    type:
+    field_type:
       | 'CharField'
       | 'IntegerField'
       | 'BooleanField'

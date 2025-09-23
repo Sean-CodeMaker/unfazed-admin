@@ -56,7 +56,7 @@ export const useModelOperations = ({
             const condition: API.Condition = { field };
 
             // 根据字段类型设置搜索条件
-            switch (fieldConfig.type) {
+            switch (fieldConfig.field_type) {
               case 'CharField':
               case 'TextField':
                 condition.icontains = String(value);
