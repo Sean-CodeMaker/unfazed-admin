@@ -28,7 +28,6 @@ const ModelList: React.FC<ModelListProps> = ({
   const {
     contextHolder,
     messageApi,
-    fetchModelDesc,
     fetchModelData,
     executeBatchAction,
     executeRowAction,

@@ -38,6 +38,80 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
     },
   );
 
+  // Build search conditions from current form values
+  const buildSearchConditions = (values: Record<string, any>, desc?: any) => {
+    if (!desc?.fields) return [];
+    const conditions: any[] = [];
+    Object.entries(values || {}).forEach(([field, value]) => {
+      if (value === undefined || value === null || value === '') return;
+      const fieldConfig = desc.fields[field];
+      if (!fieldConfig) return;
+
+      const cond: any = { field };
+
+      switch (fieldConfig.field_type) {
+        case 'CharField':
+        case 'TextField':
+          if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+            cond.eq = String(value);
+          } else {
+            cond.icontains = String(value);
+          }
+          break;
+        case 'IntegerField':
+        case 'FloatField':
+          cond.eq = Number(value);
+          break;
+        case 'BooleanField':
+          cond.eq = value ? 1 : 0;
+          break;
+        case 'DateField':
+        case 'DatetimeField':
+          if (Array.isArray(value) && value.length === 2) {
+            // range
+            const [start, end] = value;
+            if (start && end) {
+              conditions.push(
+                {
+                  field,
+                  gte: (start as any)?.format?.('YYYY-MM-DD') || String(start),
+                } as any,
+                {
+                  field,
+                  lte: (end as any)?.format?.('YYYY-MM-DD') || String(end),
+                } as any,
+              );
+            }
+            return;
+          } else if ((value as any)?.format) {
+            cond.eq = (value as any).format(
+              fieldConfig.field_type === 'DateField'
+                ? 'YYYY-MM-DD'
+                : 'YYYY-MM-DD HH:mm:ss',
+            ) as any;
+          }
+          break;
+        default:
+          if (typeof value === 'string' || typeof value === 'number') {
+            cond.eq = value;
+          }
+      }
+
+      if (
+        cond.eq !== undefined ||
+        cond.lt !== undefined ||
+        cond.lte !== undefined ||
+        cond.gt !== undefined ||
+        cond.gte !== undefined ||
+        cond.contains !== undefined ||
+        cond.icontains !== undefined
+      ) {
+        conditions.push(cond);
+      }
+    });
+    return conditions;
+  };
+
   // 执行 Action
   const executeAction = useCallback(
     async (actionKey: string, actionConfig: any, formData: any) => {
@@ -46,11 +120,19 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
       setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
 
       try {
+        // use provided formData if present, otherwise read current form values
+        const rawValues =
+          formData && Object.keys(formData).length > 0
+            ? formData
+            : formRef.current?.getFieldsValue?.() || {};
+
+        const searchConditions = buildSearchConditions(rawValues, toolDesc);
+
         const response = await executeModelAction({
           name: toolName,
           action: actionKey,
-          form_data: formData || {},
-          search_condition: [],
+          form_data: actionConfig.input === 'empty' ? {} : formData || {},
+          search_condition: searchConditions,
         });
 
         if (response?.code === 0) {
@@ -235,7 +317,9 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
                     : [
                         {
                           required: true,
-                          message: `${fieldConfig.name || fieldName} is required`,
+                          message: `${
+                            fieldConfig.name || fieldName
+                          } is required`,
                         },
                       ],
                 },

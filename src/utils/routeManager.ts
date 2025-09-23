@@ -11,7 +11,7 @@ import { getRouteList } from '@/services/api';
 /**
  * 将API路由转换为UmiJS路由格式
  */
-function transformApiRouteToUmiRoute(apiRoute: API.AdminRoute): any {
+function _transformApiRouteToUmiRoute(apiRoute: API.AdminRoute): any {
   const umiRoute: any = {
     path: apiRoute.path,
     name: apiRoute.name,
@@ -36,7 +36,7 @@ function transformApiRouteToUmiRoute(apiRoute: API.AdminRoute): any {
 
   // 处理子路由
   if (apiRoute.routes && apiRoute.routes.length > 0) {
-    umiRoute.routes = apiRoute.routes.map(transformApiRouteToUmiRoute);
+    umiRoute.routes = apiRoute.routes.map(_transformApiRouteToUmiRoute);
   }
 
   return umiRoute;

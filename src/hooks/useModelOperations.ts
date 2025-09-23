@@ -1,5 +1,4 @@
 import { message } from 'antd';
-import dayjs from 'dayjs';
 import { useCallback, useState } from 'react';
 import {
   executeModelAction,
@@ -43,70 +42,81 @@ export const useModelOperations = ({
 
       const conditions: API.Condition[] = [];
 
-      // 从搜索参数获取条件 (排除分页参数)
-      const {
-        current: _current,
-        pageSize: _requestPageSize,
-        ...searchParams
-      } = searchValues;
+      // strip pagination params
+      const { current: _c, pageSize: _s, ...searchParams } = searchValues;
+
       Object.entries(searchParams).forEach(([field, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          const fieldConfig = modelDesc.fields[field];
-          if (fieldConfig) {
-            const condition: API.Condition = { field };
+        if (value === undefined || value === null || value === '') return;
 
-            // 根据字段类型设置搜索条件
-            switch (fieldConfig.field_type) {
-              case 'CharField':
-              case 'TextField':
-                condition.icontains = String(value);
-                break;
-              case 'IntegerField':
-              case 'FloatField':
-                condition.eq = Number(value);
-                break;
-              case 'BooleanField':
-                condition.eq = value ? 1 : 0;
-                break;
-              case 'DateField':
-              case 'DatetimeField':
-                if (Array.isArray(value) && value.length === 2) {
-                  // 日期范围搜索
-                  const startDate = dayjs.isDayjs(value[0])
-                    ? value[0].format('YYYY-MM-DD')
-                    : '';
-                  const endDate = dayjs.isDayjs(value[1])
-                    ? value[1].format('YYYY-MM-DD')
-                    : '';
-                  if (startDate && endDate) {
-                    conditions.push(
-                      { field, gte: startDate as any },
-                      { field, lte: endDate as any },
-                    );
-                  }
-                  return;
-                } else if (dayjs.isDayjs(value)) {
-                  condition.eq = value.format('YYYY-MM-DD');
-                }
-                break;
-              default:
-                if (typeof value === 'string' || typeof value === 'number') {
-                  condition.eq = value;
-                }
-            }
+        const fieldConfig = modelDesc.fields[field];
+        if (!fieldConfig) return;
 
-            if (
-              condition.eq !== undefined ||
-              condition.lt !== undefined ||
-              condition.lte !== undefined ||
-              condition.gt !== undefined ||
-              condition.gte !== undefined ||
-              condition.contains !== undefined ||
-              condition.icontains !== undefined
-            ) {
-              conditions.push(condition);
+        const condition: API.Condition = { field };
+
+        // if the field is in attrs.list_search, prefer eq for text
+        switch (fieldConfig.field_type) {
+          case 'CharField':
+          case 'TextField':
+            if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+              condition.eq = String(value);
+            } else {
+              condition.icontains = String(value);
             }
-          }
+            break;
+
+          case 'IntegerField':
+          case 'FloatField':
+            condition.eq = Number(value);
+            break;
+
+          case 'BooleanField':
+            condition.eq = value ? 1 : 0;
+            break;
+
+          case 'DateField':
+          case 'DatetimeField':
+            if (Array.isArray(value) && value.length === 2) {
+              // range
+              const [start, end] = value;
+              if (start && end) {
+                conditions.push(
+                  {
+                    field,
+                    gte:
+                      (start as any)?.format?.('YYYY-MM-DD') || String(start),
+                  } as any,
+                  {
+                    field,
+                    lte: (end as any)?.format?.('YYYY-MM-DD') || String(end),
+                  } as any,
+                );
+              }
+              return;
+            } else if ((value as any)?.format) {
+              condition.eq = (value as any).format(
+                fieldConfig.field_type === 'DateField'
+                  ? 'YYYY-MM-DD'
+                  : 'YYYY-MM-DD HH:mm:ss',
+              ) as any;
+            }
+            break;
+
+          default:
+            if (typeof value === 'string' || typeof value === 'number') {
+              condition.eq = value as any;
+            }
+        }
+
+        if (
+          condition.eq !== undefined ||
+          (condition as any).lt !== undefined ||
+          (condition as any).lte !== undefined ||
+          (condition as any).gt !== undefined ||
+          (condition as any).gte !== undefined ||
+          (condition as any).contains !== undefined ||
+          (condition as any).icontains !== undefined
+        ) {
+          conditions.push(condition);
         }
       });
 

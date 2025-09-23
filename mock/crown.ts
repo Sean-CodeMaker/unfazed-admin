@@ -790,7 +790,7 @@ const crownModelDesc = {
         can_show_all: true,
         editable: true,
         list_per_page: 20,
-        list_search: ['name', 'type', 'owner', 'status'],
+        list_search: ['name', 'type', 'owner', 'status', 'created_at'],
         list_filter: ['type', 'level', 'material', 'region', 'status', 'is_active'],
         list_sort: ['id', 'name', 'price', 'level', 'created_at', 'updated_at'],
         list_order: ['-created_at'],
@@ -1474,189 +1474,128 @@ export default {
         } else if (name === 'tools') {
             // AdminToolSerializeModel mock data
             res.send({
-                "code": 0,
-                "message": "success",
-                "data": {
-                    "fields": {
-                        "name": {
-                            "field_type": "CharField",
-                            "readonly": false,
-                            "show": true,
-                            "blank": true,
-                            "choices": [
-                                [
-                                    "1",
-                                    "1"
-                                ],
-                                [
-                                    "2",
-                                    "2"
-                                ]
+                code: 0,
+                message: 'success',
+                data: {
+                    fields: {
+                        report_type: {
+                            field_type: 'CharField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [
+                                ['daily', 'Daily Report'],
+                                ['weekly', 'Weekly Report'],
+                                ['monthly', 'Monthly Report'],
+                                ['yearly', 'Yearly Report']
                             ],
-                            "help_text": "",
-                            "default": null,
-                            "name": "name"
+                            help_text: 'Select the type of report to generate',
+                            default: 'daily',
+                            name: 'Report Type'
                         },
-                        "age": {
-                            "field_type": "IntegerField",
-                            "readonly": false,
-                            "show": true,
-                            "blank": true,
-                            "choices": [
-                                [
-                                    "1",
-                                    "1"
-                                ],
-                                [
-                                    "2",
-                                    "2"
-                                ]
+                        start_date: {
+                            field_type: 'DateField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'Start date for the report period',
+                            default: null,
+                            name: 'Start Date'
+                        },
+                        end_date: {
+                            field_type: 'DateField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [],
+                            help_text: 'End date for the report period',
+                            default: null,
+                            name: 'End Date'
+                        },
+                        include_details: {
+                            field_type: 'BooleanField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: true,
+                            choices: [],
+                            help_text: 'Include detailed breakdown in the report',
+                            default: false,
+                            name: 'Include Details'
+                        },
+                        export_format: {
+                            field_type: 'CharField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: false,
+                            choices: [
+                                ['pdf', 'PDF'],
+                                ['excel', 'Excel'],
+                                ['csv', 'CSV']
                             ],
-                            "help_text": "",
-                            "default": null,
-                            "name": "age"
+                            help_text: 'Choose the format for exporting the report',
+                            default: 'pdf',
+                            name: 'Export Format'
+                        },
+                        email_recipients: {
+                            field_type: 'TextField' as const,
+                            readonly: false,
+                            show: true,
+                            blank: true,
+                            choices: [],
+                            help_text: 'Email addresses to send the report (comma-separated)',
+                            default: '',
+                            name: 'Email Recipients'
                         }
                     },
-                    "actions": {
-                        "get_data": {
-                            "name": "get_data",
-                            "label": "Get Data",
-                            "output": "toast",
-                            "input": "empty",
-                            "confirm": true,
-                            "description": "",
-                            "batch": false,
-                            "extra": {}
+                    actions: {
+                        preview: {
+                            name: 'preview',
+                            label: 'Preview Report',
+                            output: 'display' as const,
+                            input: 'empty' as const,
+                            confirm: false,
+                            description: 'Preview the report before generating',
+                            batch: false,
+                            extra: {}
+                        },
+                        generate: {
+                            name: 'generate',
+                            label: 'Generate Report',
+                            output: 'download' as const,
+                            input: 'string' as const,
+                            confirm: true,
+                            description: 'Generate and download the report',
+                            batch: false,
+                            extra: {}
+                        },
+                        send_email: {
+                            name: 'send_email',
+                            label: 'Send via Email',
+                            output: 'toast' as const,
+                            input: 'string' as const,
+                            confirm: true,
+                            description: 'Generate report and send via email',
+                            batch: false,
+                            extra: {}
+                        },
+                        schedule: {
+                            name: 'schedule',
+                            label: 'Schedule Report',
+                            output: 'toast' as const,
+                            input: 'string' as const,
+                            confirm: false,
+                            description: 'Schedule this report for automatic generation',
+                            batch: false,
+                            extra: {}
                         }
                     },
-                    "attrs": {
-                        "help_text": ""
+                    attrs: {
+                        help_text: 'Crown Management Reporting Tools',
+                        output_field: 'report_data'
                     }
                 }
-            })
-            // res.send({
-            //     code: 0,
-            //     message: 'success',
-            //     data: {
-            //         fields: {
-            //             report_type: {
-            //                 field_type: 'CharField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: false,
-            //                 choices: [
-            //                     ['daily', 'Daily Report'],
-            //                     ['weekly', 'Weekly Report'],
-            //                     ['monthly', 'Monthly Report'],
-            //                     ['yearly', 'Yearly Report']
-            //                 ],
-            //                 help_text: 'Select the type of report to generate',
-            //                 default: 'daily',
-            //                 name: 'Report Type'
-            //             },
-            //             start_date: {
-            //                 field_type: 'DateField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: false,
-            //                 choices: [],
-            //                 help_text: 'Start date for the report period',
-            //                 default: null,
-            //                 name: 'Start Date'
-            //             },
-            //             end_date: {
-            //                 field_type: 'DateField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: false,
-            //                 choices: [],
-            //                 help_text: 'End date for the report period',
-            //                 default: null,
-            //                 name: 'End Date'
-            //             },
-            //             include_details: {
-            //                 field_type: 'BooleanField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: true,
-            //                 choices: [],
-            //                 help_text: 'Include detailed breakdown in the report',
-            //                 default: false,
-            //                 name: 'Include Details'
-            //             },
-            //             export_format: {
-            //                 field_type: 'CharField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: false,
-            //                 choices: [
-            //                     ['pdf', 'PDF'],
-            //                     ['excel', 'Excel'],
-            //                     ['csv', 'CSV']
-            //                 ],
-            //                 help_text: 'Choose the format for exporting the report',
-            //                 default: 'pdf',
-            //                 name: 'Export Format'
-            //             },
-            //             email_recipients: {
-            //                 field_type: 'TextField' as const,
-            //                 readonly: false,
-            //                 show: true,
-            //                 blank: true,
-            //                 choices: [],
-            //                 help_text: 'Email addresses to send the report (comma-separated)',
-            //                 default: '',
-            //                 name: 'Email Recipients'
-            //             }
-            //         },
-            //         actions: {
-            //             preview: {
-            //                 name: 'preview',
-            //                 label: 'Preview Report',
-            //                 output: 'display' as const,
-            //                 input: 'empty' as const,
-            //                 confirm: false,
-            //                 description: 'Preview the report before generating',
-            //                 batch: false,
-            //                 extra: {}
-            //             },
-            //             generate: {
-            //                 name: 'generate',
-            //                 label: 'Generate Report',
-            //                 output: 'download' as const,
-            //                 input: 'string' as const,
-            //                 confirm: true,
-            //                 description: 'Generate and download the report',
-            //                 batch: false,
-            //                 extra: {}
-            //             },
-            //             send_email: {
-            //                 name: 'send_email',
-            //                 label: 'Send via Email',
-            //                 output: 'toast' as const,
-            //                 input: 'string' as const,
-            //                 confirm: true,
-            //                 description: 'Generate report and send via email',
-            //                 batch: false,
-            //                 extra: {}
-            //             },
-            //             schedule: {
-            //                 name: 'schedule',
-            //                 label: 'Schedule Report',
-            //                 output: 'toast' as const,
-            //                 input: 'string' as const,
-            //                 confirm: false,
-            //                 description: 'Schedule this report for automatic generation',
-            //                 batch: false,
-            //                 extra: {}
-            //             }
-            //         },
-            //         attrs: {
-            //             help_text: 'Crown Management Reporting Tools',
-            //             output_field: 'report_data'
-            //         }
-            //     }
-            // });
+            });
         } else if (name === 'crown_history') {
             res.send({
                 code: 0,
