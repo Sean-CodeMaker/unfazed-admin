@@ -5,7 +5,7 @@ import { Modal, Table } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
 import { FileUploadModal, StringInputModal } from '@/components/ActionModals';
 import { useModelOperations } from '@/hooks/useModelOperations';
-import { deleteModelData } from '@/services/api';
+import { deleteModelData, getModelDesc } from '@/services/api';
 import { CommonProTable } from '../index';
 
 interface ModelListProps {
@@ -62,15 +62,21 @@ const ModelList: React.FC<ModelListProps> = ({
   // 获取模型描述
   const { loading: descLoading } = useRequest(
     async () => {
-      const modelDescData = await fetchModelDesc();
-      if (modelDescData) {
+      // 直接调用 API 而不是通过 fetchModelDesc，确保使用最新的 modelName
+      const response = await getModelDesc(modelName);
+      if (response?.code === 0) {
+        const modelDescData = response.data;
         setModelDesc(modelDescData);
         onModelDescLoaded?.(modelDescData); // 通知父组件
+        return modelDescData;
+      } else {
+        console.error('ModelList: getModelDesc failed:', response);
+        return null;
       }
-      return modelDescData;
     },
     {
       manual: false,
+      refreshDeps: [modelName], // 当 modelName 变化时重新请求
     },
   );
 

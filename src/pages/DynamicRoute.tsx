@@ -1,4 +1,4 @@
-import { useLocation, useModel } from '@umijs/max';
+import { history, useLocation, useModel } from '@umijs/max';
 import { Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { ModelAdmin, ModelCustom } from '@/components';
@@ -19,12 +19,65 @@ const DynamicRoute: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        // 不要立即重置 routeConfig，避免中间状态的渲染
+
+        console.log('Loading route for path:', location.pathname);
 
         // 检查全局状态中是否有路由数据
         const routeList = initialState?.routeList;
 
         if (!routeList || routeList.length === 0) {
-          throw new Error('Route list not available in global state');
+          // 如果没有路由数据，可能是用户未登录或路由加载失败
+          console.warn('Route list not available in global state');
+
+          // 检查是否是需要登录的页面
+          const publicPaths = [
+            '/user/login',
+            '/oauth/login',
+            '/exception',
+            '/result',
+          ];
+          const isPublicPath = publicPaths.some((path) =>
+            location.pathname.startsWith(path),
+          );
+
+          if (!isPublicPath) {
+            // 对于需要登录的页面，重定向到登录页面
+            history.replace('/user/login');
+            return;
+          } else {
+            // 对于公共页面，抛出错误让静态路由处理
+            throw new Error(
+              'Route list not available, but this should be handled by static routes',
+            );
+          }
+        }
+
+        // 处理根路径重定向
+        if (location.pathname === '/') {
+          // 获取第一个可用的动态路由进行重定向
+          const getFirstAvailableRoute = (
+            routes: API.AdminRoute[],
+          ): string | null => {
+            for (const route of routes) {
+              if (route.routes && route.routes.length > 0) {
+                const firstChild = getFirstAvailableRoute(route.routes);
+                if (firstChild) return firstChild;
+              } else if (route.path && route.component) {
+                return route.path;
+              }
+            }
+            return null;
+          };
+
+          const redirectPath = getFirstAvailableRoute(routeList);
+          if (redirectPath) {
+            console.log('Redirecting from root to:', redirectPath);
+            history.replace(redirectPath);
+            return;
+          } else {
+            throw new Error('No available routes for redirection');
+          }
         }
 
         // 查找当前路径对应的路由配置
@@ -47,9 +100,12 @@ const DynamicRoute: React.FC = () => {
         const foundRoute = findRouteByPath(routeList, location.pathname);
 
         if (!foundRoute) {
-          throw new Error(`Route not found for path: ${location.pathname}`);
+          // 对于找不到的路由，重定向到 404 页面
+          history.replace('/exception/404');
+          return;
         }
 
+        console.log('Found route config:', foundRoute);
         setRouteConfig(foundRoute);
       } catch (err) {
         console.error('Dynamic route loading error:', err);
@@ -59,10 +115,10 @@ const DynamicRoute: React.FC = () => {
       }
     };
 
-    // 如果 initialState 还没有加载完成，等待
+    // 每次路径变化时都重新加载路由
     if (initialState?.routeList) {
       loadRoute();
-      return; // 添加 return
+      return; // 添加 return 语句
     } else {
       // 等待全局状态加载完成
       setLoading(true);
@@ -81,30 +137,42 @@ const DynamicRoute: React.FC = () => {
 
   // 渲染对应的组件
   const renderComponent = () => {
-    if (!routeConfig) {
-      return <div>Route configuration not found</div>;
+    // Avoid rendering with stale routeConfig when path just changed
+    if (!routeConfig || routeConfig.path !== location.pathname) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '50vh',
+          }}
+        >
+          <Spin size="large" tip="Loading..." />
+        </div>
+      );
     }
 
-    // 使用路由配置中的 name 字段作为模型名称
     const modelName = routeConfig.name;
+    // Use routeConfig.path to stabilize key with the actual config we will render
+    const componentKey = `${routeConfig.component}-${routeConfig.path}`;
 
     switch (routeConfig.component) {
       case 'ModelAdmin':
-        return <ModelAdmin modelName={modelName} />;
-
+        return <ModelAdmin key={componentKey} modelName={modelName} />;
       case 'ModelCustom':
         return (
           <ModelCustom
+            key={componentKey}
             toolName={modelName}
             onBack={() => window.history.back()}
           />
         );
-
-      // 对于传统的页面组件路径（如 './Welcome'），我们不在这里处理
-      // 这些会由 UmiJS 的静态路由处理
       default:
         return (
-          <div>Unsupported dynamic component: {routeConfig.component}</div>
+          <div key={componentKey}>
+            Unsupported dynamic component: {routeConfig.component}
+          </div>
         );
     }
   };

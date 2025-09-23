@@ -6,15 +6,14 @@ interface ExtendedLayoutSettings extends LayoutSettings {
 }
 
 import { SettingDrawer } from '@ant-design/pro-components';
-import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
-import { history } from '@umijs/max';
-import React from 'react';
 import { AvatarDropdown, AvatarName, Footer, SelectLang } from '@/components';
 import { getAdminSettings } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
+import '@ant-design/v5-patch-for-react-19';
+import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import { history } from '@umijs/max';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import '@ant-design/v5-patch-for-react-19';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.CI;
 const loginPath = '/user/login';
@@ -192,6 +191,22 @@ export const layout: RunTimeLayoutConfig = ({
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
+      if (location.pathname === '/' || location.pathname === '/admin') {
+        const getFirst = (routes: API.AdminRoute[] = []): string | null => {
+          for (const r of routes) {
+            if (r.routes?.length) {
+              const child = getFirst(r.routes);
+              if (child) return child;
+            } else if (r.path && r.component) {
+              return r.path;
+            }
+          }
+          return null;
+        };
+        const first = getFirst(initialState?.routeList || []);
+        if (first) history.replace(first);
+        return;
+      }
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ModelDetail, ModelList } from '@/components';
 
 interface ModelAdminProps {
@@ -14,6 +14,14 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
   const [modelDesc, setModelDesc] = useState<API.AdminSerializeModel | null>(
     null,
   );
+
+  // 当 modelName 变化时，重置组件状态
+  useEffect(() => {
+    console.log('ModelAdmin: modelName changed to', modelName);
+    setCurrentView('list');
+    setCurrentRecord(null);
+    setModelDesc(null);
+  }, [modelName]);
 
   // 处理查看详情操作
   const handleDetail = (record: Record<string, any>) => {

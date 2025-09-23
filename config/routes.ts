@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @name umi 的路由配置
  * @description 只支持 path,component,routes,redirect,wrappers,name,icon 的配置
  * @param path  path 只支持两种占位符配置，第一种是动态参数 :id 的形式，第二种是 * 通配符，通配符只能出现路由字符串的最后。
@@ -11,6 +11,7 @@
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
+  // 用户认证相关路由
   {
     path: '/user',
     layout: false,
@@ -50,6 +51,7 @@ export default [
     name: 'oauth-login',
     component: './oauth/login',
   },
+  // 结果页面路由
   {
     name: 'result',
     icon: 'CheckCircleOutlined',
@@ -73,6 +75,7 @@ export default [
       },
     ],
   },
+  // 异常页面路由
   {
     name: 'exception',
     icon: 'warning',
@@ -102,75 +105,14 @@ export default [
       },
     ],
   },
-
-  // 动态路由：支持 ModelAdmin、ModelCustom 等组件的动态渲染
-  // 注意：这些路径需要与后端 /api/admin/route-list 返回的路径保持一致
-  {
-    path: '/CrawlyUser',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/Category',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/APIUser',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/APIUserCategoryRelation',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/UserCategoryRelation',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/UserAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/GroupAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/RoleAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/PermissionAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/LogEntryAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/PeriodicTaskAdmin',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/CleanedData',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/CrawledData',
-    component: './DynamicRoute',
-  },
+  // 根路径重定向
   {
     path: '/',
-    redirect: '/LogEntryAdmin',
+    component: './DynamicRoute', // 使用 DynamicRoute 来处理根路径
   },
+  // 动态路由通配符 - 所有其他路径都通过 DynamicRoute 处理
   {
-    path: '/crown',
-    component: './DynamicRoute',
-  },
-  {
-    path: '/tools',
-    component: './DynamicRoute',
-  },
-  {
-    component: '404',
     path: '/*',
+    component: './DynamicRoute',
   },
 ];

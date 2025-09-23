@@ -5,115 +5,8 @@
 
 import { getRouteList } from '@/services/api';
 
-// 内置路由配置（不依赖后端API的路由）
-const BUILT_IN_ROUTES = [
-  // 用户相关路由
-  {
-    path: '/user',
-    layout: false,
-    routes: [
-      {
-        path: '/user/login',
-        layout: false,
-        name: 'login',
-        component: './user/login',
-      },
-      {
-        path: '/user',
-        redirect: '/user/login',
-      },
-      {
-        name: 'register-result',
-        icon: 'smile',
-        path: '/user/register-result',
-        component: './user/register-result',
-      },
-      {
-        name: 'register',
-        icon: 'smile',
-        path: '/user/register',
-        component: './user/register',
-      },
-      {
-        component: '404',
-        path: '/user/*',
-      },
-    ],
-  },
-  // OAuth 登录回调路由
-  {
-    path: '/oauth/login',
-    layout: false,
-    name: 'oauth-login',
-    component: './oauth/login',
-  },
-  // 结果页面路由
-  {
-    name: 'result',
-    icon: 'CheckCircleOutlined',
-    path: '/result',
-    routes: [
-      {
-        path: '/result',
-        redirect: '/result/success',
-      },
-      {
-        name: 'success',
-        icon: 'smile',
-        path: '/result/success',
-        component: './result/success',
-      },
-      {
-        name: 'fail',
-        icon: 'smile',
-        path: '/result/fail',
-        component: './result/fail',
-      },
-    ],
-  },
-  // 异常页面路由
-  {
-    name: 'exception',
-    icon: 'warning',
-    path: '/exception',
-    routes: [
-      {
-        path: '/exception',
-        redirect: '/exception/403',
-      },
-      {
-        name: '403',
-        icon: 'smile',
-        path: '/exception/403',
-        component: './exception/403',
-      },
-      {
-        name: '404',
-        icon: 'smile',
-        path: '/exception/404',
-        component: './exception/404',
-      },
-      {
-        name: '500',
-        icon: 'smile',
-        path: '/exception/500',
-        component: './exception/500',
-      },
-    ],
-  },
-];
-
-// 全局路由和通配符路由
-const GLOBAL_ROUTES = [
-  {
-    path: '/',
-    redirect: '/crown', // 默认重定向，可以根据动态路由调整
-  },
-  {
-    component: '404',
-    path: '/*',
-  },
-];
+// 注意：静态路由现在在 config/routes.ts 中定义
+// 这里只保留动态路由相关的工具函数
 
 /**
  * 将API路由转换为UmiJS路由格式
@@ -150,52 +43,12 @@ function transformApiRouteToUmiRoute(apiRoute: API.AdminRoute): any {
 }
 
 /**
- * 获取完整的路由配置（内置路由 + 动态路由）
+ * 获取动态路由配置（已废弃）
+ * 注意：现在动态路由通过 DynamicRoute 组件在运行时处理，不再需要这个函数
+ * @deprecated 使用 getRouteAndMenuData() 替代
  */
 export async function getCompleteRoutes(): Promise<any[]> {
-  try {
-    // 获取动态路由
-    const response = await getRouteList({
-      skipErrorHandler: true,
-    });
-
-    let dynamicRoutes: any[] = [];
-    let defaultRedirectPath = '/crown'; // 默认值
-
-    if (response.code === 0 && response.data && response.data.length > 0) {
-      // 转换API路由为UmiJS路由格式
-      dynamicRoutes = response.data.map(transformApiRouteToUmiRoute);
-
-      // 更新默认重定向路径为第一个动态路由
-      defaultRedirectPath = response.data[0].path;
-    }
-
-    // 更新默认重定向
-    const globalRoutesWithRedirect = GLOBAL_ROUTES.map((route) => {
-      if (route.path === '/' && route.redirect) {
-        return { ...route, redirect: defaultRedirectPath };
-      }
-      return route;
-    });
-
-    // 合并路由：内置路由 + 动态路由 + 全局路由
-    const completeRoutes = [
-      ...BUILT_IN_ROUTES,
-      ...dynamicRoutes,
-      ...globalRoutesWithRedirect,
-    ];
-
-    console.log('Complete routes generated:', completeRoutes);
-    return completeRoutes;
-  } catch (error) {
-    console.error(
-      'Failed to fetch dynamic routes, using built-in routes only:',
-      error,
-    );
-
-    // 如果获取动态路由失败，只使用内置路由
-    return [...BUILT_IN_ROUTES, ...GLOBAL_ROUTES];
-  }
+  return [];
 }
 
 /**

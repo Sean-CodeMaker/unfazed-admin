@@ -27,11 +27,14 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
       const response = await getModelDesc(toolName);
       if (response?.code === 0) {
         setToolDesc(response.data as API.AdminToolSerializeModel);
+      } else {
+        console.error('ModelCustom: getModelDesc failed:', response);
       }
       return response;
     },
     {
       manual: false,
+      refreshDeps: [toolName], // 当 toolName 变化时重新请求
     },
   );
 
