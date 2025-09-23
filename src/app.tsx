@@ -17,7 +17,7 @@ import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.CI;
-const loginPath = '/admin/user/login';
+const loginPath = '/user/login';
 
 // 路由和图标转换函数已移动到 routeManager.ts 中
 

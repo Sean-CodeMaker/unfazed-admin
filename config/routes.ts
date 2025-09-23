@@ -162,6 +162,14 @@ export default [
     redirect: '/LogEntryAdmin',
   },
   {
+    path: '/crown',
+    component: './DynamicRoute',
+  },
+  {
+    path: '/tools',
+    component: './DynamicRoute',
+  },
+  {
     component: '404',
     path: '/*',
   },
