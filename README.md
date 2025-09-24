@@ -8,24 +8,24 @@
 
 #### 下载 admin 静态文件
 
-- 在[Unfazed Admin Release](https://github.com/unfazed-eco/unfazed-admin/releases)页面获取最新的静态文件
-- 把文件解压，并修改文件名（例如：`frontend`），然后把静态文件到项目路径下（例如：`UnfazedProject/src`）
+- 在 [Unfazed Admin Release](https://github.com/unfazed-eco/unfazed-admin/releases) 页面获取最新的静态文件
+- 把文件解压，并修改文件名（例如：`frontend`），然后把静态文件放到项目路径下（例如：`UnfazedProject/src`）
 
 #### 配置静态文件路由
 
-- 打开 `UnfazedProject/src/backend/routes.py`,在 跟路由 添加以下配置
-  - 地址 不做强制要求，请根据实际路径配置
+- 打开 `UnfazedProject/src/backend/routes.py`，在根路由添加以下配置
+  - 地址不做强制要求，请根据实际路径配置
   ```python
-   static("/admin", directory="/var/www/src/frontend/", html=True)
+  static("/admin", directory="/var/www/src/frontend/", html=True)
   ```
 
 #### 如何访问
 
-- 把 unfazed 服务拉起来之后，再浏览器访问 http://domain/admin/ 即可以访问
+- 把 Unfazed 服务启动后，在浏览器访问 http://domain/admin/ 即可访问
 
-#### 如何配置动态路由，请查看 Unfazed Admin 部分的文档(待更新)
+#### 如何配置动态路由，请查看 Unfazed Admin 部分的文档（待更新）
 
-#### 如何修改 website name / logo,请查看 Unfazed Admin 部分的文档(待更新)
+#### 如何修改 website name / logo，请查看 Unfazed Admin 部分的文档（待更新）
 
 ## 如何二次开发
 
@@ -70,6 +70,8 @@ src/
 ### 添加新页面
 
 1. 在 `src/pages/` 目录下创建新的页面组件
+2. 在 `config/routes.ts` 中添加路由配置
+3. 如需权限控制，在 `src/access.ts` 中配置权限
 
 ### 添加新接口
 
