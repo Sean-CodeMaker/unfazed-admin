@@ -10,31 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1️⃣ 拉取代码，包含 tag
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0   # 获取完整历史，保证 tag 可用
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Lint
       - name: Run linting
         run: npm run lint
 
-      # 5️⃣ Build
       - name: Build project
         run: npm run build
 
-      # 6️⃣ 确认 build 输出目录存在
       - name: Verify build output
         run: |
           if [ ! -d dist ]; then
@@ -42,12 +36,10 @@ jobs:
             exit 1
           fi
 
-      # 7️⃣ 打包 build 产物
       - name: Create release archive
         run: |
           tar -czf unfazed-admin-${{ github.ref_name }}.tar.gz -C dist .
 
-      # 8️⃣ 创建 GitHub Release 并上传
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
