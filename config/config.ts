@@ -41,7 +41,7 @@ export default defineConfig({
    * @description 设置构建输出目录，与 publicPath 保持一致
    * @doc https://umijs.org/docs/api/config#outputpath
    */
-  outputPath: `dist${PUBLIC_PATH}`,
+  outputPath: `dist`,
   /**
    * @name 兼容性设置
    * @description 设置 ie11 不一定完美兼容，需要检查自己使用的所有依赖
