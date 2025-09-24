@@ -16,14 +16,14 @@ jobs:
         with:
           fetch-depth: 0   # 获取完整历史，保证 tag 可用
 
-      # 2️⃣ 设置 Node.js
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: 'none'
 
-      # 3️⃣ 安装依赖
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm install
 
