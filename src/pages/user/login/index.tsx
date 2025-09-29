@@ -16,7 +16,7 @@ import { createStyles } from 'antd-style';
 import React, { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
-import { getAdminSettings, getOAuthRedirectUrl, login } from '@/services/api';
+import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
 
 import Settings from '../../../../config/defaultSettings';
@@ -62,26 +62,20 @@ const ActionIcons: React.FC<{
 }> = ({ authPlugins }) => {
   const { styles: _styles } = useStyles();
 
-  const handleOAuthLogin = async (platform: string) => {
+  const handleOAuthLogin = (platform: string) => {
     try {
-      // 在跳转前，先将platform存储到localStorage
       localStorage.setItem('oauth_platform', platform);
-
-      // 先请求API获取OAuth跳转链接
-      const response = await getOAuthRedirectUrl(platform);
-      if (response.code === 0 && response.data?.redirect_url) {
-        // 跳转到第三方OAuth页面
-        window.location.href = response.data.redirect_url;
-      } else {
-        console.error('Failed to get OAuth redirect URL:', response.message);
-        // 失败时清除localStorage
-        localStorage.removeItem('oauth_platform');
-      }
-    } catch (error) {
-      console.error('OAuth redirect error:', error);
-      // 失败时清除localStorage
-      localStorage.removeItem('oauth_platform');
+    } catch (storageError) {
+      console.warn(
+        'Failed to persist oauth platform to localStorage:',
+        storageError,
+      );
     }
+
+    // 直接跳转到后端重定向接口，避免XHR重定向触发跨域错误
+    window.location.href = `/api/auth/oauth-login-redirect?platform=${encodeURIComponent(
+      platform,
+    )}`;
   };
 
   // 如果没有OAuth插件数据，不渲染任何内容

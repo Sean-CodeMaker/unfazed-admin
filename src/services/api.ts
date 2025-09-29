@@ -13,19 +13,6 @@ export async function outLogin(platform?: string, options?: { [key: string]: any
     });
 }
 
-/** OAuth登录重定向接口 GET /api/auth/oauth-redirect-login */
-export async function getOAuthRedirectUrl(platform: string) {
-    return request<{
-        code: number;
-        message: string;
-        data: {
-            redirect_url: string;
-        };
-    }>(`/api/auth/oauth-login-redirect?platform=${encodeURIComponent(platform)}`, {
-        method: 'GET',
-    });
-}
-
 /** 获取管理员设置 GET /api/admin/settings */
 export async function getAdminSettings(options?: { [key: string]: any }) {
     return request<{
