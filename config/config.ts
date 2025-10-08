@@ -1,7 +1,7 @@
 // https://umijs.org/config/
 
+import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
-import { join } from 'path';
 import { PUBLIC_PATH } from './constants';
 import defaultSettings from './defaultSettings';
 import proxy from './proxy';
