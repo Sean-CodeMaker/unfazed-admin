@@ -18,7 +18,7 @@ import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
 import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
-
+import { PATH_PREFIX } from '../../../../config/constants';
 import Settings from '../../../../config/defaultSettings';
 
 const useStyles = createStyles(({ token }) => {
@@ -281,7 +281,7 @@ const Login: React.FC = () => {
         await updateUserInfoAndSettings(msg.data, values.platform || 'default');
 
         const urlParams = new URL(window.location.href).searchParams;
-        window.location.href = urlParams.get('redirect') || '/admin/';
+        window.location.href = urlParams.get('redirect') || `/${PATH_PREFIX}/`;
         return;
       }
       console.log(msg);

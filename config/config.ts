@@ -1,10 +1,10 @@
 // https://umijs.org/config/
 
-import { join } from 'node:path';
 import { defineConfig } from '@umijs/max';
+import { join } from 'path';
+import { PUBLIC_PATH } from './constants';
 import defaultSettings from './defaultSettings';
 import proxy from './proxy';
-
 import routes from './routes';
 
 const { REACT_APP_ENV = 'dev' } = process.env;
@@ -14,8 +14,6 @@ const { REACT_APP_ENV = 'dev' } = process.env;
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
  */
-const PUBLIC_PATH: string = '/admin/';
-
 export default defineConfig({
   /**
    * @name 开启 hash 模式

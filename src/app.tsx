@@ -12,6 +12,7 @@ import { getRouteAndMenuData } from '@/utils/routeManager';
 import '@ant-design/v5-patch-for-react-19';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
+import { PATH_PREFIX } from '../config/constants';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 
@@ -47,8 +48,8 @@ export async function getInitialState(): Promise<{
     if (
       ![
         loginPath,
-        '/admin/user/register',
-        '/admin/user/register-result',
+        `/${PATH_PREFIX}/user/register`,
+        `/${PATH_PREFIX}/user/register-result`,
       ].includes(location.pathname)
     ) {
       history.push(loginPath);
@@ -127,9 +128,9 @@ export async function getInitialState(): Promise<{
   if (
     ![
       loginPath,
-      '/admin/user/register',
-      '/admin/user/register-result',
-      '/admin/oauth/login',
+      `/${PATH_PREFIX}/user/register`,
+      `/${PATH_PREFIX}/user/register-result`,
+      `/${PATH_PREFIX}/oauth/login`,
     ].includes(location.pathname)
   ) {
     const currentUser = await fetchUserInfo();
@@ -191,7 +192,10 @@ export const layout: RunTimeLayoutConfig = ({
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
-      if (location.pathname === '/' || location.pathname === '/admin') {
+      if (
+        location.pathname === '/' ||
+        location.pathname === `/${PATH_PREFIX}`
+      ) {
         const getFirst = (routes: API.AdminRoute[] = []): string | null => {
           for (const r of routes) {
             if (r.routes?.length) {

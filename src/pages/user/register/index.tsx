@@ -15,6 +15,7 @@ import type { Store } from 'antd/es/form/interface';
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 import { register } from '@/services/api';
+import { PATH_PREFIX } from '../../../../config/constants';
 import useStyles from './styles';
 
 export interface StateType {
@@ -314,7 +315,7 @@ const Register: FC = () => {
             >
               <span>注册</span>
             </Button>
-            <Link to="/admin/user/login">
+            <Link to={`/${PATH_PREFIX}/user/login`}>
               <span>使用已有账户登录</span>
             </Link>
           </div>
