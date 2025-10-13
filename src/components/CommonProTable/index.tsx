@@ -104,7 +104,12 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
             column.valueType = 'dateTime';
             column.render = (_, record) =>
               record[fieldName]
-                ? dayjs(record[fieldName]).format('YYYY-MM-DD HH:mm:ss')
+                ? dayjs(
+                    typeof record[fieldName] === 'number' &&
+                      `${record[fieldName]}`.length === 10
+                      ? record[fieldName] * 1000
+                      : record[fieldName],
+                  ).format('YYYY-MM-DD HH:mm:ss')
                 : '-';
             break;
           case 'TimeField':
