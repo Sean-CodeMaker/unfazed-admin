@@ -1,29 +1,22 @@
-
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 
 // 扩展 LayoutSettings 以包含我们的自定义字段
 interface ExtendedLayoutSettings extends LayoutSettings {
   showWatermark?: boolean;
 }
+
 import { SettingDrawer } from '@ant-design/pro-components';
-import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
-import { history } from '@umijs/max';
-import React from 'react';
-import {
-  AvatarDropdown,
-  AvatarName,
-  Footer,
-  SelectLang,
-  Question,
-} from '@/components';
+import { AvatarDropdown, AvatarName, Footer, SelectLang } from '@/components';
 import { getAdminSettings } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
+import '@ant-design/v5-patch-for-react-19';
+import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import { history } from '@umijs/max';
+import { PATH_PREFIX } from '../config/constants';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import '@ant-design/v5-patch-for-react-19';
 
-const isDev =
-  process.env.NODE_ENV === 'development' || process.env.CI;
+const isDev = process.env.NODE_ENV === 'development' || process.env.CI;
 const loginPath = '/user/login';
 
 // 路由和图标转换函数已移动到 routeManager.ts 中
@@ -37,7 +30,7 @@ export async function getInitialState(): Promise<{
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
   menuData?: any[];
-  routeList?: API.AdminRoute[];  // 添加原始路由数据
+  routeList?: API.AdminRoute[]; // 添加原始路由数据
 }> {
   const fetchUserInfo = async () => {
     try {
@@ -52,7 +45,13 @@ export async function getInitialState(): Promise<{
 
     // 如果没有用户信息且不在登录相关页面，才跳转到登录页
     const { location } = history;
-    if (![loginPath, '/user/register', '/user/register-result'].includes(location.pathname)) {
+    if (
+      ![
+        loginPath,
+        `/${PATH_PREFIX}/user/register`,
+        `/${PATH_PREFIX}/user/register-result`,
+      ].includes(location.pathname)
+    ) {
       history.push(loginPath);
     }
     return undefined;
@@ -98,7 +97,10 @@ export async function getInitialState(): Promise<{
 
         // 存储应用级别配置到localStorage
         try {
-          localStorage.setItem('unfazed_app_settings', JSON.stringify(appSettings));
+          localStorage.setItem(
+            'unfazed_app_settings',
+            JSON.stringify(appSettings),
+          );
         } catch (error) {
           console.warn('Failed to save app settings to localStorage:', error);
         }
@@ -124,9 +126,12 @@ export async function getInitialState(): Promise<{
   // 如果不是登录相关页面，检查用户登录状态
   const { location } = history;
   if (
-    ![loginPath, '/user/register', '/user/register-result', '/oauth/login'].includes(
-      location.pathname,
-    )
+    ![
+      loginPath,
+      `/${PATH_PREFIX}/user/register`,
+      `/${PATH_PREFIX}/user/register-result`,
+      `/${PATH_PREFIX}/oauth/login`,
+    ].includes(location.pathname)
   ) {
     const currentUser = await fetchUserInfo();
     if (currentUser) {
@@ -164,10 +169,7 @@ export const layout: RunTimeLayoutConfig = ({
   setInitialState,
 }) => {
   return {
-    actionsRender: () => [
-      <Question key="question" />,
-      <SelectLang key="selectLang" />,
-    ],
+    actionsRender: () => [<SelectLang key="selectLang" />],
     avatarProps: {
       src: initialState?.currentUser?.avatar,
       title: <AvatarName />,
@@ -181,12 +183,34 @@ export const layout: RunTimeLayoutConfig = ({
         return initialState?.menuData || [];
       },
     },
-    waterMarkProps: initialState?.settings?.showWatermark !== false ? {
-      content: initialState?.currentUser?.name,
-    } : undefined,
+    waterMarkProps:
+      initialState?.settings?.showWatermark !== false
+        ? {
+            content: initialState?.currentUser?.name,
+          }
+        : undefined,
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
+      if (
+        location.pathname === '/' ||
+        location.pathname === `/${PATH_PREFIX}`
+      ) {
+        const getFirst = (routes: API.AdminRoute[] = []): string | null => {
+          for (const r of routes) {
+            if (r.routes?.length) {
+              const child = getFirst(r.routes);
+              if (child) return child;
+            } else if (r.path && r.component) {
+              return r.path;
+            }
+          }
+          return null;
+        };
+        const first = getFirst(initialState?.routeList || []);
+        if (first) history.replace(first);
+        return;
+      }
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);

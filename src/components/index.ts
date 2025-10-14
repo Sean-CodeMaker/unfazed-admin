@@ -5,15 +5,28 @@
 /**
  * 布局组件
  */
-import Footer from './Footer';
-import { Question, SelectLang } from './RightContent';
-import { AvatarDropdown, AvatarName } from './RightContent/AvatarDropdown';
-import ModelList from './ModelList';
-import ModelDetail from './ModelDetail';
-import ModelAdmin from './ModelAdmin';
-import CommonProTable from './CommonProTable';
-import ModelCustom from './ModelCustom';
-import EditorJS from './EditorJS';
-import ProFormEditorJS from './ProFormEditorJS';
 
-export { AvatarDropdown, AvatarName, Footer, Question, SelectLang, ModelList, ModelDetail, ModelAdmin, CommonProTable, ModelCustom, EditorJS, ProFormEditorJS };
+import CommonProTable from './CommonProTable';
+import EditorJS from './EditorJS';
+import Footer from './Footer';
+import ModelAdmin from './ModelAdmin';
+import ModelCustom from './ModelCustom';
+import ModelDetail from './ModelDetail';
+import ModelList from './ModelList';
+import ProFormEditorJS from './ProFormEditorJS';
+import { SelectLang } from './RightContent';
+import { AvatarDropdown, AvatarName } from './RightContent/AvatarDropdown';
+
+export {
+  AvatarDropdown,
+  AvatarName,
+  Footer,
+  SelectLang,
+  ModelList,
+  ModelDetail,
+  ModelAdmin,
+  CommonProTable,
+  ModelCustom,
+  EditorJS,
+  ProFormEditorJS,
+};

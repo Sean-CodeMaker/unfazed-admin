@@ -1,6 +1,7 @@
 // @ts-ignore
 /* eslint-disable */
 import { request } from '@umijs/max';
+import { PATH_PREFIX } from '../../config/constants';
 
 // 注释：currentUser API 已删除，改为使用本地存储的用户信息
 
@@ -13,26 +14,13 @@ export async function outLogin(platform?: string, options?: { [key: string]: any
     });
 }
 
-/** OAuth登录重定向接口 GET /api/auth/oauth-redirect-login */
-export async function getOAuthRedirectUrl(platform: string) {
-    return request<{
-        code: number;
-        message: string;
-        data: {
-            redirect_url: string;
-        };
-    }>(`/api/auth/oauth-redirect-login?platform=${encodeURIComponent(platform)}`, {
-        method: 'GET',
-    });
-}
-
-/** 获取管理员设置 GET /api/admin/settings */
+/** 获取管理员设置 GET /api/${PATH_PREFIX}/settings */
 export async function getAdminSettings(options?: { [key: string]: any }) {
     return request<{
         code: number;
         message: string;
         data: API.AdminSettings;
-    }>('/api/admin/settings', {
+    }>(`/api/${PATH_PREFIX}/settings`, {
         method: 'GET',
         ...(options || {}),
     });
@@ -78,17 +66,17 @@ export async function register(body: API.RegisterParams, options?: { [key: strin
     });
 }
 
-/** 获取路由列表 GET /api/admin/route-list */
+/** 获取路由列表 GET /api/${PATH_PREFIX}/route-list */
 export async function getRouteList(options?: { [key: string]: any }) {
-    return request<API.RouteListResponse>('/api/admin/route-list', {
+    return request<API.RouteListResponse>(`/api/${PATH_PREFIX}/route-list`, {
         method: 'GET',
         ...(options || {}),
     });
 }
 
-/** 获取模型描述 POST /api/admin/model-desc */
+/** 获取模型描述 POST /api/${PATH_PREFIX}/model-desc */
 export async function getModelDesc(modelName: string, options?: { [key: string]: any }) {
-    return request<API.ModelDescResponse>('/api/admin/model-desc', {
+    return request<API.ModelDescResponse>(`/api/${PATH_PREFIX}/model-desc`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -100,9 +88,9 @@ export async function getModelDesc(modelName: string, options?: { [key: string]:
     });
 }
 
-/** 获取模型数据 POST /api/admin/model-data */
+/** 获取模型数据 POST /api/${PATH_PREFIX}/model-data */
 export async function getModelData(params: API.ModelDataRequest, options?: { [key: string]: any }) {
-    return request<API.ModelDataResponse>('/api/admin/model-data', {
+    return request<API.ModelDataResponse>(`/api/${PATH_PREFIX}/model-data`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -112,9 +100,9 @@ export async function getModelData(params: API.ModelDataRequest, options?: { [ke
     });
 }
 
-/** 获取模型内联信息 POST /api/admin/model-inlines */
+/** 获取模型内联信息 POST /api/${PATH_PREFIX}/model-inlines */
 export async function getModelInlines(params: API.ModelInlinesRequest, options?: { [key: string]: any }) {
-    return request<API.ModelInlinesResponse>('/api/admin/model-inlines', {
+    return request<API.ModelInlinesResponse>(`/api/${PATH_PREFIX}/model-inlines`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -124,9 +112,9 @@ export async function getModelInlines(params: API.ModelInlinesRequest, options?:
     });
 }
 
-/** 执行模型操作 POST /api/admin/model-action */
+/** 执行模型操作 POST /api/${PATH_PREFIX}/model-action */
 export async function executeModelAction(params: API.ModelActionRequest, options?: { [key: string]: any }) {
-    return request<any>('/api/admin/model-action', {
+    return request<any>(`/api/${PATH_PREFIX}/model-action`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -136,9 +124,9 @@ export async function executeModelAction(params: API.ModelActionRequest, options
     });
 }
 
-/** 保存模型数据 POST /api/admin/model-save */
+/** 保存模型数据 POST /api/${PATH_PREFIX}/model-save */
 export async function saveModelData(params: API.ModelSaveRequest, options?: { [key: string]: any }) {
-    return request<any>('/api/admin/model-save', {
+    return request<any>(`/api/${PATH_PREFIX}/model-save`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -148,9 +136,9 @@ export async function saveModelData(params: API.ModelSaveRequest, options?: { [k
     });
 }
 
-/** 删除模型数据 POST /api/admin/model-delete */
+/** 删除模型数据 POST /api/${PATH_PREFIX}/model-delete */
 export async function deleteModelData(params: API.ModelDeleteRequest, options?: { [key: string]: any }) {
-    return request<any>('/api/admin/model-delete', {
+    return request<any>(`/api/${PATH_PREFIX}/model-delete`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

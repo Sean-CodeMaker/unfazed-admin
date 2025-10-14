@@ -1,0 +1,60 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 只在推送版本标签时触发
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 获取完整历史，保证 tag 可用
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Build project
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d dist ]; then
+            echo "Build failed: dist folder not found!"
+            exit 1
+          fi
+
+      - name: Create release archive
+        run: |
+          tar -czf unfazed-admin-${{ github.ref_name }}.tar.gz -C dist .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: unfazed-admin-${{ github.ref_name }}.tar.gz
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes in ${{ github.ref_name }}
+            
+            Built from commit: ${{ github.sha }}
+            
+            ### Installation
+            1. Download `unfazed-admin-${{ github.ref_name }}.tar.gz`
+            2. Extract to your web server directory
+            3. Configure your server to serve `/admin/` path with SPA fallback
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

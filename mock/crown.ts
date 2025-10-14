@@ -451,7 +451,7 @@ const crownInsuranceData = [
 const crownModelDesc = {
     fields: {
         id: {
-            type: 'IntegerField' as const,
+            field_type: 'IntegerField' as const,
             readonly: true,
             show: true,
             blank: false,
@@ -461,7 +461,7 @@ const crownModelDesc = {
             name: 'ID'
         },
         name: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -471,7 +471,7 @@ const crownModelDesc = {
             name: 'Name'
         },
         type: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -490,7 +490,7 @@ const crownModelDesc = {
             name: 'Type'
         },
         level: {
-            type: 'IntegerField' as const,
+            field_type: 'IntegerField' as const,
             readonly: false,
             show: false,
             blank: false,
@@ -508,7 +508,7 @@ const crownModelDesc = {
             name: 'Level'
         },
         price: {
-            type: 'FloatField' as const,
+            field_type: 'FloatField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -518,7 +518,7 @@ const crownModelDesc = {
             name: 'Price'
         },
         description: {
-            type: 'TextField' as const,
+            field_type: 'TextField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -528,7 +528,7 @@ const crownModelDesc = {
             name: 'Description'
         },
         is_active: {
-            type: 'BooleanField' as const,
+            field_type: 'BooleanField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -538,7 +538,7 @@ const crownModelDesc = {
             name: 'Active Status'
         },
         created_at: {
-            type: 'DatetimeField' as const,
+            field_type: 'DatetimeField' as const,
             readonly: true,
             show: true,
             blank: false,
@@ -548,7 +548,7 @@ const crownModelDesc = {
             name: 'Created At'
         },
         updated_at: {
-            type: 'DatetimeField' as const,
+            field_type: 'DatetimeField' as const,
             readonly: true,
             show: true,
             blank: false,
@@ -558,7 +558,7 @@ const crownModelDesc = {
             name: 'Updated At'
         },
         rich_description: {
-            type: 'EditorField' as const,
+            field_type: 'EditorField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -568,7 +568,7 @@ const crownModelDesc = {
             name: 'Rich Description'
         },
         image_url: {
-            type: 'ImageField' as const,
+            field_type: 'ImageField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -578,7 +578,7 @@ const crownModelDesc = {
             name: 'Crown Image'
         },
         owner: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -588,7 +588,7 @@ const crownModelDesc = {
             name: 'Owner'
         },
         weight: {
-            type: 'FloatField' as const,
+            field_type: 'FloatField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -598,7 +598,7 @@ const crownModelDesc = {
             name: 'Weight'
         },
         material: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -616,7 +616,7 @@ const crownModelDesc = {
             name: 'Material'
         },
         region: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -636,7 +636,7 @@ const crownModelDesc = {
             name: 'Region'
         },
         status: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -790,7 +790,7 @@ const crownModelDesc = {
         can_show_all: true,
         editable: true,
         list_per_page: 20,
-        list_search: ['name', 'type', 'owner', 'status'],
+        list_search: ['name', 'type', 'owner', 'status', 'created_at'],
         list_filter: ['type', 'level', 'material', 'region', 'status', 'is_active'],
         list_sort: ['id', 'name', 'price', 'level', 'created_at', 'updated_at'],
         list_order: ['-created_at'],
@@ -802,7 +802,7 @@ const crownModelDesc = {
 const userModelDesc = {
     fields: {
         id: {
-            type: 'IntegerField' as const,
+            field_type: 'IntegerField' as const,
             readonly: true,
             show: true,
             blank: false,
@@ -812,7 +812,7 @@ const userModelDesc = {
             name: 'ID'
         },
         username: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -822,7 +822,7 @@ const userModelDesc = {
             name: 'Username'
         },
         email: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -832,7 +832,7 @@ const userModelDesc = {
             name: 'Email'
         },
         first_name: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -842,7 +842,7 @@ const userModelDesc = {
             name: 'First Name'
         },
         last_name: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -852,7 +852,7 @@ const userModelDesc = {
             name: 'Last Name'
         },
         is_active: {
-            type: 'BooleanField' as const,
+            field_type: 'BooleanField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -862,7 +862,7 @@ const userModelDesc = {
             name: 'Active'
         },
         is_staff: {
-            type: 'BooleanField' as const,
+            field_type: 'BooleanField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -872,7 +872,7 @@ const userModelDesc = {
             name: 'Staff'
         },
         department: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: true,
@@ -887,7 +887,7 @@ const userModelDesc = {
             name: 'Department'
         },
         role: {
-            type: 'CharField' as const,
+            field_type: 'CharField' as const,
             readonly: false,
             show: true,
             blank: false,
@@ -1479,7 +1479,7 @@ export default {
                 data: {
                     fields: {
                         report_type: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1494,7 +1494,7 @@ export default {
                             name: 'Report Type'
                         },
                         start_date: {
-                            type: 'DateField' as const,
+                            field_type: 'DateField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1504,7 +1504,7 @@ export default {
                             name: 'Start Date'
                         },
                         end_date: {
-                            type: 'DateField' as const,
+                            field_type: 'DateField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1514,7 +1514,7 @@ export default {
                             name: 'End Date'
                         },
                         include_details: {
-                            type: 'BooleanField' as const,
+                            field_type: 'BooleanField' as const,
                             readonly: false,
                             show: true,
                             blank: true,
@@ -1524,7 +1524,7 @@ export default {
                             name: 'Include Details'
                         },
                         export_format: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1538,7 +1538,7 @@ export default {
                             name: 'Export Format'
                         },
                         email_recipients: {
-                            type: 'TextField' as const,
+                            field_type: 'TextField' as const,
                             readonly: false,
                             show: true,
                             blank: true,
@@ -1603,7 +1603,7 @@ export default {
                 data: {
                     fields: {
                         id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -1613,7 +1613,7 @@ export default {
                             name: 'ID'
                         },
                         crown_id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1623,7 +1623,7 @@ export default {
                             name: 'Crown ID'
                         },
                         event_type: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1642,7 +1642,7 @@ export default {
                             name: 'Event Type'
                         },
                         description: {
-                            type: 'TextField' as const,
+                            field_type: 'TextField' as const,
                             readonly: false,
                             show: true,
                             blank: true,
@@ -1652,7 +1652,7 @@ export default {
                             name: 'Description'
                         },
                         event_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -1662,7 +1662,7 @@ export default {
                             name: 'Event Date'
                         },
                         created_at: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -1672,7 +1672,7 @@ export default {
                             name: 'Created At'
                         },
                         updated_at: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -2002,7 +2002,7 @@ export default {
                 crown_history: {
                     fields: {
                         id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -2012,7 +2012,7 @@ export default {
                             name: 'ID'
                         },
                         event_type: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2031,7 +2031,7 @@ export default {
                             name: 'Event Type'
                         },
                         description: {
-                            type: 'TextField' as const,
+                            field_type: 'TextField' as const,
                             readonly: false,
                             show: true,
                             blank: true,
@@ -2041,7 +2041,7 @@ export default {
                             name: 'Description'
                         },
                         event_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2146,7 +2146,7 @@ export default {
                 crown_certificates: {
                     fields: {
                         id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -2156,7 +2156,7 @@ export default {
                             name: 'ID'
                         },
                         certificate_type: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2171,7 +2171,7 @@ export default {
                             name: 'Certificate Type'
                         },
                         issuer: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2181,7 +2181,7 @@ export default {
                             name: 'Issuer'
                         },
                         certificate_number: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2191,7 +2191,7 @@ export default {
                             name: 'Certificate Number'
                         },
                         issue_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2201,7 +2201,7 @@ export default {
                             name: 'Issue Date'
                         },
                         expiry_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: true,
@@ -2211,7 +2211,7 @@ export default {
                             name: 'Expiry Date'
                         },
                         status: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2253,7 +2253,7 @@ export default {
                 crown_insurance: {
                     fields: {
                         id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -2263,7 +2263,7 @@ export default {
                             name: 'ID'
                         },
                         policy_number: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2273,7 +2273,7 @@ export default {
                             name: 'Policy Number'
                         },
                         insurance_company: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2283,7 +2283,7 @@ export default {
                             name: 'Insurance Company'
                         },
                         coverage_amount: {
-                            type: 'FloatField' as const,
+                            field_type: 'FloatField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2293,7 +2293,7 @@ export default {
                             name: 'Coverage Amount'
                         },
                         premium_amount: {
-                            type: 'FloatField' as const,
+                            field_type: 'FloatField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2303,7 +2303,7 @@ export default {
                             name: 'Premium Amount'
                         },
                         start_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2313,7 +2313,7 @@ export default {
                             name: 'Start Date'
                         },
                         end_date: {
-                            type: 'DatetimeField' as const,
+                            field_type: 'DatetimeField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2323,7 +2323,7 @@ export default {
                             name: 'End Date'
                         },
                         policy_type: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2337,7 +2337,7 @@ export default {
                             name: 'Policy Type'
                         },
                         status: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2380,7 +2380,7 @@ export default {
                 crown_tags: {
                     fields: {
                         id: {
-                            type: 'IntegerField' as const,
+                            field_type: 'IntegerField' as const,
                             readonly: true,
                             show: true,
                             blank: false,
@@ -2390,7 +2390,7 @@ export default {
                             name: 'ID'
                         },
                         name: {
-                            type: 'CharField' as const,
+                            field_type: 'CharField' as const,
                             readonly: false,
                             show: true,
                             blank: false,
@@ -2400,7 +2400,7 @@ export default {
                             name: 'Name'
                         },
                         description: {
-                            type: 'TextField' as const,
+                            field_type: 'TextField' as const,
                             readonly: false,
                             show: true,
                             blank: true,

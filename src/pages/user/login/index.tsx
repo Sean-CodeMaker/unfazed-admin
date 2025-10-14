@@ -1,8 +1,4 @@
-import {
-  AlipayCircleOutlined,
-  LockOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import {
   LoginForm,
   ProFormCheckbox,
@@ -17,12 +13,12 @@ import {
 } from '@umijs/max';
 import { Alert, App, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
-import { login, getAdminSettings, getOAuthRedirectUrl } from '@/services/api';
+import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
-
+import { PATH_PREFIX } from '../../../../config/constants';
 import Settings from '../../../../config/defaultSettings';
 
 const useStyles = createStyles(({ token }) => {
@@ -61,29 +57,25 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
-const ActionIcons: React.FC<{ authPlugins: API.AdminSettings['authPlugins'] }> = ({ authPlugins }) => {
-  const { styles } = useStyles();
+const ActionIcons: React.FC<{
+  authPlugins: API.AdminSettings['authPlugins'];
+}> = ({ authPlugins }) => {
+  const { styles: _styles } = useStyles();
 
-  const handleOAuthLogin = async (platform: string) => {
+  const handleOAuthLogin = (platform: string) => {
     try {
-      // 在跳转前，先将platform存储到localStorage
       localStorage.setItem('oauth_platform', platform);
-
-      // 先请求API获取OAuth跳转链接
-      const response = await getOAuthRedirectUrl(platform);
-      if (response.code === 0 && response.data?.redirect_url) {
-        // 跳转到第三方OAuth页面
-        window.location.href = response.data.redirect_url;
-      } else {
-        console.error('Failed to get OAuth redirect URL:', response.message);
-        // 失败时清除localStorage
-        localStorage.removeItem('oauth_platform');
-      }
-    } catch (error) {
-      console.error('OAuth redirect error:', error);
-      // 失败时清除localStorage
-      localStorage.removeItem('oauth_platform');
+    } catch (storageError) {
+      console.warn(
+        'Failed to persist oauth platform to localStorage:',
+        storageError,
+      );
     }
+
+    // 直接跳转到后端重定向接口，避免XHR重定向触发跨域错误
+    window.location.href = `/api/auth/oauth-login-redirect?platform=${encodeURIComponent(
+      platform,
+    )}`;
   };
 
   // 如果没有OAuth插件数据，不渲染任何内容
@@ -108,7 +100,7 @@ const ActionIcons: React.FC<{ authPlugins: API.AdminSettings['authPlugins'] }> =
             backgroundColor: '#fff', // 添加白色背景，适配透明图标
             border: '1px solid #f0f0f0', // 添加淡边框，增强视觉效果
             padding: '2px', // 添加内边距，避免图标贴边
-            transition: 'all 0.3s ease' // 添加过渡动画
+            transition: 'all 0.3s ease', // 添加过渡动画
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
@@ -154,8 +146,12 @@ const LoginMessage: React.FC<{
 const Login: React.FC = () => {
   const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
-  const [authPlugins, setAuthPlugins] = useState<API.AdminSettings['authPlugins']>([]);
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const [authPlugins, setAuthPlugins] = useState<
+    API.AdminSettings['authPlugins']
+  >([]);
+  const [defaultLoginType, setDefaultLoginType] = useState<boolean>(false);
+  const { initialState: _initialState, setInitialState } =
+    useModel('@@initialState');
   const { styles } = useStyles();
   const { message } = App.useApp();
   const intl = useIntl();
@@ -175,8 +171,12 @@ const Login: React.FC = () => {
           skipErrorHandler: true,
         });
         if (response.code === 0 && response.data?.authPlugins) {
-          localStorage.setItem('authPlugins', JSON.stringify(response.data.authPlugins));
+          localStorage.setItem(
+            'authPlugins',
+            JSON.stringify(response.data.authPlugins),
+          );
           setAuthPlugins(response.data.authPlugins);
+          setDefaultLoginType(response.data.defaultLoginType);
         }
       } catch (error) {
         console.warn('Failed to fetch auth plugins:', error);
@@ -186,11 +186,17 @@ const Login: React.FC = () => {
     initAuthPlugins();
   }, []);
 
-  const updateUserInfoAndSettings = async (loginData: API.LoginResult['data'], platform?: string) => {
+  const updateUserInfoAndSettings = async (
+    loginData: API.LoginResult['data'],
+    platform?: string,
+  ) => {
     if (loginData) {
       // 转换登录返回的数据为 CurrentUser 格式
       const userInfo: API.CurrentUser = {
-        name: loginData.extra?.nickname || loginData.extra?.username || loginData.account,
+        name:
+          loginData.extra?.nickname ||
+          loginData.extra?.username ||
+          loginData.account,
         avatar: loginData.extra?.avatar,
         userid: loginData.account,
         email: loginData.email,
@@ -219,11 +225,16 @@ const Login: React.FC = () => {
 
           // 保存OAuth认证插件信息到本地存储
           if (response.data?.authPlugins) {
-            localStorage.setItem('authPlugins', JSON.stringify(response.data.authPlugins));
+            localStorage.setItem(
+              'authPlugins',
+              JSON.stringify(response.data.authPlugins),
+            );
           }
         }
       } catch (_error) {
-        console.warn('Failed to fetch settings after login, using default settings');
+        console.warn(
+          'Failed to fetch settings after login, using default settings',
+        );
       }
 
       // 获取动态路由和菜单数据（只有登录用户才能获取）
@@ -270,7 +281,7 @@ const Login: React.FC = () => {
         await updateUserInfoAndSettings(msg.data, values.platform || 'default');
 
         const urlParams = new URL(window.location.href).searchParams;
-        window.location.href = urlParams.get('redirect') || '/';
+        window.location.href = urlParams.get('redirect') || `/${PATH_PREFIX}/`;
         return;
       }
       console.log(msg);
@@ -278,7 +289,7 @@ const Login: React.FC = () => {
       setUserLoginState({
         status: 'error',
         type: type,
-        message: msg.message || '登录失败'
+        message: msg.message || '登录失败',
       });
     } catch (error) {
       const defaultLoginFailureMessage = intl.formatMessage({
@@ -314,7 +325,12 @@ const Login: React.FC = () => {
             minWidth: 280,
             maxWidth: '75vw',
           }}
-          logo={<img alt="logo" src="https://unfazed-eco.github.io/images/uz-logo.png" />}
+          logo={
+            <img
+              alt="logo"
+              src="https://unfazed-eco.github.io/images/uz-logo.png"
+            />
+          }
           title="Unfazed Admin"
           subTitle={intl.formatMessage({
             id: 'pages.layouts.userLayout.title',
@@ -323,18 +339,31 @@ const Login: React.FC = () => {
             autoLogin: true,
           }}
           actions={
-            authPlugins && authPlugins.length > 0 ? [
-              <FormattedMessage
-                key="loginWith"
-                id="pages.login.loginWith"
-                defaultMessage="其他登录方式"
-              />,
-              <ActionIcons key="icons" authPlugins={authPlugins} />,
-            ] : []
+            authPlugins && authPlugins.length > 0
+              ? [
+                  <div
+                    key="oauth-actions"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center', // 垂直居中
+                      gap: 4, // 控制文字和图标之间的间距
+                    }}
+                  >
+                    {/* biome-ignore lint/correctness/useUniqueElementIds: react-intl id 不是 DOM id */}
+                    <FormattedMessage
+                      key="loginWith"
+                      id="pages.login.loginWith"
+                      defaultMessage="其他登录方式"
+                    />
+                    <ActionIcons key="icons" authPlugins={authPlugins} />
+                  </div>,
+                ]
+              : []
           }
           onFinish={async (values) => {
             await handleSubmit(values as API.LoginParams);
           }}
+          submitter={defaultLoginType ? undefined : false}
         >
           <Tabs
             activeKey={type}
@@ -351,15 +380,17 @@ const Login: React.FC = () => {
             ]}
           />
 
-          {status === 'error' && loginType === 'account' && (
-            <LoginMessage
-              content={intl.formatMessage({
-                id: 'pages.login.accountLogin.errorMessage',
-                defaultMessage: '账户或密码错误(admin/ant.design)',
-              })}
-            />
-          )}
-          {type === 'account' && (
+          {defaultLoginType &&
+            status === 'error' &&
+            loginType === 'account' && (
+              <LoginMessage
+                content={intl.formatMessage({
+                  id: 'pages.login.accountLogin.errorMessage',
+                  defaultMessage: '账户或密码错误(admin/ant.design)',
+                })}
+              />
+            )}
+          {defaultLoginType && type === 'account' && (
             <>
               <ProFormText
                 name="username"
@@ -375,6 +406,7 @@ const Login: React.FC = () => {
                   {
                     required: true,
                     message: (
+                      // biome-ignore lint/correctness/useUniqueElementIds: react-intl id 不是 DOM id
                       <FormattedMessage
                         id="pages.login.username.required"
                         defaultMessage="请输入用户名!"
@@ -397,6 +429,7 @@ const Login: React.FC = () => {
                   {
                     required: true,
                     message: (
+                      // biome-ignore lint/correctness/useUniqueElementIds: react-intl id 不是 DOM id
                       <FormattedMessage
                         id="pages.login.password.required"
                         defaultMessage="请输入密码！"
@@ -407,29 +440,32 @@ const Login: React.FC = () => {
               />
             </>
           )}
-
-          <div
-            style={{
-              marginBottom: 24,
-            }}
-          >
-            <ProFormCheckbox noStyle name="autoLogin">
-              <FormattedMessage
-                id="pages.login.rememberMe"
-                defaultMessage="自动登录"
-              />
-            </ProFormCheckbox>
-            <a
+          {defaultLoginType && (
+            <div
               style={{
-                float: 'right',
+                marginBottom: 24,
               }}
             >
-              <FormattedMessage
-                id="pages.login.forgotPassword"
-                defaultMessage="忘记密码"
-              />
-            </a>
-          </div>
+              <ProFormCheckbox noStyle name="autoLogin">
+                {/* biome-ignore lint/correctness/useUniqueElementIds: react-intl id 不是 DOM id */}
+                <FormattedMessage
+                  id="pages.login.rememberMe"
+                  defaultMessage="自动登录"
+                />
+              </ProFormCheckbox>
+              <a
+                style={{
+                  float: 'right',
+                }}
+              >
+                {/* biome-ignore lint/correctness/useUniqueElementIds: react-intl id 不是 DOM id */}
+                <FormattedMessage
+                  id="pages.login.forgotPassword"
+                  defaultMessage="忘记密码"
+                />
+              </a>
+            </div>
+          )}
         </LoginForm>
       </div>
       <Footer />
