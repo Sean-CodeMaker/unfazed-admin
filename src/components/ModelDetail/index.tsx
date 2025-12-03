@@ -152,9 +152,11 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     record: Record<string, any>,
   ) => {
     try {
+      const payload = { ...record };
+
       const response = await saveModelData({
         name: inlineName,
-        data: record,
+        data: payload,
       });
 
       if (response?.code === 0) {
@@ -163,7 +165,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
         setInlineData((prev) => ({
           ...prev,
           [inlineName]: (prev[inlineName] || []).map((item) =>
-            item.id === record.id ? { ...item, ...record } : item,
+            item.id === payload.id ? { ...item, ...payload } : item,
           ),
         }));
         // 退出编辑模式

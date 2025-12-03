@@ -1,13 +1,7 @@
-import Code from '@editorjs/code';
-import EditorJS, { type OutputData } from '@editorjs/editorjs';
-import Header from '@editorjs/header';
-import InlineCode from '@editorjs/inline-code';
-import LinkTool from '@editorjs/link';
-import List from '@editorjs/list';
-import Marker from '@editorjs/marker';
-import Paragraph from '@editorjs/paragraph';
-import Quote from '@editorjs/quote';
-import SimpleImage from '@editorjs/simple-image';
+/* eslint-disable import/no-unresolved */
+
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
 import React, {
   forwardRef,
   useEffect,
@@ -15,145 +9,167 @@ import React, {
   useRef,
 } from 'react';
 
-export interface EditorJSProps {
-  /** 编辑器的初始数据 */
-  data?: OutputData;
-  /** 数据变化回调 */
-  onChange?: (data: OutputData) => void;
-  /** 编辑器配置 */
-  config?: {
-    /** 是否只读 */
-    readOnly?: boolean;
-    /** 占位符文本 */
-    placeholder?: string;
-    /** 最小高度 */
-    minHeight?: number;
+type CKEditorInstance = {
+  getData: () => string;
+  setData: (data: string) => void;
+  enableReadOnlyMode: (source: string) => void;
+  disableReadOnlyMode: (source: string) => void;
+  destroy: () => Promise<void>;
+  ui: {
+    view: {
+      editable?: {
+        element?: HTMLElement;
+      };
+    };
   };
-  /** 自定义样式 */
+};
+
+export interface EditorJSProps {
+  /** HTML content */
+  value?: string;
+  /** Change callback */
+  onChange?: (value: string) => void;
+  /** CKEditor configuration */
+  config?: Record<string, any>;
+  /** Readonly flag */
+  readOnly?: boolean;
+  /** Minimum editable height */
+  height?: number;
+  /** Custom wrapper style */
   style?: React.CSSProperties;
-  /** 自定义类名 */
+  /** Custom wrapper class */
   className?: string;
 }
 
 export interface EditorJSRef {
-  /** 获取编辑器数据 */
-  save: () => Promise<OutputData>;
-  /** 清空编辑器 */
+  /** Return current HTML */
+  save: () => Promise<string>;
+  /** Clear editor content */
   clear: () => Promise<void>;
-  /** 销毁编辑器实例 */
+  /** Destroy editor instance */
   destroy: () => Promise<void>;
-  /** 获取原始编辑器实例 */
-  getEditor: () => EditorJS | null;
+  /** Access underlying editor */
+  getEditor: () => CKEditorInstance | null;
+  /** Manually set content */
+  setData: (value: string) => void;
 }
 
 const EditorJSComponent = forwardRef<EditorJSRef, EditorJSProps>(
-  ({ data, onChange, config = {}, style = {}, className = '' }, ref) => {
-    const editorRef = useRef<EditorJS | null>(null);
-    const holderRef = useRef<HTMLDivElement>(null);
-    const isInitialized = useRef(false);
+  (
+    {
+      value = '',
+      onChange,
+      config = {},
+      readOnly = false,
+      height = 200,
+      style = {},
+      className = '',
+    },
+    ref,
+  ) => {
+    const editorRef = useRef<CKEditorInstance | null>(null);
+    const latestValueRef = useRef<string>(value);
 
-    // 配置 Editor.js 工具
-    const tools = {
-      header: Header,
-      paragraph: Paragraph,
-      list: List,
-      quote: Quote,
-      code: Code,
-      linkTool: LinkTool,
-      image: SimpleImage,
-      marker: Marker,
-      inlineCode: InlineCode,
-    } as any;
-
-    // 初始化编辑器
-    const initEditor = async () => {
-      if (!holderRef.current || isInitialized.current) return;
-
-      try {
-        editorRef.current = new EditorJS({
-          holder: holderRef.current,
-          tools,
-          data: data || undefined,
-          readOnly: config.readOnly || false,
-          placeholder: config.placeholder || "Let's write an awesome story!",
-          minHeight: config.minHeight || 200,
-          onChange: async (api, _event) => {
-            if (onChange) {
-              try {
-                const outputData = await api.saver.save();
-                onChange(outputData);
-              } catch (error) {
-                console.error('Error saving editor data:', error);
-              }
-            }
-          },
-          onReady: () => {
-            console.log('Editor.js is ready to work!');
-          },
-        });
-
-        await editorRef.current.isReady;
-        isInitialized.current = true;
-      } catch (error) {
-        console.error('Error initializing Editor.js:', error);
+    const applyHeight = (editor: CKEditorInstance | null) => {
+      if (!editor) return;
+      const editableElement = editor.ui.view.editable?.element as
+        | HTMLElement
+        | undefined;
+      if (editableElement) {
+        editableElement.style.minHeight = `${height}px`;
       }
     };
 
-    // 暴露给父组件的方法
+    const toggleReadOnly = (
+      editor: CKEditorInstance | null,
+      isReadOnly: boolean,
+    ) => {
+      if (!editor) return;
+      if (isReadOnly) {
+        editor.enableReadOnlyMode('form-readonly');
+      } else {
+        editor.disableReadOnlyMode('form-readonly');
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       save: async () => {
-        if (!editorRef.current) {
-          throw new Error('Editor is not initialized');
+        const editor = editorRef.current;
+        if (!editor) {
+          throw new Error('Rich text editor is not initialized');
         }
-        return await editorRef.current.save();
+        return editor.getData();
       },
       clear: async () => {
-        if (!editorRef.current) return;
-        await editorRef.current.clear();
+        const editor = editorRef.current;
+        if (!editor) return;
+        editor.setData('');
+        latestValueRef.current = '';
       },
       destroy: async () => {
-        if (editorRef.current) {
-          await editorRef.current.destroy();
+        const editor = editorRef.current;
+        if (editor) {
+          await editor.destroy();
           editorRef.current = null;
-          isInitialized.current = false;
         }
       },
       getEditor: () => editorRef.current,
+      setData: (nextValue: string) => {
+        latestValueRef.current = nextValue;
+        const editor = editorRef.current;
+        if (!editor) return;
+        if (editor.getData() !== nextValue) {
+          editor.setData(nextValue);
+        }
+      },
     }));
 
-    // 初始化编辑器
     useEffect(() => {
-      initEditor();
-
-      return () => {
-        // 清理编辑器实例
-        if (editorRef.current) {
-          editorRef.current.destroy();
-          editorRef.current = null;
-          isInitialized.current = false;
-        }
-      };
-    }, []);
-
-    // 数据更新时重新渲染
-    useEffect(() => {
-      if (editorRef.current && data && isInitialized.current) {
-        editorRef.current.render(data);
+      const normalizedValue = value ?? '';
+      latestValueRef.current = normalizedValue;
+      const editor = editorRef.current;
+      if (editor && editor.getData() !== normalizedValue) {
+        editor.setData(normalizedValue);
       }
-    }, [data]);
+    }, [value]);
+
+    useEffect(() => {
+      toggleReadOnly(editorRef.current, readOnly);
+    }, [readOnly]);
+
+    useEffect(() => {
+      applyHeight(editorRef.current);
+    }, [height]);
 
     return (
       <div
-        ref={holderRef}
-        style={{
-          border: '1px solid #e8e8e8',
-          borderRadius: '6px',
-          padding: '16px',
-          minHeight: config.minHeight || 200,
-          ...style,
-        }}
-        className={`editorjs-container ${className}`}
-      />
+        className={`ck-editor-wrapper ${className}`}
+        style={{ minHeight: height, ...style }}
+      >
+        <CKEditor
+          editor={ClassicEditor}
+          data={value ?? ''}
+          disabled={readOnly}
+          config={config}
+          onReady={(editor: CKEditorInstance) => {
+            editorRef.current = editor;
+            applyHeight(editor);
+            toggleReadOnly(editor, readOnly);
+            if (editor.getData() !== latestValueRef.current) {
+              editor.setData(latestValueRef.current);
+            }
+          }}
+          onChange={(_event: unknown, editor: CKEditorInstance) => {
+            const data = editor.getData();
+            latestValueRef.current = data;
+            onChange?.(data);
+          }}
+          onBlur={(_event: unknown, editor: CKEditorInstance) => {
+            latestValueRef.current = editor.getData();
+            onChange?.(latestValueRef.current);
+          }}
+        />
+      </div>
     );
   },
 );

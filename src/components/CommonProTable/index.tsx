@@ -154,93 +154,24 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
             break;
           case 'EditorField':
             column.valueType = 'text';
-            column.width = 200;
+            column.width = 220;
             column.render = (_, record) => {
-              const content = record[fieldName] || '';
+              const content = record[fieldName];
               if (!content) return '-';
 
-              let preview = '';
-              let displayContent = '';
+              const stringContent = String(content);
+              const sanitizedText = stringContent
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
 
-              try {
-                // 尝试解析 Editor.js JSON 数据
-                const editorData = JSON.parse(content);
-                if (editorData?.blocks) {
-                  // 提取所有文本块的内容
-                  const textBlocks = editorData.blocks
-                    .filter(
-                      (block: any) =>
-                        block.data && typeof block.data === 'object',
-                    )
-                    .map((block: any) => {
-                      if (
-                        block.type === 'paragraph' ||
-                        block.type === 'header'
-                      ) {
-                        return block.data.text || '';
-                      } else if (block.type === 'list') {
-                        return block.data.items?.join(', ') || '';
-                      } else if (block.type === 'quote') {
-                        return block.data.text || '';
-                      } else if (block.type === 'code') {
-                        return block.data.code || '';
-                      }
-                      return '';
-                    })
-                    .filter(Boolean);
-
-                  const allText = textBlocks
-                    .join(' ')
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/&nbsp;/g, ' ');
-                  preview =
-                    allText.length > 50
-                      ? `${allText.substring(0, 50)}...`
-                      : allText;
-
-                  // 为悬停显示创建简化的预览
-                  displayContent = editorData.blocks
-                    .map((block: any, _index: number) => {
-                      const blockType = block.type || 'paragraph';
-                      const blockData = block.data || {};
-
-                      switch (blockType) {
-                        case 'header': {
-                          const level = blockData.level || 2;
-                          return `<h${level}>${blockData.text || ''}</h${level}>`;
-                        }
-                        case 'paragraph':
-                          return `<p>${blockData.text || ''}</p>`;
-                        case 'list': {
-                          const items = blockData.items || [];
-                          const listItems = items
-                            .map((item: string) => `<li>${item}</li>`)
-                            .join('');
-                          return blockData.style === 'ordered'
-                            ? `<ol>${listItems}</ol>`
-                            : `<ul>${listItems}</ul>`;
-                        }
-                        case 'quote':
-                          return `<blockquote><p>${blockData.text || ''}</p>${blockData.caption ? `<cite>${blockData.caption}</cite>` : ''}</blockquote>`;
-                        case 'code':
-                          return `<pre><code>${blockData.code || ''}</code></pre>`;
-                        default:
-                          return `<p>${JSON.stringify(blockData)}</p>`;
-                      }
-                    })
-                    .join('');
-                }
-              } catch (_error) {
-                // 如果不是 JSON 格式，可能是 HTML 内容，回退到原来的处理方式
-                const textContent = content
-                  .replace(/<[^>]*>/g, '')
-                  .replace(/&nbsp;/g, ' ');
-                preview =
-                  textContent.length > 50
-                    ? `${textContent.substring(0, 50)}...`
-                    : textContent;
-                displayContent = content;
-              }
+              const preview =
+                sanitizedText.length > 50
+                  ? `${sanitizedText.substring(0, 50)}...`
+                  : sanitizedText || 'Rich content';
 
               return (
                 <Tooltip
@@ -253,11 +184,8 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                         padding: '8px',
                         backgroundColor: '#fff',
                       }}
-                    >
-                      <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-                        {displayContent}
-                      </pre>
-                    </div>
+                      dangerouslySetInnerHTML={{ __html: stringContent }}
+                    />
                   }
                   placement="topLeft"
                   overlayStyle={{ maxWidth: 'none' }}
@@ -270,7 +198,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                     }}
                     title="Hover to view formatted content"
                   >
-                    ✍️ {preview || 'Rich content'}
+                    ✍️ {preview}
                   </span>
                 </Tooltip>
               );

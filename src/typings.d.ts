@@ -361,3 +361,24 @@ declare namespace API {
     data: InlinesData;
   };
 }
+
+declare module '@ckeditor/ckeditor5-react' {
+  import type { ComponentType } from 'react';
+
+  interface CKEditorProps {
+    editor: any;
+    data?: string;
+    disabled?: boolean;
+    config?: Record<string, any>;
+    onReady?: (editor: any) => void;
+    onChange?: (event: unknown, editor: any) => void;
+    onBlur?: (event: unknown, editor: any) => void;
+  }
+
+  export const CKEditor: ComponentType<CKEditorProps>;
+}
+
+declare module '@ckeditor/ckeditor5-build-classic' {
+  const ClassicEditor: any;
+  export default ClassicEditor;
+}

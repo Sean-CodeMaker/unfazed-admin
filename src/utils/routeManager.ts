@@ -57,7 +57,10 @@ export async function getCompleteRoutes(): Promise<any[]> {
 export function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {
   const transformRoute = (route: API.AdminRoute): any => {
     const menuItem: any = {
-      name: route.label || route.name,
+      name:
+        route.name
+          .replace(/(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/g, ' ')
+          .trim() || route.label,
       path: route.path,
     };
 
