@@ -245,6 +245,76 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
             };
             break;
 
+          case 'JsonField':
+            column.valueType = 'text';
+            column.width = 180;
+            column.render = (_, record) => {
+              const content = record[fieldName];
+              if (content === null || content === undefined) return '-';
+
+              // Convert to string for display
+              let jsonString: string;
+              let formattedJson: string;
+              try {
+                if (typeof content === 'string') {
+                  // Parse and re-stringify to validate and format
+                  const parsed = JSON.parse(content);
+                  jsonString = JSON.stringify(parsed);
+                  formattedJson = JSON.stringify(parsed, null, 2);
+                } else {
+                  jsonString = JSON.stringify(content);
+                  formattedJson = JSON.stringify(content, null, 2);
+                }
+              } catch {
+                jsonString = String(content);
+                formattedJson = String(content);
+              }
+
+              // Create preview text
+              const preview =
+                jsonString.length > 30
+                  ? `${jsonString.substring(0, 30)}...`
+                  : jsonString;
+
+              return (
+                <Tooltip
+                  title={
+                    <pre
+                      style={{
+                        margin: 0,
+                        maxWidth: 500,
+                        maxHeight: 400,
+                        overflow: 'auto',
+                        fontSize: 12,
+                        fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {formattedJson}
+                    </pre>
+                  }
+                  placement="topLeft"
+                  overlayStyle={{ maxWidth: 'none' }}
+                  color="#fff"
+                  overlayInnerStyle={{ color: '#333' }}
+                >
+                  <span
+                    style={{
+                      cursor: 'pointer',
+                      color: '#722ed1',
+                      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                      fontSize: 12,
+                    }}
+                    title="Hover to view formatted JSON"
+                  >
+                    📋 {preview}
+                  </span>
+                </Tooltip>
+              );
+            };
+            break;
+
           default:
             column.valueType = 'text';
         }

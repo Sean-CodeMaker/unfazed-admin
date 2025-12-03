@@ -9,6 +9,7 @@
 import CommonProTable from './CommonProTable';
 import EditorJS from './EditorJS';
 import Footer from './Footer';
+import JsonFieldEditor from './JsonFieldEditor';
 import ModelAdmin from './ModelAdmin';
 import ModelCustom from './ModelCustom';
 import ModelDetail from './ModelDetail';
@@ -29,4 +30,5 @@ export {
   ModelCustom,
   EditorJS,
   ProFormEditorJS,
+  JsonFieldEditor,
 };

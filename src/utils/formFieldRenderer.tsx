@@ -3,6 +3,7 @@ import {
   ProFormDatePicker,
   ProFormDateTimePicker,
   ProFormDigit,
+  ProFormItem,
   ProFormSelect,
   ProFormSwitch,
   ProFormText,
@@ -11,7 +12,8 @@ import {
 } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
 import React from 'react';
-import { ProFormEditorJS } from '@/components';
+import { JsonFieldEditor, ProFormEditorJS } from '@/components';
+import { toJsonString, validateJson } from '@/utils/json';
 
 /**
  * 渲染表单字段的公共工具函数
@@ -175,6 +177,51 @@ export const renderFormField = (
             ),
           }}
         />
+      );
+
+    case 'JsonField':
+      return (
+        <ProFormItem
+          key={fieldName}
+          name={fieldName}
+          label={fieldConfig.name || fieldName}
+          tooltip={fieldConfig.help_text}
+          rules={[
+            ...(fieldConfig.blank
+              ? []
+              : [
+                  {
+                    required: true,
+                    message: `${fieldConfig.name || fieldName} is required`,
+                  },
+                ]),
+            {
+              validator: async (_: any, value: any) => {
+                if (value === null || value === undefined) return;
+                const result = validateJson(value);
+                if (!result.valid) {
+                  throw new Error(`Invalid JSON: ${result.error}`);
+                }
+              },
+            },
+          ]}
+          // Convert object to JSON string for display
+          getValueProps={(value: any) => ({
+            value: toJsonString(value),
+          })}
+          // Keep as JSON string when submitting to backend
+          transform={(value: any) => {
+            // Ensure we send a valid JSON string to backend
+            const jsonString = toJsonString(value);
+            return { [fieldName]: jsonString };
+          }}
+          {...customCommonProps}
+        >
+          <JsonFieldEditor
+            readonly={readonly || fieldConfig.readonly}
+            placeholder={fieldConfig.help_text || 'Enter JSON data...'}
+          />
+        </ProFormItem>
       );
 
     default:

@@ -203,7 +203,8 @@ declare namespace API {
       | 'TimeField'
       | 'TextField'
       | 'EditorField'
-      | 'ImageField';
+      | 'ImageField'
+      | 'JsonField';
     readonly?: boolean;
     show?: boolean;
     blank?: boolean;
