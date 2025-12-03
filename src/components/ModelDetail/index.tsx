@@ -766,14 +766,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                       : 'Saved successfully',
                   );
 
-                  // 新建模式下，保存成功后启用 inline tabs
-                  if (isCreateMode) {
-                    setHasMainDataSaved(true);
-                    // 更新 record 以包含新创建的 ID
-                    if (response.data?.saved_data?.id) {
-                      record.id = response.data.saved_data.id;
-                    }
-                  }
+                  // Navigate back to list page after successful save
+                  onBack?.();
                 } else {
                   messageApi.error(response?.message || 'Save failed');
                 }
