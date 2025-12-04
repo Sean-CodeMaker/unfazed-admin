@@ -1,4 +1,4 @@
-import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
+import type { ActionType } from '@ant-design/pro-components';
 import { PageContainer } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { Modal, Table } from 'antd';
@@ -11,18 +11,17 @@ import { CommonProTable } from '../index';
 interface ModelListProps {
   modelName: string;
   onDetail?: (record: Record<string, any>) => void;
-  onAdd?: () => void;
   onModelDescLoaded?: (modelDesc: API.AdminSerializeModel) => void;
 }
 
 const ModelList: React.FC<ModelListProps> = ({
   modelName,
   onDetail,
-  onAdd: _onAdd,
   onModelDescLoaded,
 }) => {
   const actionRef = useRef<ActionType>(null!);
-  const _formRef = useRef<ProFormInstance>(null!);
+  // Use ref to store latest search params (avoids async state update issues)
+  const latestSearchParamsRef = useRef<Record<string, any>>({});
 
   // 使用自定义 Hook
   const {
@@ -55,6 +54,7 @@ const ModelList: React.FC<ModelListProps> = ({
     record?: Record<string, any>;
     isBatch?: boolean;
     records?: Record<string, any>[];
+    searchParams?: Record<string, any>;
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -82,6 +82,8 @@ const ModelList: React.FC<ModelListProps> = ({
   // 包装数据获取函数
   const wrappedFetchModelData = useCallback(
     async (params: any) => {
+      // Save latest search params to ref for batch actions
+      latestSearchParamsRef.current = params;
       return await fetchModelData(params, modelDesc || undefined);
     },
     [fetchModelData, modelDesc],
@@ -128,39 +130,6 @@ const ModelList: React.FC<ModelListProps> = ({
     });
   };
 
-  // 触发Action（根据input类型）
-  const triggerAction = useCallback(
-    (
-      actionKey: string,
-      actionConfig: any,
-      record?: Record<string, any>,
-      isBatch = false,
-      records: Record<string, any>[] = [],
-    ) => {
-      setCurrentAction({
-        actionKey,
-        actionConfig,
-        record,
-        isBatch,
-        records,
-      });
-
-      switch (actionConfig.input) {
-        case 'string':
-          setStringModalVisible(true);
-          break;
-        case 'file':
-          setFileModalVisible(true);
-          break;
-        default:
-          // 直接执行
-          executeAction(actionKey, actionConfig, record, isBatch, records);
-          break;
-      }
-    },
-    [],
-  );
-
   // 执行Action的核心逻辑
   const executeAction = useCallback(
     async (
@@ -170,6 +139,7 @@ const ModelList: React.FC<ModelListProps> = ({
       isBatch = false,
       records: Record<string, any>[] = [],
       extra?: any,
+      searchParams?: Record<string, any>,
     ) => {
       setActionLoading(true);
       try {
@@ -180,6 +150,7 @@ const ModelList: React.FC<ModelListProps> = ({
             records,
             modelDesc || undefined,
             extra,
+            searchParams,
           );
         } else {
           result = await executeRowAction(
@@ -211,6 +182,59 @@ const ModelList: React.FC<ModelListProps> = ({
     [executeBatchAction, executeRowAction, modelDesc],
   );
 
+  // 触发Action（根据input类型）
+  const triggerAction = useCallback(
+    (
+      actionKey: string,
+      actionConfig: any,
+      record?: Record<string, any>,
+      isBatch = false,
+      records: Record<string, any>[] = [],
+      searchParams?: Record<string, any>,
+    ) => {
+      // Use latestSearchParamsRef if searchParams has no valid values
+      const hasValidSearchParams =
+        searchParams &&
+        Object.values(searchParams).some(
+          (v) => v !== undefined && v !== null && v !== '',
+        );
+      const effectiveSearchParams = hasValidSearchParams
+        ? searchParams
+        : latestSearchParamsRef.current;
+
+      setCurrentAction({
+        actionKey,
+        actionConfig,
+        record,
+        isBatch,
+        records,
+        searchParams: effectiveSearchParams,
+      });
+
+      switch (actionConfig.input) {
+        case 'string':
+          setStringModalVisible(true);
+          break;
+        case 'file':
+          setFileModalVisible(true);
+          break;
+        default:
+          // 直接执行
+          executeAction(
+            actionKey,
+            actionConfig,
+            record,
+            isBatch,
+            records,
+            undefined,
+            effectiveSearchParams,
+          );
+          break;
+      }
+    },
+    [executeAction],
+  );
+
   // 字符串输入Modal的确认处理
   const handleStringInputConfirm = useCallback(
     (inputValue: string) => {
@@ -223,6 +247,7 @@ const ModelList: React.FC<ModelListProps> = ({
           currentAction.isBatch,
           currentAction.records || [],
           extra,
+          currentAction.searchParams,
         );
       }
       setStringModalVisible(false);
@@ -261,6 +286,7 @@ const ModelList: React.FC<ModelListProps> = ({
             currentAction.isBatch,
             currentAction.records || [],
             extra,
+            currentAction.searchParams,
           );
         });
       }
@@ -329,13 +355,21 @@ const ModelList: React.FC<ModelListProps> = ({
           record?: any,
           isBatch?: boolean,
           records?: any[],
+          searchParams?: Record<string, any>,
         ) => {
           if (actionKey === 'add') {
             // 处理新增操作：跳转到 ModelDetail，使用 id = -1 表示新建模式
             const newRecord = { id: -1 };
             onDetail?.(newRecord);
           } else {
-            triggerAction(actionKey, action, record, isBatch, records || []);
+            triggerAction(
+              actionKey,
+              action,
+              record,
+              isBatch,
+              records || [],
+              searchParams,
+            );
           }
         }}
         onSave={async (record: any) => {

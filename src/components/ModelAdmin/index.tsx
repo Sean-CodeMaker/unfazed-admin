@@ -29,12 +29,6 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
     setCurrentView('detail');
   };
 
-  // 处理新增操作
-  const handleAdd = () => {
-    // TODO: 实现新增逻辑
-    console.log('Add clicked');
-  };
-
   // 返回列表
   const handleBackToList = () => {
     setCurrentView('list');
@@ -61,7 +55,6 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
         <ModelList
           modelName={modelName}
           onDetail={handleDetail}
-          onAdd={handleAdd}
           onModelDescLoaded={handleModelDescLoaded}
         />
       ) : currentRecord && modelDesc ? (

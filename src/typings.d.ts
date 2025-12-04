@@ -226,8 +226,6 @@ declare namespace API {
 
   type AdminAttrs = {
     help_text?: string;
-    can_search?: boolean;
-    search_fields?: string[];
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
@@ -239,6 +237,8 @@ declare namespace API {
     list_order?: string[];
     list_editable?: string[];
     detail_display?: string[];
+    detail_order?: string[];
+    detail_editable?: string[];
   };
 
   type AdminSerializeModel = {
@@ -323,8 +323,6 @@ declare namespace API {
 
   type AdminInlineAttrs = {
     help_text?: string;
-    can_search?: boolean;
-    search_fields?: string[];
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
@@ -335,6 +333,9 @@ declare namespace API {
     list_sort?: string[];
     list_order?: string[];
     list_editable?: string[];
+    detail_display?: string[];
+    detail_order?: string[];
+    detail_editable?: string[];
     max_num?: number;
     min_num?: number;
   };

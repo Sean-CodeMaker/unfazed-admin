@@ -32,6 +32,7 @@ interface CommonProTableProps {
     record?: any,
     isBatch?: boolean,
     records?: any[],
+    searchParams?: Record<string, any>,
   ) => void;
   /** 保存操作回调 */
   onSave?: (record: Record<string, any>) => Promise<void>;
@@ -60,6 +61,10 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
 }) => {
   const formRef = useRef<ProFormInstance>(null as any);
   const [editableKeys, setEditableKeys] = useState<React.Key[]>([]);
+  // Store current search params for batch actions
+  const [currentSearchParams, setCurrentSearchParams] = useState<
+    Record<string, any>
+  >({});
 
   // 生成列配置（基于 ModelList 的实现）
   const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
@@ -553,7 +558,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   }, [modelDesc, onDetail, onAction, onSave, onDelete, editableKeys]);
 
   // 生成批量操作菜单项
-  const renderBatchActions = useCallback(() => {
+  const getBatchActionMenuItems = useCallback(() => {
     if (!modelDesc.actions) return [];
 
     const menuItems: any[] = [];
@@ -563,14 +568,23 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           menuItems.push({
             key: actionKey,
             label: action.label || action.name,
-            onClick: () => onAction?.(actionKey, action, undefined, true, []),
+            onClick: () => {
+              // Get current form values directly when clicking
+              const currentFormValues = formRef.current?.getFieldsValue() || {};
+              // Merge with saved search params (in case form values are empty)
+              const searchParams = {
+                ...currentSearchParams,
+                ...currentFormValues,
+              };
+              onAction?.(actionKey, action, undefined, true, [], searchParams);
+            },
           });
         }
       },
     );
 
     return menuItems;
-  }, [modelDesc, onAction]);
+  }, [modelDesc, onAction, currentSearchParams]);
 
   // 生成工具栏按钮
   const renderToolBar = useCallback(() => {
@@ -590,13 +604,16 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return buttons;
-  }, [modelDesc, modelName, onAction]);
+  }, [modelDesc, onAction]);
 
   const columns = useMemo(() => generateColumns(), [generateColumns]);
 
-  // 检查是否有可搜索的字段
+  // 检查是否有可搜索的字段或批量操作
   const searchFields = (modelDesc.attrs as any)?.list_search || [];
   const hasSearchableFields = searchFields.length > 0;
+  const batchActions = getBatchActionMenuItems();
+  const hasBatchActions = batchActions.length > 0;
+  const showSearchPanel = hasSearchableFields || hasBatchActions;
 
   return (
     <ProTable<Record<string, any>>
@@ -605,29 +622,54 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       formRef={formRef}
       rowKey={(record) => record.id || record.key || JSON.stringify(record)}
       search={
-        hasSearchableFields
+        showSearchPanel
           ? {
               labelWidth: 120,
               defaultCollapsed: false,
-              optionRender: (_searchConfig: any, _formProps: any, dom: any) => {
-                const batchActions = renderBatchActions();
-                const originalButtons = dom.reverse();
+              optionRender: (_searchConfig: any, formProps: any, dom: any) => {
+                // Only show Query/Reset buttons if there are searchable fields
+                const originalButtons = hasSearchableFields
+                  ? dom.reverse()
+                  : [];
 
-                if (batchActions.length > 0) {
-                  const moreActionsDropdown = (
+                if (hasBatchActions) {
+                  // Build batch action items dynamically with access to form
+                  const batchActionItems = Object.entries(
+                    modelDesc.actions || {},
+                  )
+                    .filter(([, action]: [string, any]) => action.batch)
+                    .map(([actionKey, action]: [string, any]) => ({
+                      key: actionKey,
+                      label: action.label || action.name,
+                      onClick: () => {
+                        // Get form values directly from formProps
+                        const formValues =
+                          formProps.form?.getFieldsValue() || {};
+                        onAction?.(
+                          actionKey,
+                          action,
+                          undefined,
+                          true,
+                          [],
+                          formValues,
+                        );
+                      },
+                    }));
+
+                  const batchActionsDropdown = (
                     <Dropdown
-                      key="more-actions"
-                      menu={{ items: batchActions }}
+                      key="batch-actions"
+                      menu={{ items: batchActionItems }}
                       trigger={['click']}
                     >
                       <Button>
-                        More
+                        Batch Actions
                         <MoreOutlined />
                       </Button>
                     </Dropdown>
                   );
 
-                  return [...originalButtons, moreActionsDropdown];
+                  return [...originalButtons, batchActionsDropdown];
                 }
 
                 return originalButtons;
@@ -640,6 +682,11 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         return buttons.length > 0 ? buttons : false;
       }}
       request={data ? undefined : onRequest}
+      beforeSearchSubmit={(params) => {
+        // Save search params for batch actions
+        setCurrentSearchParams(params);
+        return params;
+      }}
       dataSource={data}
       columns={columns}
       editable={

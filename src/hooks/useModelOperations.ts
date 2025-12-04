@@ -43,7 +43,12 @@ export const useModelOperations = ({
       const conditions: API.Condition[] = [];
 
       // strip pagination params
-      const { current: _c, pageSize: _s, ...searchParams } = searchValues;
+      const {
+        current: _c,
+        pageSize: _s,
+        _timestamp: _t,
+        ...searchParams
+      } = searchValues;
 
       Object.entries(searchParams).forEach(([field, value]) => {
         if (value === undefined || value === null || value === '') return;
@@ -249,38 +254,56 @@ export const useModelOperations = ({
   const executeBatchAction = useCallback(
     async (
       actionKey: string,
-      records: Record<string, any>[],
+      _records: Record<string, any>[],
       modelDesc?: API.AdminSerializeModel,
       extra?: any,
+      searchParams?: Record<string, any>,
     ) => {
       try {
-        // 获取当前搜索条件
-        const searchConditions = buildSearchConditions(
-          currentSearchParams,
-          modelDesc,
+        // Use provided searchParams if it has valid values, otherwise fall back to currentSearchParams
+        // Check if searchParams has any non-undefined, non-null, non-empty values
+        const hasValidSearchParams =
+          searchParams &&
+          Object.values(searchParams).some(
+            (v) => v !== undefined && v !== null && v !== '',
+          );
+        const paramsToUse = hasValidSearchParams
+          ? searchParams
+          : currentSearchParams;
+
+        console.log('executeBatchAction - searchParams:', searchParams);
+        console.log(
+          'executeBatchAction - hasValidSearchParams:',
+          hasValidSearchParams,
         );
+        console.log(
+          'executeBatchAction - currentSearchParams:',
+          currentSearchParams,
+        );
+        console.log('executeBatchAction - paramsToUse:', paramsToUse);
 
-        let allConditions: API.Condition[] = [...searchConditions];
+        // Build search conditions in structured format
+        const searchConditions = buildSearchConditions(paramsToUse, modelDesc);
+        console.log('executeBatchAction - searchConditions:', searchConditions);
 
-        // 如果提供了records，则为基于选中记录的操作
-        if (records.length > 0) {
-          // 根据 records 生成选中记录的条件
-          const recordConditions: API.Condition[] = records.map((record) => ({
-            field: 'id',
-            eq: record.id,
-          }));
-          // 合并搜索条件和选中记录条件
-          allConditions = [...searchConditions, ...recordConditions];
-        }
-        // 如果records为空，则为基于搜索条件的批量操作，只使用搜索条件
-
-        const response = await executeModelAction({
+        const payload: API.ModelActionRequest = {
           name: modelName,
           action: actionKey,
-          search_condition:
-            allConditions.length > 0 ? allConditions : undefined,
-          form_data: extra || {},
-        });
+        };
+
+        if (searchConditions.length > 0) {
+          payload.search_condition = searchConditions;
+        }
+
+        if (
+          extra &&
+          typeof extra === 'object' &&
+          Object.keys(extra).length > 0
+        ) {
+          payload.form_data = extra;
+        }
+
+        const response = await executeModelAction(payload);
 
         // 获取action配置
         const actionConfig = modelDesc?.actions?.[actionKey];
@@ -330,7 +353,11 @@ export const useModelOperations = ({
           name: modelName,
           action: actionKey,
           search_condition: conditions,
-          form_data: extra || {},
+          // Always provide the full row payload so the API has complete context.
+          form_data: {
+            ...(record || {}),
+            ...(extra || {}),
+          },
         });
 
         // 获取action配置
