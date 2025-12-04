@@ -37,7 +37,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
 
   // 判断是否为新建模式
   const isCreateMode = record.id === -1;
-  const [hasMainDataSaved, setHasMainDataSaved] = useState(!isCreateMode);
+  const [hasMainDataSaved, _setHasMainDataSaved] = useState(!isCreateMode);
 
   // 创建一个通用的 action 处理函数
   const handleInlineAction = useCallback(

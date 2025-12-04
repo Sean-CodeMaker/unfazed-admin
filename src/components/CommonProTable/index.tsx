@@ -365,8 +365,15 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         }
       }
 
-      // 设置可编辑
-      if (modelDesc.attrs.can_edit && !fieldConfig.readonly) {
+      // 设置可编辑 (only fields in list_editable are editable, and readonly fields are never editable)
+      const listEditable = (modelDesc.attrs as any)?.list_editable as
+        | string[]
+        | undefined;
+      if (
+        modelDesc.attrs.can_edit &&
+        !fieldConfig.readonly &&
+        listEditable?.includes(fieldName)
+      ) {
         column.editable = () => true;
       }
 
