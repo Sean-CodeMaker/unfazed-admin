@@ -376,18 +376,10 @@ describe('CommonProTable', () => {
   });
 
   describe('Detail button', () => {
-    it('should always show Detail button regardless of editable attribute', () => {
-      const modelDescNotEditable = {
-        ...mockModelDesc,
-        attrs: {
-          ...mockModelDesc.attrs,
-          editable: false,
-        },
-      };
-
+    it('should always show Detail button', () => {
       render(
         <CommonProTable
-          modelDesc={modelDescNotEditable}
+          modelDesc={mockModelDesc}
           modelName="test"
           data={mockData}
           onDetail={jest.fn()}

@@ -35,11 +35,16 @@ export const renderFormField = (
 ) => {
   const { readonly = false, commonProps: customCommonProps } = options || {};
 
+  // Determine if field should be readonly (from options OR from fieldConfig)
+  const isReadonly =
+    readonly || fieldConfig.readonly || customCommonProps?.readonly;
+
   const commonProps = {
     name: fieldName,
     label: fieldConfig.name || fieldName,
     tooltip: fieldConfig.help_text,
-    readonly: readonly || fieldConfig.readonly,
+    readonly: isReadonly,
+    disabled: isReadonly, // Also set disabled for better compatibility
     rules: fieldConfig.blank
       ? []
       : [
@@ -49,6 +54,8 @@ export const renderFormField = (
           },
         ],
     ...customCommonProps,
+    // Ensure readonly/disabled are not overwritten by customCommonProps
+    ...(isReadonly ? { readonly: true, disabled: true } : {}),
   };
 
   // 根据字段类型渲染不同的组件
@@ -114,7 +121,7 @@ export const renderFormField = (
           {...commonProps}
           fieldProps={{
             height: 300,
-            readOnly: readonly,
+            readOnly: isReadonly,
             config: {
               placeholder: commonProps.tooltip || 'Start writing your story...',
             },
@@ -218,7 +225,7 @@ export const renderFormField = (
           {...customCommonProps}
         >
           <JsonFieldEditor
-            readonly={readonly || fieldConfig.readonly}
+            readonly={isReadonly}
             placeholder={fieldConfig.help_text || 'Enter JSON data...'}
           />
         </ProFormItem>

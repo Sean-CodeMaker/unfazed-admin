@@ -238,7 +238,6 @@ declare namespace API {
     list_sort?: string[];
     list_order?: string[];
     list_editable?: string[];
-    editable?: boolean;
     detail_display?: string[];
   };
 
