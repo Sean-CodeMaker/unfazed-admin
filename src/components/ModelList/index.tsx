@@ -364,7 +364,7 @@ const ModelList: React.FC<ModelListProps> = ({
         onRequest={wrappedFetchModelData}
         tableProps={{
           pagination: {
-            pageSize:
+            defaultPageSize:
               getStoredSettings().pageSize ||
               modelDesc.attrs.list_per_page ||
               20,
