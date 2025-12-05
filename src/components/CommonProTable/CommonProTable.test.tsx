@@ -52,7 +52,9 @@ jest.mock('@ant-design/pro-components', () => {
                       { 'data-testid': `filter-${col.dataIndex}` },
                       'filterable',
                     ),
-                  col.editable?.() &&
+                  (typeof col.editable === 'function'
+                    ? col.editable?.()
+                    : col.editable) &&
                     React.createElement(
                       'span',
                       { 'data-testid': `editable-${col.dataIndex}` },

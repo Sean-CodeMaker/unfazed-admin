@@ -477,15 +477,15 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         // Readonly fields are never editable
         column.editable = false;
       } else if (modelDesc.attrs.can_edit) {
-        // If list_editable is defined, only fields in it are editable
-        // If list_editable is not defined, all non-readonly fields are editable
+        // Only fields in list_editable are editable
+        // If list_editable is not defined or empty, no columns are editable
         if (listEditable && listEditable.length > 0) {
           column.editable = listEditable.includes(fieldName)
             ? () => true
             : false;
         } else {
-          // No list_editable defined, all non-readonly fields are editable
-          column.editable = () => true;
+          // No list_editable defined, columns are not editable
+          column.editable = false;
         }
       }
 
