@@ -715,111 +715,147 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   const showSearchPanel = hasSearchableFields || hasBatchActions;
 
   return (
-    <ProTable<Record<string, any>>
-      headerTitle={modelDesc.attrs.help_text || modelName}
-      actionRef={actionRef}
-      formRef={formRef}
-      rowKey={(record) => record.id || record.key || JSON.stringify(record)}
-      search={
-        showSearchPanel
-          ? {
-              labelWidth: 120,
-              defaultCollapsed: false,
-              optionRender: (_searchConfig: any, formProps: any, dom: any) => {
-                // Only show Query/Reset buttons if there are searchable fields
-                const originalButtons = hasSearchableFields
-                  ? dom.reverse()
-                  : [];
+    <>
+      <style>
+        {`
+          .common-pro-table [class*='ant-space'] {
+            flex-wrap: wrap !important;
+            justify-content: flex-end !important;
+          }
+          .common-pro-table [class*='ant-space-item']:last-child {
+            margin-left: auto !important;
+          }
+          .common-pro-table [class*='ant-pro-query-filter-collapse-button'] {
+            white-space: nowrap !important;
+          }
+        `}
+      </style>
+      <ProTable<Record<string, any>>
+        className="common-pro-table"
+        headerTitle={modelDesc.attrs.help_text || modelName}
+        actionRef={actionRef}
+        formRef={formRef}
+        rowKey={(record) => record.id || record.key || JSON.stringify(record)}
+        search={
+          showSearchPanel
+            ? {
+                labelWidth: 120,
+                defaultCollapsed: false,
+                optionRender: (
+                  _searchConfig: any,
+                  formProps: any,
+                  dom: any,
+                ) => {
+                  // Only show Query/Reset buttons if there are searchable fields
+                  const originalButtons = hasSearchableFields
+                    ? dom.reverse()
+                    : [];
 
-                if (hasBatchActions) {
-                  // Build batch action items dynamically with access to form
-                  const batchActionItems = Object.entries(
-                    modelDesc.actions || {},
-                  )
-                    .filter(([, action]: [string, any]) => action.batch)
-                    .map(([actionKey, action]: [string, any]) => ({
-                      key: actionKey,
-                      label: action.label || action.name,
-                      onClick: () => {
-                        // Get form values directly from formProps
-                        const formValues =
-                          formProps.form?.getFieldsValue() || {};
-                        onAction?.(
-                          actionKey,
-                          action,
-                          undefined,
-                          true,
-                          [],
-                          formValues,
-                        );
-                      },
-                    }));
+                  const buttons = [...originalButtons];
 
-                  const batchActionsDropdown = (
-                    <Dropdown
-                      key="batch-actions"
-                      menu={{ items: batchActionItems }}
-                      trigger={['click']}
+                  if (hasBatchActions) {
+                    // Build batch action items dynamically with access to form
+                    const batchActionItems = Object.entries(
+                      modelDesc.actions || {},
+                    )
+                      .filter(([, action]: [string, any]) => action.batch)
+                      .map(([actionKey, action]: [string, any]) => ({
+                        key: actionKey,
+                        label: action.label || action.name,
+                        onClick: () => {
+                          // Get form values directly from formProps
+                          const formValues =
+                            formProps.form?.getFieldsValue() || {};
+                          onAction?.(
+                            actionKey,
+                            action,
+                            undefined,
+                            true,
+                            [],
+                            formValues,
+                          );
+                        },
+                      }));
+
+                    const batchActionsDropdown = (
+                      <Dropdown
+                        key="batch-actions"
+                        menu={{ items: batchActionItems }}
+                        trigger={['click']}
+                      >
+                        <Button>
+                          Batch Actions
+                          <MoreOutlined />
+                        </Button>
+                      </Dropdown>
+                    );
+
+                    buttons.push(batchActionsDropdown);
+                  }
+
+                  // Wrap buttons in a flex container that allows wrapping
+                  return (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                      }}
                     >
-                      <Button>
-                        Batch Actions
-                        <MoreOutlined />
-                      </Button>
-                    </Dropdown>
+                      {buttons}
+                    </div>
                   );
-
-                  return [...originalButtons, batchActionsDropdown];
-                }
-
-                return originalButtons;
-              },
-            }
-          : false
-      }
-      toolBarRender={() => {
-        const buttons = renderToolBar();
-        return buttons.length > 0 ? buttons : false;
-      }}
-      request={data ? undefined : onRequest}
-      beforeSearchSubmit={(params) => {
-        // Save search params for batch actions
-        setCurrentSearchParams(params);
-        return params;
-      }}
-      dataSource={data}
-      columns={columns}
-      editable={
-        modelDesc.attrs.can_edit
-          ? {
-              type: 'multiple',
-              editableKeys,
-              onChange: setEditableKeys,
-              onSave: async (_key: any, record: Record<string, any>) => {
-                await onSave?.(record);
-              },
-              actionRender: (_row: any, _config: any, defaultDom: any) => {
-                return [defaultDom.save, defaultDom.cancel];
-              },
-            }
-          : undefined
-      }
-      scroll={{
-        x: 'max-content',
-        y: 'calc(100vh - 400px)',
-      }}
-      pagination={{
-        showSizeChanger: true,
-        showQuickJumper: true,
-        ...(data ? { pageSize: 20 } : {}),
-      }}
-      options={{
-        search: false,
-        reload: true,
-        density: true,
-        setting: true,
-      }}
-      {...tableProps}
-    />
+                },
+              }
+            : false
+        }
+        toolBarRender={() => {
+          const buttons = renderToolBar();
+          return buttons.length > 0 ? buttons : false;
+        }}
+        request={data ? undefined : onRequest}
+        beforeSearchSubmit={(params) => {
+          // Save search params for batch actions
+          setCurrentSearchParams(params);
+          return params;
+        }}
+        dataSource={data}
+        columns={columns}
+        editable={
+          modelDesc.attrs.can_edit
+            ? {
+                type: 'multiple',
+                editableKeys,
+                onChange: setEditableKeys,
+                onSave: async (_key: any, record: Record<string, any>) => {
+                  await onSave?.(record);
+                },
+                actionRender: (_row: any, _config: any, defaultDom: any) => {
+                  return [defaultDom.save, defaultDom.cancel];
+                },
+              }
+            : undefined
+        }
+        scroll={{
+          x: 'max-content',
+          y: 'calc(100vh - 400px)',
+        }}
+        pagination={{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          ...(data ? { pageSize: 20 } : {}),
+        }}
+        options={{
+          search: false,
+          reload: true,
+          density: true,
+          setting: true,
+        }}
+        {...tableProps}
+      />
+    </>
   );
 };
 

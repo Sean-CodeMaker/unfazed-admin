@@ -404,7 +404,7 @@ const ModelList: React.FC<ModelListProps> = ({
               20,
             showSizeChanger: true,
             showQuickJumper: true,
-            pageSizeOptions: modelDesc.attrs.list_page_size_options || [
+            pageSizeOptions: modelDesc.attrs.list_per_page_options || [
               10, 20, 50, 100,
             ],
           },
