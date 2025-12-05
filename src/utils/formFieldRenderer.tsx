@@ -11,6 +11,7 @@ import {
   ProFormTimePicker,
 } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
 import { JsonFieldEditor, ProFormEditorJS } from '@/components';
 import { toJsonString, validateJson } from '@/utils/json';
@@ -109,7 +110,35 @@ export const renderFormField = (
       return <ProFormDatePicker key={fieldName} {...commonProps} />;
 
     case 'DatetimeField':
-      return <ProFormDateTimePicker key={fieldName} {...commonProps} />;
+      return (
+        <ProFormDateTimePicker
+          key={fieldName}
+          {...commonProps}
+          fieldProps={{
+            showTime: true,
+            format: 'YYYY-MM-DD HH:mm:ss',
+          }}
+          // Convert timestamp to dayjs for display
+          convertValue={(value: any) => {
+            if (!value) return value;
+            // If value is a number (timestamp), convert to dayjs
+            if (typeof value === 'number') {
+              // Check if timestamp is in seconds (10 digits) or milliseconds (13 digits)
+              const ts = String(value).length === 10 ? value * 1000 : value;
+              return dayjs(ts);
+            }
+            // If already a string or dayjs object, return as is
+            return value;
+          }}
+          // Convert dayjs back to timestamp for submission
+          transform={(value: any) => {
+            if (!value) return { [fieldName]: value };
+            // Convert to timestamp (seconds)
+            const timestamp = dayjs(value).unix();
+            return { [fieldName]: timestamp };
+          }}
+        />
+      );
 
     case 'TimeField':
       return <ProFormTimePicker key={fieldName} {...commonProps} />;

@@ -311,6 +311,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                 tableProps={{
                   pagination: {
                     pageSize: inlineDesc.attrs?.list_per_page || 10,
+                    pageSizeOptions: inlineDesc.attrs
+                      ?.list_page_size_options || [10, 20, 50, 100],
                     showSizeChanger: true,
                     showQuickJumper: true,
                   },
