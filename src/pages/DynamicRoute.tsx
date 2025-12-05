@@ -154,12 +154,19 @@ const DynamicRoute: React.FC = () => {
     }
 
     const modelName = routeConfig.name;
+    const routeLabel = routeConfig.label;
     // Use routeConfig.path to stabilize key with the actual config we will render
     const componentKey = `${routeConfig.component}-${routeConfig.path}`;
 
     switch (routeConfig.component) {
       case 'ModelAdmin':
-        return <ModelAdmin key={componentKey} modelName={modelName} />;
+        return (
+          <ModelAdmin
+            key={componentKey}
+            modelName={modelName}
+            routeLabel={routeLabel}
+          />
+        );
       case 'ModelCustom':
         return (
           <ModelCustom

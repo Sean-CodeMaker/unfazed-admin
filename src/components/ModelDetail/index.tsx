@@ -21,6 +21,7 @@ import { useInlineOperations } from './useInlineOperations';
 
 interface ModelDetailProps {
   modelName: string;
+  routeLabel?: string;
   modelDesc: API.AdminSerializeModel;
   record: Record<string, any>;
   onBack?: () => void;
@@ -33,6 +34,7 @@ const capitalizeFirstLetter = (str: string) => {
 
 const ModelDetail: React.FC<ModelDetailProps> = ({
   modelName,
+  routeLabel,
   modelDesc,
   record,
   onBack,
@@ -481,7 +483,9 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     ...(hasMainDataSaved
       ? Object.keys(inlineDescs).map((inlineName) => ({
           key: inlineName,
-          label: capitalizeFirstLetter(inlineName),
+          label:
+            inlineDescs[inlineName]?.attrs?.label ||
+            capitalizeFirstLetter(inlineName),
           children: renderInlineComponent(inlineName),
         }))
       : []),
@@ -491,8 +495,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     <PageContainer
       header={{
         title: isCreateMode
-          ? `Create New ${modelDesc.attrs.help_text || modelName}`
-          : `${modelDesc.attrs.help_text || modelName} Detail`,
+          ? `Create New ${routeLabel || modelName}`
+          : `${routeLabel || modelName} Detail`,
         breadcrumb: {},
         extra: [
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={onBack}>

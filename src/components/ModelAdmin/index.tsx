@@ -3,9 +3,10 @@ import { ModelDetail, ModelList } from '@/components';
 
 interface ModelAdminProps {
   modelName: string;
+  routeLabel?: string;
 }
 
-const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
+const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName, routeLabel }) => {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [currentRecord, setCurrentRecord] = useState<Record<
     string,
@@ -60,6 +61,7 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
       ) : currentRecord && modelDesc ? (
         <ModelDetail
           modelName={modelName}
+          routeLabel={routeLabel}
           modelDesc={modelDesc}
           record={currentRecord}
           onBack={handleBackToList}
