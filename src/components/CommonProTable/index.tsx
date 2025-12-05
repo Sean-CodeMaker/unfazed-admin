@@ -74,6 +74,9 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     const listOrder = (modelDesc.attrs as any)?.list_order as
       | string[]
       | undefined;
+    const listRangeSearch = (modelDesc.attrs as any)?.list_range_search as
+      | string[]
+      | undefined;
     let fieldEntries = Object.entries(modelDesc.fields || {});
 
     if (listOrder && listOrder.length > 0) {
@@ -94,6 +97,14 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         return;
       }
 
+      // Check if field is in list_search
+      const isInListSearch = (modelDesc.attrs as any)?.list_search?.includes(
+        fieldName,
+      );
+      // list_range_search only works if field is also in list_search
+      const isInListRangeSearch =
+        isInListSearch && listRangeSearch?.includes(fieldName);
+
       const column: ProColumns<Record<string, any>> = {
         title: fieldConfig.name || fieldName,
         dataIndex: fieldName,
@@ -102,9 +113,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         ellipsis: true,
         tooltip: fieldConfig.help_text,
         hideInTable: false,
-        hideInSearch: !(modelDesc.attrs as any)?.list_search?.includes(
-          fieldName,
-        ),
+        hideInSearch: !isInListSearch,
       };
 
       // 根据字段类型设置 valueType 和渲染逻辑
@@ -116,14 +125,38 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           );
           break;
         case 'DateField':
-          column.valueType = 'date';
+          // Use dateRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'dateRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+          } else {
+            column.valueType = 'date';
+          }
           column.render = (_, record) =>
             record[fieldName]
               ? dayjs(record[fieldName]).format('YYYY-MM-DD')
               : '-';
           break;
         case 'DatetimeField':
-          column.valueType = 'dateTime';
+          // Use dateTimeRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'dateTimeRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+          } else {
+            column.valueType = 'dateTime';
+          }
           column.render = (_, record) =>
             record[fieldName]
               ? dayjs(
@@ -143,7 +176,20 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           break;
         case 'IntegerField':
         case 'FloatField':
-          column.valueType = 'digit';
+          // Use digitRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'digitRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+            // Use ProTable's built-in digitRange component (no custom renderFormItem)
+          } else {
+            column.valueType = 'digit';
+          }
           column.render = (_, record) =>
             record[fieldName] !== null && record[fieldName] !== undefined
               ? Number(record[fieldName]).toLocaleString()
@@ -167,7 +213,60 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
               return choice ? choice[1] : record[fieldName] || '-';
             };
           } else {
-            column.valueType = 'text';
+            // Use text range for list_range_search fields
+            if (isInListRangeSearch) {
+              column.valueType = 'text';
+              column.search = {
+                transform: (value: any) => {
+                  return {
+                    [fieldName]: value,
+                  };
+                },
+              };
+              column.renderFormItem = (_schema, config) => {
+                const { value, onChange } = config;
+                const currentValue = Array.isArray(value) ? value : ['', ''];
+                return (
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Start"
+                      value={currentValue[0] || ''}
+                      onChange={(e) => {
+                        onChange?.([e.target.value, currentValue[1] || '']);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '4px 11px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 6,
+                        outline: 'none',
+                      }}
+                    />
+                    <span>~</span>
+                    <input
+                      type="text"
+                      placeholder="End"
+                      value={currentValue[1] || ''}
+                      onChange={(e) => {
+                        onChange?.([currentValue[0] || '', e.target.value]);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '4px 11px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 6,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                );
+              };
+            } else {
+              column.valueType = 'text';
+            }
             column.render = (_, record) => {
               const text = record[fieldName] || '-';
               return text.length > 20 ? `${text.substring(0, 20)}...` : text;

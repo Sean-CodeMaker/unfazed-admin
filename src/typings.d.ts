@@ -232,6 +232,7 @@ declare namespace API {
     can_show_all?: boolean;
     list_per_page?: number;
     list_search?: string[];
+    list_range_search?: string[];
     list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
@@ -329,6 +330,7 @@ declare namespace API {
     can_show_all?: boolean;
     list_per_page?: number;
     list_search?: string[];
+    list_range_search?: string[];
     list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
