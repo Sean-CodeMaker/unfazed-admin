@@ -45,6 +45,9 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
   const isCreateMode = record.id === -1;
   const [hasMainDataSaved, _setHasMainDataSaved] = useState(!isCreateMode);
 
+  // Check if editing is allowed
+  const canEdit = modelDesc.attrs.can_edit !== false;
+
   // Use inline operations hook
   const {
     contextHolder,
@@ -397,17 +400,18 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
               }
             }}
             submitter={{
-              render: () => (
-                <Space>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<SaveOutlined />}
-                  >
-                    Save
-                  </Button>
-                </Space>
-              ),
+              render: () =>
+                canEdit ? (
+                  <Space>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      icon={<SaveOutlined />}
+                    >
+                      Save
+                    </Button>
+                  </Space>
+                ) : null,
             }}
           >
             <Divider orientation="left">Basic Information</Divider>
@@ -450,8 +454,10 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                   if (!fieldConfig.show) return null;
 
                   // Determine if field is editable
-                  let isReadonly = fieldConfig.readonly;
+                  // If can_edit is false, all fields are readonly
+                  let isReadonly = !canEdit || fieldConfig.readonly;
                   if (
+                    canEdit &&
                     !isReadonly &&
                     detailEditable &&
                     detailEditable.length > 0
