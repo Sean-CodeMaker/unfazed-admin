@@ -92,3 +92,17 @@ ol {
     }
   }
 }
+
+// Fix ProTable search collapse button overflow
+[class*='ant-pro-query-filter-actions'] {
+  [class*='ant-form-item-control-input-content'] {
+    [class*='ant-space'] {
+      flex-wrap: wrap !important;
+      justify-content: flex-end !important;
+    }
+  }
+}
+
+[class*='ant-pro-query-filter-collapse-button'] {
+  white-space: nowrap !important;
+}

@@ -203,7 +203,8 @@ declare namespace API {
       | 'TimeField'
       | 'TextField'
       | 'EditorField'
-      | 'ImageField';
+      | 'ImageField'
+      | 'JsonField';
     readonly?: boolean;
     show?: boolean;
     blank?: boolean;
@@ -225,19 +226,21 @@ declare namespace API {
 
   type AdminAttrs = {
     help_text?: string;
-    can_search?: boolean;
-    search_fields?: string[];
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
     can_show_all?: boolean;
     list_per_page?: number;
+    list_per_page_options?: number[];
     list_search?: string[];
+    list_range_search?: string[];
     list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
-    editable?: boolean;
+    list_editable?: string[];
     detail_display?: string[];
+    detail_order?: string[];
+    detail_editable?: string[];
   };
 
   type AdminSerializeModel = {
@@ -322,17 +325,21 @@ declare namespace API {
 
   type AdminInlineAttrs = {
     help_text?: string;
-    can_search?: boolean;
-    search_fields?: string[];
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
     can_show_all?: boolean;
     list_per_page?: number;
+    list_per_page_options?: number[];
     list_search?: string[];
+    list_range_search?: string[];
     list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
+    list_editable?: string[];
+    detail_display?: string[];
+    detail_order?: string[];
+    detail_editable?: string[];
     max_num?: number;
     min_num?: number;
   };
@@ -360,4 +367,25 @@ declare namespace API {
     message: string;
     data: InlinesData;
   };
+}
+
+declare module '@ckeditor/ckeditor5-react' {
+  import type { ComponentType } from 'react';
+
+  interface CKEditorProps {
+    editor: any;
+    data?: string;
+    disabled?: boolean;
+    config?: Record<string, any>;
+    onReady?: (editor: any) => void;
+    onChange?: (event: unknown, editor: any) => void;
+    onBlur?: (event: unknown, editor: any) => void;
+  }
+
+  export const CKEditor: ComponentType<CKEditorProps>;
+}
+
+declare module '@ckeditor/ckeditor5-build-classic' {
+  const ClassicEditor: any;
+  export default ClassicEditor;
 }

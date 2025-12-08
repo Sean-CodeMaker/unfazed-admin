@@ -32,6 +32,7 @@ interface CommonProTableProps {
     record?: any,
     isBatch?: boolean,
     records?: any[],
+    searchParams?: Record<string, any>,
   ) => void;
   /** 保存操作回调 */
   onSave?: (record: Record<string, any>) => Promise<void>;
@@ -60,298 +61,439 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
 }) => {
   const formRef = useRef<ProFormInstance>(null as any);
   const [editableKeys, setEditableKeys] = useState<React.Key[]>([]);
+  // Store current search params for batch actions
+  const [currentSearchParams, setCurrentSearchParams] = useState<
+    Record<string, any>
+  >({});
 
   // 生成列配置（基于 ModelList 的实现）
   const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
     const columns: ProColumns<Record<string, any>>[] = [];
 
+    // Get field entries and sort by list_order if available
+    const listOrder = (modelDesc.attrs as any)?.list_order as
+      | string[]
+      | undefined;
+    const listRangeSearch = (modelDesc.attrs as any)?.list_range_search as
+      | string[]
+      | undefined;
+    let fieldEntries = Object.entries(modelDesc.fields || {});
+
+    if (listOrder && listOrder.length > 0) {
+      // Sort fields by list_order, fields not in list_order go to the end
+      fieldEntries = fieldEntries.sort(([a], [b]) => {
+        const indexA = listOrder.indexOf(a);
+        const indexB = listOrder.indexOf(b);
+        // If not in list_order, put at the end
+        const orderA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+        const orderB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+        return orderA - orderB;
+      });
+    }
+
     // 生成数据列
-    Object.entries(modelDesc.fields || {}).forEach(
-      ([fieldName, fieldConfig]) => {
-        if (fieldConfig.show === false) {
-          return;
-        }
+    fieldEntries.forEach(([fieldName, fieldConfig]) => {
+      if (fieldConfig.show === false) {
+        return;
+      }
 
-        const column: ProColumns<Record<string, any>> = {
-          title: fieldConfig.name || fieldName,
-          dataIndex: fieldName,
-          key: fieldName,
-          width: 150,
-          ellipsis: true,
-          tooltip: fieldConfig.help_text,
-          hideInTable: false,
-          hideInSearch: !(modelDesc.attrs as any)?.list_search?.includes(
-            fieldName,
-          ),
-        };
+      // Check if field is in list_search
+      const isInListSearch = (modelDesc.attrs as any)?.list_search?.includes(
+        fieldName,
+      );
+      // list_range_search only works if field is also in list_search
+      const isInListRangeSearch =
+        isInListSearch && listRangeSearch?.includes(fieldName);
 
-        // 根据字段类型设置 valueType 和渲染逻辑
-        switch (fieldConfig.field_type) {
-          case 'BooleanField':
-            column.valueType = 'switch';
-            column.render = (_, record) => (
-              <span>{record[fieldName] ? '✓' : '✗'}</span>
-            );
-            break;
-          case 'DateField':
+      const column: ProColumns<Record<string, any>> = {
+        title: fieldConfig.name || fieldName,
+        dataIndex: fieldName,
+        key: fieldName,
+        width: 150,
+        ellipsis: true,
+        tooltip: fieldConfig.help_text,
+        hideInTable: false,
+        hideInSearch: !isInListSearch,
+      };
+
+      // 根据字段类型设置 valueType 和渲染逻辑
+      switch (fieldConfig.field_type) {
+        case 'BooleanField':
+          column.valueType = 'switch';
+          column.render = (_, record) => (
+            <span>{record[fieldName] ? '✓' : '✗'}</span>
+          );
+          break;
+        case 'DateField':
+          // Use dateRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'dateRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+          } else {
             column.valueType = 'date';
-            column.render = (_, record) =>
-              record[fieldName]
-                ? dayjs(record[fieldName]).format('YYYY-MM-DD')
-                : '-';
-            break;
-          case 'DatetimeField':
+          }
+          column.render = (_, record) =>
+            record[fieldName]
+              ? dayjs(record[fieldName]).format('YYYY-MM-DD')
+              : '-';
+          break;
+        case 'DatetimeField':
+          // Use dateTimeRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'dateTimeRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+          } else {
             column.valueType = 'dateTime';
-            column.render = (_, record) =>
-              record[fieldName]
-                ? dayjs(
-                    typeof record[fieldName] === 'number' &&
-                      `${record[fieldName]}`.length === 10
-                      ? record[fieldName] * 1000
-                      : record[fieldName],
-                  ).format('YYYY-MM-DD HH:mm:ss')
-                : '-';
-            break;
-          case 'TimeField':
-            column.valueType = 'time';
-            column.render = (_, record) =>
-              record[fieldName]
-                ? dayjs(record[fieldName]).format('HH:mm:ss')
-                : '-';
-            break;
-          case 'IntegerField':
-          case 'FloatField':
+          }
+          column.render = (_, record) =>
+            record[fieldName]
+              ? dayjs(
+                  typeof record[fieldName] === 'number' &&
+                    `${record[fieldName]}`.length === 10
+                    ? record[fieldName] * 1000
+                    : record[fieldName],
+                ).format('YYYY-MM-DD HH:mm:ss')
+              : '-';
+          break;
+        case 'TimeField':
+          column.valueType = 'time';
+          column.render = (_, record) =>
+            record[fieldName]
+              ? dayjs(record[fieldName]).format('HH:mm:ss')
+              : '-';
+          break;
+        case 'IntegerField':
+        case 'FloatField':
+          // Use digitRange for list_range_search fields
+          if (isInListRangeSearch) {
+            column.valueType = 'digitRange';
+            column.search = {
+              transform: (value: any) => {
+                return {
+                  [fieldName]: value,
+                };
+              },
+            };
+            // Use ProTable's built-in digitRange component (no custom renderFormItem)
+          } else {
             column.valueType = 'digit';
-            column.render = (_, record) =>
-              record[fieldName] !== null && record[fieldName] !== undefined
-                ? Number(record[fieldName]).toLocaleString()
-                : '-';
-            break;
-          case 'CharField':
-          case 'TextField':
-            if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-              column.valueType = 'select';
-              column.valueEnum = fieldConfig.choices.reduce(
-                (acc: any, [value, label]: [string, string]) => {
-                  acc[value] = { text: label };
-                  return acc;
-                },
-                {},
+          }
+          column.render = (_, record) =>
+            record[fieldName] !== null && record[fieldName] !== undefined
+              ? Number(record[fieldName]).toLocaleString()
+              : '-';
+          break;
+        case 'CharField':
+        case 'TextField':
+          if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+            column.valueType = 'select';
+            column.valueEnum = fieldConfig.choices.reduce(
+              (acc: any, [value, label]: [string, string]) => {
+                acc[value] = { text: label };
+                return acc;
+              },
+              {},
+            );
+            column.render = (_, record) => {
+              const choice = fieldConfig.choices?.find(
+                ([value]: [string, string]) => value === record[fieldName],
               );
-              column.render = (_, record) => {
-                const choice = fieldConfig.choices?.find(
-                  ([value]: [string, string]) => value === record[fieldName],
+              return choice ? choice[1] : record[fieldName] || '-';
+            };
+          } else {
+            // Use text range for list_range_search fields
+            if (isInListRangeSearch) {
+              column.valueType = 'text';
+              column.search = {
+                transform: (value: any) => {
+                  return {
+                    [fieldName]: value,
+                  };
+                },
+              };
+              column.renderFormItem = (_schema, config) => {
+                const { value, onChange } = config;
+                const currentValue = Array.isArray(value) ? value : ['', ''];
+                return (
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Start"
+                      value={currentValue[0] || ''}
+                      onChange={(e) => {
+                        onChange?.([e.target.value, currentValue[1] || '']);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '4px 11px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 6,
+                        outline: 'none',
+                      }}
+                    />
+                    <span>~</span>
+                    <input
+                      type="text"
+                      placeholder="End"
+                      value={currentValue[1] || ''}
+                      onChange={(e) => {
+                        onChange?.([currentValue[0] || '', e.target.value]);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '4px 11px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 6,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
                 );
-                return choice ? choice[1] : record[fieldName] || '-';
               };
             } else {
               column.valueType = 'text';
-              column.render = (_, record) => {
-                const text = record[fieldName] || '-';
-                return text.length > 20 ? `${text.substring(0, 20)}...` : text;
-              };
             }
-            break;
-          case 'EditorField':
-            column.valueType = 'text';
-            column.width = 200;
             column.render = (_, record) => {
-              const content = record[fieldName] || '';
-              if (!content) return '-';
-
-              let preview = '';
-              let displayContent = '';
-
-              try {
-                // 尝试解析 Editor.js JSON 数据
-                const editorData = JSON.parse(content);
-                if (editorData?.blocks) {
-                  // 提取所有文本块的内容
-                  const textBlocks = editorData.blocks
-                    .filter(
-                      (block: any) =>
-                        block.data && typeof block.data === 'object',
-                    )
-                    .map((block: any) => {
-                      if (
-                        block.type === 'paragraph' ||
-                        block.type === 'header'
-                      ) {
-                        return block.data.text || '';
-                      } else if (block.type === 'list') {
-                        return block.data.items?.join(', ') || '';
-                      } else if (block.type === 'quote') {
-                        return block.data.text || '';
-                      } else if (block.type === 'code') {
-                        return block.data.code || '';
-                      }
-                      return '';
-                    })
-                    .filter(Boolean);
-
-                  const allText = textBlocks
-                    .join(' ')
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/&nbsp;/g, ' ');
-                  preview =
-                    allText.length > 50
-                      ? `${allText.substring(0, 50)}...`
-                      : allText;
-
-                  // 为悬停显示创建简化的预览
-                  displayContent = editorData.blocks
-                    .map((block: any, _index: number) => {
-                      const blockType = block.type || 'paragraph';
-                      const blockData = block.data || {};
-
-                      switch (blockType) {
-                        case 'header': {
-                          const level = blockData.level || 2;
-                          return `<h${level}>${blockData.text || ''}</h${level}>`;
-                        }
-                        case 'paragraph':
-                          return `<p>${blockData.text || ''}</p>`;
-                        case 'list': {
-                          const items = blockData.items || [];
-                          const listItems = items
-                            .map((item: string) => `<li>${item}</li>`)
-                            .join('');
-                          return blockData.style === 'ordered'
-                            ? `<ol>${listItems}</ol>`
-                            : `<ul>${listItems}</ul>`;
-                        }
-                        case 'quote':
-                          return `<blockquote><p>${blockData.text || ''}</p>${blockData.caption ? `<cite>${blockData.caption}</cite>` : ''}</blockquote>`;
-                        case 'code':
-                          return `<pre><code>${blockData.code || ''}</code></pre>`;
-                        default:
-                          return `<p>${JSON.stringify(blockData)}</p>`;
-                      }
-                    })
-                    .join('');
-                }
-              } catch (_error) {
-                // 如果不是 JSON 格式，可能是 HTML 内容，回退到原来的处理方式
-                const textContent = content
-                  .replace(/<[^>]*>/g, '')
-                  .replace(/&nbsp;/g, ' ');
-                preview =
-                  textContent.length > 50
-                    ? `${textContent.substring(0, 50)}...`
-                    : textContent;
-                displayContent = content;
-              }
-
-              return (
-                <Tooltip
-                  title={
-                    <div
-                      style={{
-                        maxWidth: 500,
-                        maxHeight: 300,
-                        overflow: 'auto',
-                        padding: '8px',
-                        backgroundColor: '#fff',
-                      }}
-                    >
-                      <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
-                        {displayContent}
-                      </pre>
-                    </div>
-                  }
-                  placement="topLeft"
-                  overlayStyle={{ maxWidth: 'none' }}
-                >
-                  <span
-                    style={{
-                      cursor: 'pointer',
-                      color: '#1677ff',
-                      fontSize: '12px',
-                    }}
-                    title="Hover to view formatted content"
-                  >
-                    ✍️ {preview || 'Rich content'}
-                  </span>
-                </Tooltip>
-              );
-            };
-            break;
-
-          case 'ImageField':
-            column.valueType = 'text';
-            column.width = 120;
-            column.render = (_, record) => {
-              const imageUrl = record[fieldName];
-              if (!imageUrl) return '-';
-
-              return (
-                <Image
-                  src={imageUrl}
-                  alt={fieldConfig.name || fieldName}
-                  width={80}
-                  height={60}
-                  style={{
-                    objectFit: 'cover',
-                    borderRadius: 4,
-                    border: '1px solid #d9d9d9',
-                  }}
-                  placeholder={
-                    <div
-                      style={{
-                        width: 80,
-                        height: 60,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f5f5f5',
-                        border: '1px solid #d9d9d9',
-                        borderRadius: 4,
-                      }}
-                    >
-                      <EyeOutlined style={{ color: '#bfbfbf' }} />
-                    </div>
-                  }
-                  fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+2oqIrqwOqG4otoP/7DwhIHGALSCxgCzgASCAJSCBhA0ggAQkgASRAAgkgAQkrAUlbrUoroKChzZmNe/+t2+NZTZ+3pt6vr7+7/ffO9/S7v//x8v9Nv339b7Y8A4cOHjjyBAADGHGAYNwBjFjAGIJBBzBmAYMIJh3AqAWMIph0AKMWMIpg0gGMWsAogkknMGrBgAWMIph0AqMWDFjAKIJJJzBqwYAFjCKYdAKjFgxYwCiCSSc="
-                />
-              );
-            };
-            break;
-
-          default:
-            column.valueType = 'text';
-        }
-
-        // 设置排序
-        if ((modelDesc.attrs as any)?.list_sort?.includes(fieldName)) {
-          column.sorter = true;
-        }
-
-        // 设置筛选
-        if ((modelDesc.attrs as any)?.list_filter?.includes(fieldName)) {
-          if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-            column.filters = fieldConfig.choices.map(
-              ([value, label]: [string, string]) => ({
-                text: label,
-                value: value,
-              }),
-            );
-            column.onFilter = (value: any, record: Record<string, any>) => {
-              return record[fieldName] === value;
+              const text = record[fieldName] || '-';
+              return text.length > 20 ? `${text.substring(0, 20)}...` : text;
             };
           }
-        }
+          break;
+        case 'EditorField':
+          column.valueType = 'text';
+          column.width = 220;
+          column.render = (_, record) => {
+            const content = record[fieldName];
+            if (!content) return '-';
 
-        // 设置可编辑
-        if (modelDesc.attrs.can_edit && !fieldConfig.readonly) {
-          column.editable = () => true;
-        }
+            const stringContent = String(content);
+            const sanitizedText = stringContent
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/&nbsp;/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
 
-        columns.push(column);
-      },
-    );
+            const preview =
+              sanitizedText.length > 50
+                ? `${sanitizedText.substring(0, 50)}...`
+                : sanitizedText || 'Rich content';
+
+            return (
+              <Tooltip
+                title={
+                  <div
+                    style={{
+                      maxWidth: 500,
+                      maxHeight: 300,
+                      overflow: 'auto',
+                      padding: '8px',
+                      backgroundColor: '#fff',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: stringContent }}
+                  />
+                }
+                placement="topLeft"
+                overlayStyle={{ maxWidth: 'none' }}
+              >
+                <span
+                  style={{
+                    cursor: 'pointer',
+                    color: '#1677ff',
+                    fontSize: '12px',
+                  }}
+                  title="Hover to view formatted content"
+                >
+                  ✍️ {preview}
+                </span>
+              </Tooltip>
+            );
+          };
+          break;
+
+        case 'ImageField':
+          column.valueType = 'text';
+          column.width = 120;
+          column.render = (_, record) => {
+            const imageUrl = record[fieldName];
+            if (!imageUrl) return '-';
+
+            return (
+              <Image
+                src={imageUrl}
+                alt={fieldConfig.name || fieldName}
+                width={80}
+                height={60}
+                style={{
+                  objectFit: 'cover',
+                  borderRadius: 4,
+                  border: '1px solid #d9d9d9',
+                }}
+                placeholder={
+                  <div
+                    style={{
+                      width: 80,
+                      height: 60,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#f5f5f5',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <EyeOutlined style={{ color: '#bfbfbf' }} />
+                  </div>
+                }
+                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+2oqIrqwOqG4otoP/7DwhIHGALSCxgCzgASCAJSCBhA0ggAQkgASRAAgkgAQkrAUlbrUoroKChzZmNe/+t2+NZTZ+3pt6vr7+7/ffO9/S7v//x8v9Nv339b7Y8A4cOHjjyBAADGHGAYNwBjFjAGIJBBzBmAYMIJh3AqAWMIph0AKMWMIpg0gGMWsAogkknMGrBgAWMIph0AqMWDFjAKIJJJzBqwYAFjCKYdAKjFgxYwCiCSSc="
+              />
+            );
+          };
+          break;
+
+        case 'JsonField':
+          column.valueType = 'text';
+          column.width = 180;
+          column.render = (_, record) => {
+            const content = record[fieldName];
+            if (content === null || content === undefined) return '-';
+
+            // Convert to string for display
+            let jsonString: string;
+            let formattedJson: string;
+            try {
+              if (typeof content === 'string') {
+                // Parse and re-stringify to validate and format
+                const parsed = JSON.parse(content);
+                jsonString = JSON.stringify(parsed);
+                formattedJson = JSON.stringify(parsed, null, 2);
+              } else {
+                jsonString = JSON.stringify(content);
+                formattedJson = JSON.stringify(content, null, 2);
+              }
+            } catch {
+              jsonString = String(content);
+              formattedJson = String(content);
+            }
+
+            // Create preview text
+            const preview =
+              jsonString.length > 30
+                ? `${jsonString.substring(0, 30)}...`
+                : jsonString;
+
+            return (
+              <Tooltip
+                title={
+                  <pre
+                    style={{
+                      margin: 0,
+                      maxWidth: 500,
+                      maxHeight: 400,
+                      overflow: 'auto',
+                      fontSize: 12,
+                      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {formattedJson}
+                  </pre>
+                }
+                placement="topLeft"
+                overlayStyle={{ maxWidth: 'none' }}
+                color="#fff"
+                overlayInnerStyle={{ color: '#333' }}
+              >
+                <span
+                  style={{
+                    cursor: 'pointer',
+                    color: '#722ed1',
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    fontSize: 12,
+                  }}
+                  title="Hover to view formatted JSON"
+                >
+                  📋 {preview}
+                </span>
+              </Tooltip>
+            );
+          };
+          break;
+
+        default:
+          column.valueType = 'text';
+      }
+
+      // 设置排序 (front-end only, no API request)
+      if ((modelDesc.attrs as any)?.list_sort?.includes(fieldName)) {
+        column.sorter = (a: Record<string, any>, b: Record<string, any>) => {
+          const aVal = a[fieldName];
+          const bVal = b[fieldName];
+          if (aVal === null || aVal === undefined) return -1;
+          if (bVal === null || bVal === undefined) return 1;
+          if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return aVal - bVal;
+          }
+          return String(aVal).localeCompare(String(bVal));
+        };
+      }
+
+      // 设置筛选
+      if ((modelDesc.attrs as any)?.list_filter?.includes(fieldName)) {
+        if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+          column.filters = fieldConfig.choices.map(
+            ([value, label]: [string, string]) => ({
+              text: label,
+              value: value,
+            }),
+          );
+          column.onFilter = (value: any, record: Record<string, any>) => {
+            return record[fieldName] === value;
+          };
+        }
+      }
+
+      // 设置可编辑 (readonly fields are never editable)
+      const listEditable = (modelDesc.attrs as any)?.list_editable as
+        | string[]
+        | undefined;
+      if (fieldConfig.readonly) {
+        // Readonly fields are never editable
+        column.editable = false;
+      } else if (modelDesc.attrs.can_edit) {
+        // Only fields in list_editable are editable
+        // If list_editable is not defined or empty, no columns are editable
+        if (listEditable && listEditable.length > 0) {
+          column.editable = listEditable.includes(fieldName)
+            ? () => true
+            : false;
+        } else {
+          // No list_editable defined, columns are not editable
+          column.editable = false;
+        }
+      }
+
+      columns.push(column);
+    });
 
     // 添加操作列
-    const hasDetailAction = modelDesc.attrs.editable;
+    const hasDetailAction = true; // Always show Detail button
     const hasEditAction = modelDesc.attrs.can_edit;
     const hasDeleteAction = modelDesc.attrs.can_delete;
     const nonBatchActions = Object.values(modelDesc.actions || {}).filter(
@@ -515,7 +657,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   }, [modelDesc, onDetail, onAction, onSave, onDelete, editableKeys]);
 
   // 生成批量操作菜单项
-  const renderBatchActions = useCallback(() => {
+  const getBatchActionMenuItems = useCallback(() => {
     if (!modelDesc.actions) return [];
 
     const menuItems: any[] = [];
@@ -525,14 +667,23 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           menuItems.push({
             key: actionKey,
             label: action.label || action.name,
-            onClick: () => onAction?.(actionKey, action, undefined, true, []),
+            onClick: () => {
+              // Get current form values directly when clicking
+              const currentFormValues = formRef.current?.getFieldsValue() || {};
+              // Merge with saved search params (in case form values are empty)
+              const searchParams = {
+                ...currentSearchParams,
+                ...currentFormValues,
+              };
+              onAction?.(actionKey, action, undefined, true, [], searchParams);
+            },
           });
         }
       },
     );
 
     return menuItems;
-  }, [modelDesc, onAction]);
+  }, [modelDesc, onAction, currentSearchParams]);
 
   // 生成工具栏按钮
   const renderToolBar = useCallback(() => {
@@ -552,90 +703,159 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return buttons;
-  }, [modelDesc, modelName, onAction]);
+  }, [modelDesc, onAction]);
 
   const columns = useMemo(() => generateColumns(), [generateColumns]);
 
-  // 检查是否有可搜索的字段
+  // 检查是否有可搜索的字段或批量操作
   const searchFields = (modelDesc.attrs as any)?.list_search || [];
   const hasSearchableFields = searchFields.length > 0;
+  const batchActions = getBatchActionMenuItems();
+  const hasBatchActions = batchActions.length > 0;
+  const showSearchPanel = hasSearchableFields || hasBatchActions;
 
   return (
-    <ProTable<Record<string, any>>
-      headerTitle={modelDesc.attrs.help_text || modelName}
-      actionRef={actionRef}
-      formRef={formRef}
-      rowKey={(record) => record.id || record.key || JSON.stringify(record)}
-      search={
-        hasSearchableFields
-          ? {
-              labelWidth: 120,
-              defaultCollapsed: false,
-              optionRender: (_searchConfig: any, _formProps: any, dom: any) => {
-                const batchActions = renderBatchActions();
-                const originalButtons = dom.reverse();
+    <>
+      <style>
+        {`
+          .common-pro-table [class*='ant-space'] {
+            flex-wrap: wrap !important;
+            justify-content: flex-end !important;
+          }
+          .common-pro-table [class*='ant-space-item']:last-child {
+            margin-left: auto !important;
+          }
+          .common-pro-table [class*='ant-pro-query-filter-collapse-button'] {
+            white-space: nowrap !important;
+          }
+        `}
+      </style>
+      <ProTable<Record<string, any>>
+        className="common-pro-table"
+        headerTitle={modelDesc.attrs.help_text || modelName}
+        actionRef={actionRef}
+        formRef={formRef}
+        rowKey={(record) => record.id || record.key || JSON.stringify(record)}
+        search={
+          showSearchPanel
+            ? {
+                labelWidth: 120,
+                defaultCollapsed: false,
+                optionRender: (
+                  _searchConfig: any,
+                  formProps: any,
+                  dom: any,
+                ) => {
+                  // Only show Query/Reset buttons if there are searchable fields
+                  const originalButtons = hasSearchableFields
+                    ? dom.reverse()
+                    : [];
 
-                if (batchActions.length > 0) {
-                  const moreActionsDropdown = (
-                    <Dropdown
-                      key="more-actions"
-                      menu={{ items: batchActions }}
-                      trigger={['click']}
+                  const buttons = [...originalButtons];
+
+                  if (hasBatchActions) {
+                    // Build batch action items dynamically with access to form
+                    const batchActionItems = Object.entries(
+                      modelDesc.actions || {},
+                    )
+                      .filter(([, action]: [string, any]) => action.batch)
+                      .map(([actionKey, action]: [string, any]) => ({
+                        key: actionKey,
+                        label: action.label || action.name,
+                        onClick: () => {
+                          // Get form values directly from formProps
+                          const formValues =
+                            formProps.form?.getFieldsValue() || {};
+                          onAction?.(
+                            actionKey,
+                            action,
+                            undefined,
+                            true,
+                            [],
+                            formValues,
+                          );
+                        },
+                      }));
+
+                    const batchActionsDropdown = (
+                      <Dropdown
+                        key="batch-actions"
+                        menu={{ items: batchActionItems }}
+                        trigger={['click']}
+                      >
+                        <Button>
+                          Batch Actions
+                          <MoreOutlined />
+                        </Button>
+                      </Dropdown>
+                    );
+
+                    buttons.push(batchActionsDropdown);
+                  }
+
+                  // Wrap buttons in a flex container that allows wrapping
+                  return (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                      }}
                     >
-                      <Button>
-                        More
-                        <MoreOutlined />
-                      </Button>
-                    </Dropdown>
+                      {buttons}
+                    </div>
                   );
-
-                  return [...originalButtons, moreActionsDropdown];
-                }
-
-                return originalButtons;
-              },
-            }
-          : false
-      }
-      toolBarRender={() => {
-        const buttons = renderToolBar();
-        return buttons.length > 0 ? buttons : false;
-      }}
-      request={data ? undefined : onRequest}
-      dataSource={data}
-      columns={columns}
-      editable={
-        modelDesc.attrs.can_edit
-          ? {
-              type: 'multiple',
-              editableKeys,
-              onChange: setEditableKeys,
-              onSave: async (_key: any, record: Record<string, any>) => {
-                await onSave?.(record);
-              },
-              actionRender: (_row: any, _config: any, defaultDom: any) => {
-                return [defaultDom.save, defaultDom.cancel];
-              },
-            }
-          : undefined
-      }
-      scroll={{
-        x: 'max-content',
-        y: 'calc(100vh - 400px)',
-      }}
-      pagination={{
-        showSizeChanger: true,
-        showQuickJumper: true,
-        ...(data ? { pageSize: 20 } : {}),
-      }}
-      options={{
-        search: false,
-        reload: true,
-        density: true,
-        setting: true,
-      }}
-      {...tableProps}
-    />
+                },
+              }
+            : false
+        }
+        toolBarRender={() => {
+          const buttons = renderToolBar();
+          return buttons.length > 0 ? buttons : false;
+        }}
+        request={data ? undefined : onRequest}
+        beforeSearchSubmit={(params) => {
+          // Save search params for batch actions
+          setCurrentSearchParams(params);
+          return params;
+        }}
+        dataSource={data}
+        columns={columns}
+        editable={
+          modelDesc.attrs.can_edit
+            ? {
+                type: 'multiple',
+                editableKeys,
+                onChange: setEditableKeys,
+                onSave: async (_key: any, record: Record<string, any>) => {
+                  await onSave?.(record);
+                },
+                actionRender: (_row: any, _config: any, defaultDom: any) => {
+                  return [defaultDom.save, defaultDom.cancel];
+                },
+              }
+            : undefined
+        }
+        scroll={{
+          x: 'max-content',
+          y: 'calc(100vh - 400px)',
+        }}
+        pagination={{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          ...(data ? { pageSize: 20 } : {}),
+        }}
+        options={{
+          search: false,
+          reload: true,
+          density: true,
+          setting: true,
+        }}
+        {...tableProps}
+      />
+    </>
   );
 };
 

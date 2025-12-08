@@ -1176,6 +1176,14 @@
             "description": "number of items to display per page in frontend admin",
             "default": 20
           },
+          "list_page_size_options": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "List Page Size Options",
+            "description": "list of page size options in frontend admin"
+          },
           "list_search": {
             "items": {
               "type": "string"

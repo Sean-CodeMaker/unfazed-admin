@@ -58,14 +58,52 @@ Object.defineProperty(global.window.console, 'error', {
   writable: true,
   configurable: true,
   value: (...rest) => {
-    const logStr = rest.join('');
+    const logStr = String(rest[0] || '');
+    // Filter out known warnings and errors
     if (
       logStr.includes(
         'Warning: An update to %s inside a test was not wrapped in act(...)',
-      )
+      ) ||
+      // Filter out CKEditor CSS parsing errors in jsdom
+      logStr.includes('Could not parse CSS stylesheet') ||
+      (rest[0]?.message &&
+        rest[0].message.includes('Could not parse CSS stylesheet'))
     ) {
       return;
     }
     errorLog(...rest);
   },
 });
+
+// Mock CKEditor5 to avoid CSS parsing issues in jsdom
+jest.mock('@ckeditor/ckeditor5-build-classic', () => ({
+  __esModule: true,
+  default: class MockEditor {
+    static create() {
+      return Promise.resolve({
+        destroy: jest.fn(),
+        getData: jest.fn(() => ''),
+        setData: jest.fn(),
+        model: {
+          document: {
+            on: jest.fn(),
+          },
+        },
+        editing: {
+          view: {
+            document: {
+              on: jest.fn(),
+            },
+          },
+        },
+      });
+    }
+  },
+}));
+
+jest.mock('@ckeditor/ckeditor5-react', () => ({
+  __esModule: true,
+  CKEditor: ({ onChange, data }) => {
+    return null;
+  },
+}));

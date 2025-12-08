@@ -127,11 +127,13 @@ const ModelCustom: React.FC<ModelCustomProps> = ({ toolName, onBack }) => {
             : formRef.current?.getFieldsValue?.() || {};
 
         const searchConditions = buildSearchConditions(rawValues, toolDesc);
+        const formPayload =
+          actionConfig.input === 'empty' ? {} : formData || {};
 
         const response = await executeModelAction({
           name: toolName,
           action: actionKey,
-          form_data: actionConfig.input === 'empty' ? {} : formData || {},
+          form_data: formPayload,
           search_condition: searchConditions,
         });
 

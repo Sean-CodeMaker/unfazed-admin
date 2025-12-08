@@ -3,9 +3,10 @@ import { ModelDetail, ModelList } from '@/components';
 
 interface ModelAdminProps {
   modelName: string;
+  routeLabel?: string;
 }
 
-const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
+const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName, routeLabel }) => {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [currentRecord, setCurrentRecord] = useState<Record<
     string,
@@ -27,12 +28,6 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
   const handleDetail = (record: Record<string, any>) => {
     setCurrentRecord(record);
     setCurrentView('detail');
-  };
-
-  // 处理新增操作
-  const handleAdd = () => {
-    // TODO: 实现新增逻辑
-    console.log('Add clicked');
   };
 
   // 返回列表
@@ -61,12 +56,12 @@ const ModelAdmin: React.FC<ModelAdminProps> = ({ modelName }) => {
         <ModelList
           modelName={modelName}
           onDetail={handleDetail}
-          onAdd={handleAdd}
           onModelDescLoaded={handleModelDescLoaded}
         />
       ) : currentRecord && modelDesc ? (
         <ModelDetail
           modelName={modelName}
+          routeLabel={routeLabel}
           modelDesc={modelDesc}
           record={currentRecord}
           onBack={handleBackToList}

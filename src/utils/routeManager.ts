@@ -43,15 +43,6 @@ function _transformApiRouteToUmiRoute(apiRoute: API.AdminRoute): any {
 }
 
 /**
- * 获取动态路由配置（已废弃）
- * 注意：现在动态路由通过 DynamicRoute 组件在运行时处理，不再需要这个函数
- * @deprecated 使用 getRouteAndMenuData() 替代
- */
-export async function getCompleteRoutes(): Promise<any[]> {
-  return [];
-}
-
-/**
  * 将API路由数据转换为菜单数据格式
  */
 export function transformApiRoutesToMenuData(routes: API.AdminRoute[]): any[] {

@@ -3,6 +3,7 @@ import {
   ProFormDatePicker,
   ProFormDateTimePicker,
   ProFormDigit,
+  ProFormItem,
   ProFormSelect,
   ProFormSwitch,
   ProFormText,
@@ -10,8 +11,10 @@ import {
   ProFormTimePicker,
 } from '@ant-design/pro-components';
 import { Button, Modal } from 'antd';
+import dayjs from 'dayjs';
 import React from 'react';
-import { ProFormEditorJS } from '@/components';
+import { JsonFieldEditor, ProFormEditorJS } from '@/components';
+import { toJsonString, validateJson } from '@/utils/json';
 
 /**
  * 渲染表单字段的公共工具函数
@@ -33,11 +36,16 @@ export const renderFormField = (
 ) => {
   const { readonly = false, commonProps: customCommonProps } = options || {};
 
+  // Determine if field should be readonly (from options OR from fieldConfig)
+  const isReadonly =
+    readonly || fieldConfig.readonly || customCommonProps?.readonly;
+
   const commonProps = {
     name: fieldName,
     label: fieldConfig.name || fieldName,
     tooltip: fieldConfig.help_text,
-    readonly: readonly || fieldConfig.readonly,
+    readonly: isReadonly,
+    disabled: isReadonly, // Also set disabled for better compatibility
     rules: fieldConfig.blank
       ? []
       : [
@@ -47,6 +55,8 @@ export const renderFormField = (
           },
         ],
     ...customCommonProps,
+    // Ensure readonly/disabled are not overwritten by customCommonProps
+    ...(isReadonly ? { readonly: true, disabled: true } : {}),
   };
 
   // 根据字段类型渲染不同的组件
@@ -100,7 +110,35 @@ export const renderFormField = (
       return <ProFormDatePicker key={fieldName} {...commonProps} />;
 
     case 'DatetimeField':
-      return <ProFormDateTimePicker key={fieldName} {...commonProps} />;
+      return (
+        <ProFormDateTimePicker
+          key={fieldName}
+          {...commonProps}
+          fieldProps={{
+            showTime: true,
+            format: 'YYYY-MM-DD HH:mm:ss',
+          }}
+          // Convert timestamp to dayjs for display
+          convertValue={(value: any) => {
+            if (!value) return value;
+            // If value is a number (timestamp), convert to dayjs
+            if (typeof value === 'number') {
+              // Check if timestamp is in seconds (10 digits) or milliseconds (13 digits)
+              const ts = String(value).length === 10 ? value * 1000 : value;
+              return dayjs(ts);
+            }
+            // If already a string or dayjs object, return as is
+            return value;
+          }}
+          // Convert dayjs back to timestamp for submission
+          transform={(value: any) => {
+            if (!value) return { [fieldName]: value };
+            // Convert to timestamp (seconds)
+            const timestamp = dayjs(value).unix();
+            return { [fieldName]: timestamp };
+          }}
+        />
+      );
 
     case 'TimeField':
       return <ProFormTimePicker key={fieldName} {...commonProps} />;
@@ -112,7 +150,7 @@ export const renderFormField = (
           {...commonProps}
           fieldProps={{
             height: 300,
-            readOnly: readonly,
+            readOnly: isReadonly,
             config: {
               placeholder: commonProps.tooltip || 'Start writing your story...',
             },
@@ -175,6 +213,51 @@ export const renderFormField = (
             ),
           }}
         />
+      );
+
+    case 'JsonField':
+      return (
+        <ProFormItem
+          key={fieldName}
+          name={fieldName}
+          label={fieldConfig.name || fieldName}
+          tooltip={fieldConfig.help_text}
+          rules={[
+            ...(fieldConfig.blank
+              ? []
+              : [
+                  {
+                    required: true,
+                    message: `${fieldConfig.name || fieldName} is required`,
+                  },
+                ]),
+            {
+              validator: async (_: any, value: any) => {
+                if (value === null || value === undefined) return;
+                const result = validateJson(value);
+                if (!result.valid) {
+                  throw new Error(`Invalid JSON: ${result.error}`);
+                }
+              },
+            },
+          ]}
+          // Convert object to JSON string for display
+          getValueProps={(value: any) => ({
+            value: toJsonString(value),
+          })}
+          // Keep as JSON string when submitting to backend
+          transform={(value: any) => {
+            // Ensure we send a valid JSON string to backend
+            const jsonString = toJsonString(value);
+            return { [fieldName]: jsonString };
+          }}
+          {...customCommonProps}
+        >
+          <JsonFieldEditor
+            readonly={isReadonly}
+            placeholder={fieldConfig.help_text || 'Enter JSON data...'}
+          />
+        </ProFormItem>
       );
 
     default:

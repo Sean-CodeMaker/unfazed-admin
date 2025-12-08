@@ -39,6 +39,9 @@
         "noStaticElementInteractions": "off",
         "useValidAnchor": "off",
         "useKeyWithClickEvents": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
       }
     }
   },

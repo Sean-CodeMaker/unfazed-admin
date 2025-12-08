@@ -82,7 +82,36 @@ const crownData = [
         material: 'pure_gold',
         gems: ['diamond', 'ruby', 'emerald'],
         region: 'Europe',
-        status: 'available'
+        status: 'available',
+        metadata: {
+            certification: 'Royal Heritage Certified',
+            appraisal_date: '2024-01-10',
+            insurance_value: 15000000,
+            exhibition_history: ['British Museum 2020', 'Louvre 2022', 'Met 2023'],
+            condition: 'excellent',
+            provenance: {
+                original_owner: 'King Arthur',
+                year_created: 520,
+                documented_since: 1066
+            }
+        },
+        specifications: {
+            dimensions: {
+                height_cm: 25,
+                diameter_cm: 18,
+                circumference_cm: 56.5
+            },
+            materials_breakdown: {
+                gold_purity: '24k',
+                gold_weight_grams: 2100,
+                gems_total_carats: 45.5
+            },
+            craftsmanship: {
+                technique: 'lost-wax casting',
+                artisan: 'Master Goldsmith Guild',
+                restoration_count: 3
+            }
+        }
     },
     {
         id: 2,
@@ -100,7 +129,37 @@ const crownData = [
         material: 'platinum',
         gems: ['diamond'],
         region: 'Britain',
-        status: 'reserved'
+        status: 'reserved',
+        metadata: {
+            certification: 'GIA Certified',
+            appraisal_date: '2024-01-15',
+            insurance_value: 35000000,
+            exhibition_history: ['Tower of London 2021', 'Buckingham Palace 2023'],
+            condition: 'pristine',
+            provenance: {
+                original_owner: 'House of Windsor',
+                year_created: 1953,
+                documented_since: 1953
+            }
+        },
+        specifications: {
+            dimensions: {
+                height_cm: 22,
+                diameter_cm: 16,
+                circumference_cm: 52
+            },
+            materials_breakdown: {
+                platinum_weight_grams: 1500,
+                diamonds_count: 99,
+                diamonds_total_carats: 125.8,
+                largest_diamond_carats: 15.2
+            },
+            craftsmanship: {
+                technique: 'precision setting',
+                artisan: 'Garrard & Co',
+                restoration_count: 0
+            }
+        }
     },
     {
         id: 3,
@@ -117,7 +176,19 @@ const crownData = [
         material: 'jade',
         gems: ['jade', 'pearl'],
         region: 'Asia',
-        status: 'sold'
+        status: 'sold',
+        metadata: {
+            certification: 'Imperial Palace Museum Verified',
+            dynasty: 'Han Dynasty',
+            cultural_significance: 'Symbol of Imperial Authority',
+            condition: 'good'
+        },
+        specifications: {
+            dimensions: { height_cm: 28, diameter_cm: 20 },
+            jade_type: 'Hetian nephrite',
+            jade_grade: 'A+',
+            pearl_count: 12
+        }
     },
     {
         id: 4,
@@ -134,7 +205,19 @@ const crownData = [
         material: 'crystal',
         gems: ['crystal'],
         region: 'Arctic',
-        status: 'available'
+        status: 'available',
+        metadata: {
+            source: 'Alpine Crystal Mines',
+            clarity: 'flawless',
+            special_properties: ['light refraction', 'temperature resistant'],
+            storage_requirements: { temperature_c: -10, humidity_percent: 30 }
+        },
+        specifications: {
+            dimensions: { height_cm: 20, diameter_cm: 15 },
+            crystal_type: 'quartz',
+            facets_count: 256,
+            light_transmission: 0.98
+        }
     },
     {
         id: 5,
@@ -151,7 +234,17 @@ const crownData = [
         material: 'gold',
         gems: ['ruby', 'garnet'],
         region: 'Middle East',
-        status: 'maintenance'
+        status: 'maintenance',
+        metadata: {
+            maintenance_reason: 'gem realignment',
+            estimated_completion: '2024-02-15',
+            service_provider: 'Royal Jewelers Guild'
+        },
+        specifications: {
+            dimensions: { height_cm: 24, diameter_cm: 17 },
+            ruby_count: 48,
+            ruby_total_carats: 89.5
+        }
     },
     {
         id: 6,
@@ -168,7 +261,17 @@ const crownData = [
         material: 'silver',
         gems: ['sapphire', 'aquamarine'],
         region: 'Oceania',
-        status: 'available'
+        status: 'available',
+        metadata: {
+            origin: 'Pacific Islands',
+            legend: 'Said to calm the seas',
+            previous_owners: ['Neptune', 'Poseidon', 'Sea King']
+        },
+        specifications: {
+            dimensions: { height_cm: 23, diameter_cm: 18 },
+            sapphire_count: 36,
+            aquamarine_count: 24
+        }
     },
     {
         id: 7,
@@ -185,7 +288,26 @@ const crownData = [
         material: 'mythril',
         gems: ['diamond', 'ruby', 'emerald', 'sapphire', 'topaz', 'amethyst'],
         region: 'Fantasy',
-        status: 'legendary'
+        status: 'legendary',
+        metadata: {
+            rarity: 'unique',
+            powers: ['light manipulation', 'harmony blessing', 'spectrum shield'],
+            forged_by: 'Ancient Elven Smiths',
+            age_years: 10000
+        },
+        specifications: {
+            dimensions: { height_cm: 30, diameter_cm: 22 },
+            gem_distribution: {
+                diamond: 12,
+                ruby: 8,
+                emerald: 8,
+                sapphire: 8,
+                topaz: 6,
+                amethyst: 6
+            },
+            total_carats: 250,
+            mythril_purity: 0.999
+        }
     },
     {
         id: 8,
@@ -651,6 +773,26 @@ const crownModelDesc = {
             help_text: 'Current status of the crown',
             default: 'available',
             name: 'Status'
+        },
+        metadata: {
+            field_type: 'JsonField' as const,
+            readonly: false,
+            show: true,
+            blank: true,
+            choices: [],
+            help_text: 'Additional metadata in JSON format (e.g. dimensions, certifications)',
+            default: null,
+            name: 'Metadata'
+        },
+        specifications: {
+            field_type: 'JsonField' as const,
+            readonly: false,
+            show: true,
+            blank: true,
+            choices: [],
+            help_text: 'Technical specifications (dimensions, materials breakdown)',
+            default: null,
+            name: 'Specifications'
         }
     },
     actions: {
@@ -790,7 +932,9 @@ const crownModelDesc = {
         can_show_all: true,
         editable: true,
         list_per_page: 20,
+        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
         list_search: ['name', 'type', 'owner', 'status', 'created_at'],
+        list_range_search: ['price', 'weight', 'created_at', 'updated_at'],
         list_filter: ['type', 'level', 'material', 'region', 'status', 'is_active'],
         list_sort: ['id', 'name', 'price', 'level', 'created_at', 'updated_at'],
         list_order: ['-created_at'],
@@ -899,6 +1043,26 @@ const userModelDesc = {
             help_text: 'User role',
             default: 'user',
             name: 'Role'
+        },
+        created_at: {
+            field_type: 'DatetimeField' as const,
+            readonly: true,
+            show: true,
+            blank: false,
+            choices: [],
+            help_text: 'User creation time',
+            default: null,
+            name: 'Created At'
+        },
+        last_login: {
+            field_type: 'DatetimeField' as const,
+            readonly: true,
+            show: true,
+            blank: true,
+            choices: [],
+            help_text: 'Last login time',
+            default: null,
+            name: 'Last Login'
         }
     },
     actions: {
@@ -1008,7 +1172,9 @@ const userModelDesc = {
         can_show_all: true,
         editable: true,
         list_per_page: 20,
+        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
         list_search: ['username', 'email'],
+        list_range_search: ['created_at', 'last_login'],
         list_filter: ['is_active', 'is_staff', 'department', 'role'],
         list_sort: ['id', 'username', 'created_at'],
         list_order: ['-id'],
@@ -1692,7 +1858,9 @@ export default {
                         can_edit: true,
                         can_show_all: true,
                         list_per_page: 10,
+                        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
                         list_search: [],
+                        list_range_search: ['event_date'],
                         list_filter: ['event_type'],
                         list_sort: ['event_date'],
                         list_order: ['-event_date'],
@@ -2128,7 +2296,9 @@ export default {
                         can_edit: true,
                         can_show_all: true,
                         list_per_page: 10,
+                        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
                         list_search: ['id', 'description'],
+                        list_range_search: ['event_date'],
                         list_filter: ['event_type'],
                         list_sort: ['event_date'],
                         list_order: ['-event_date'],
@@ -2235,7 +2405,9 @@ export default {
                         can_edit: true,
                         can_show_all: true,
                         list_per_page: 10,
+                        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
                         list_search: [],
+                        list_range_search: ['issue_date', 'expiry_date'],
                         list_filter: ['certificate_type', 'status'],
                         list_sort: ['issue_date'],
                         list_order: ['-issue_date'],
@@ -2362,7 +2534,9 @@ export default {
                         can_edit: true,
                         can_show_all: true,
                         list_per_page: 10,
+                        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
                         list_search: [],
+                        list_range_search: ['coverage_amount', 'premium_amount', 'start_date', 'end_date'],
                         list_filter: ['policy_type'],
                         list_sort: ['start_date'],
                         list_order: ['-start_date'],
@@ -2420,7 +2594,9 @@ export default {
                         can_edit: true,
                         can_show_all: true,
                         list_per_page: 10,
+                        list_per_page_options: [10, 20, 50, 100, 200, 500, 1000],
                         list_search: [],
+                        list_range_search: [],
                         list_filter: ['name'],
                         list_sort: ['name'],
                         list_order: ['name'],

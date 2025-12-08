@@ -43,7 +43,15 @@ export const useModelOperations = ({
       const conditions: API.Condition[] = [];
 
       // strip pagination params
-      const { current: _c, pageSize: _s, ...searchParams } = searchValues;
+      const {
+        current: _c,
+        pageSize: _s,
+        _timestamp: _t,
+        ...searchParams
+      } = searchValues;
+
+      // Get list_range_search fields
+      const listRangeSearch = (modelDesc.attrs as any)?.list_range_search || [];
 
       Object.entries(searchParams).forEach(([field, value]) => {
         if (value === undefined || value === null || value === '') return;
@@ -52,6 +60,80 @@ export const useModelOperations = ({
         if (!fieldConfig) return;
 
         const condition: API.Condition = { field };
+
+        // Check if this field is in list_range_search
+        const isRangeField = listRangeSearch.includes(field);
+
+        // Handle list_range_search fields with range values
+        if (isRangeField) {
+          // Normalize value to array format [start, end]
+          let start: any;
+          let end: any;
+
+          if (Array.isArray(value)) {
+            [start, end] = value;
+          } else {
+            // If value is not array, treat as single value (use as gte)
+            start = value;
+            end = undefined;
+          }
+
+          switch (fieldConfig.field_type) {
+            case 'CharField':
+              if (start !== undefined && start !== null && start !== '') {
+                conditions.push({ field, gte: String(start) } as any);
+              }
+              if (end !== undefined && end !== null && end !== '') {
+                conditions.push({ field, lte: String(end) } as any);
+              }
+              break;
+
+            case 'IntegerField':
+            case 'FloatField':
+              // Number range search
+              if (start !== undefined && start !== null && start !== '') {
+                conditions.push({ field, gte: Number(start) } as any);
+              }
+              if (end !== undefined && end !== null && end !== '') {
+                conditions.push({ field, lte: Number(end) } as any);
+              }
+              break;
+
+            case 'DateField':
+              // Date range search
+              if (start) {
+                const startStr =
+                  (start as any)?.format?.('YYYY-MM-DD') || String(start);
+                conditions.push({ field, gte: startStr } as any);
+              }
+              if (end) {
+                const endStr =
+                  (end as any)?.format?.('YYYY-MM-DD') || String(end);
+                conditions.push({ field, lte: endStr } as any);
+              }
+              break;
+
+            case 'DatetimeField':
+              // Datetime range search - use timestamp (seconds)
+              if (start) {
+                const startTimestamp =
+                  (start as any)?.unix?.() ||
+                  Math.floor(new Date(start).getTime() / 1000);
+                conditions.push({ field, gte: startTimestamp } as any);
+              }
+              if (end) {
+                const endTimestamp =
+                  (end as any)?.unix?.() ||
+                  Math.floor(new Date(end).getTime() / 1000);
+                conditions.push({ field, lte: endTimestamp } as any);
+              }
+              break;
+
+            default:
+              break;
+          }
+          return;
+        }
 
         // if the field is in attrs.list_search, prefer eq for text
         switch (fieldConfig.field_type) {
@@ -74,7 +156,6 @@ export const useModelOperations = ({
             break;
 
           case 'DateField':
-          case 'DatetimeField':
             if (Array.isArray(value) && value.length === 2) {
               // range
               const [start, end] = value;
@@ -93,11 +174,32 @@ export const useModelOperations = ({
               }
               return;
             } else if ((value as any)?.format) {
-              condition.eq = (value as any).format(
-                fieldConfig.field_type === 'DateField'
-                  ? 'YYYY-MM-DD'
-                  : 'YYYY-MM-DD HH:mm:ss',
-              ) as any;
+              condition.eq = (value as any).format('YYYY-MM-DD') as any;
+            }
+            break;
+
+          case 'DatetimeField':
+            if (Array.isArray(value) && value.length === 2) {
+              // range - use timestamp (seconds)
+              const [start, end] = value;
+              if (start && end) {
+                const startTs =
+                  (start as any)?.unix?.() ||
+                  Math.floor(new Date(start).getTime() / 1000);
+                const endTs =
+                  (end as any)?.unix?.() ||
+                  Math.floor(new Date(end).getTime() / 1000);
+                conditions.push(
+                  { field, gte: startTs } as any,
+                  { field, lte: endTs } as any,
+                );
+              }
+              return;
+            } else if ((value as any)?.unix) {
+              // Single datetime value - use timestamp
+              condition.eq = (value as any).unix() as any;
+            } else if (value instanceof Date) {
+              condition.eq = Math.floor(value.getTime() / 1000) as any;
             }
             break;
 
@@ -249,38 +351,44 @@ export const useModelOperations = ({
   const executeBatchAction = useCallback(
     async (
       actionKey: string,
-      records: Record<string, any>[],
+      _records: Record<string, any>[],
       modelDesc?: API.AdminSerializeModel,
       extra?: any,
+      searchParams?: Record<string, any>,
     ) => {
       try {
-        // 获取当前搜索条件
-        const searchConditions = buildSearchConditions(
-          currentSearchParams,
-          modelDesc,
-        );
+        // Use provided searchParams if it has valid values, otherwise fall back to currentSearchParams
+        // Check if searchParams has any non-undefined, non-null, non-empty values
+        const hasValidSearchParams =
+          searchParams &&
+          Object.values(searchParams).some(
+            (v) => v !== undefined && v !== null && v !== '',
+          );
+        const paramsToUse = hasValidSearchParams
+          ? searchParams
+          : currentSearchParams;
 
-        let allConditions: API.Condition[] = [...searchConditions];
+        // Build search conditions in structured format
+        const searchConditions = buildSearchConditions(paramsToUse, modelDesc);
 
-        // 如果提供了records，则为基于选中记录的操作
-        if (records.length > 0) {
-          // 根据 records 生成选中记录的条件
-          const recordConditions: API.Condition[] = records.map((record) => ({
-            field: 'id',
-            eq: record.id,
-          }));
-          // 合并搜索条件和选中记录条件
-          allConditions = [...searchConditions, ...recordConditions];
-        }
-        // 如果records为空，则为基于搜索条件的批量操作，只使用搜索条件
-
-        const response = await executeModelAction({
+        const payload: API.ModelActionRequest = {
           name: modelName,
           action: actionKey,
-          search_condition:
-            allConditions.length > 0 ? allConditions : undefined,
-          form_data: extra || {},
-        });
+        };
+
+        if (searchConditions.length > 0) {
+          payload.search_condition = searchConditions;
+        }
+
+        if (
+          extra &&
+          typeof extra === 'object' &&
+          Object.keys(extra).length > 0
+        ) {
+          payload.form_data = extra;
+        }
+
+        const response = await executeModelAction(payload);
 
         // 获取action配置
         const actionConfig = modelDesc?.actions?.[actionKey];
@@ -330,7 +438,11 @@ export const useModelOperations = ({
           name: modelName,
           action: actionKey,
           search_condition: conditions,
-          form_data: extra || {},
+          // Always provide the full row payload so the API has complete context.
+          form_data: {
+            ...(record || {}),
+            ...(extra || {}),
+          },
         });
 
         // 获取action配置
