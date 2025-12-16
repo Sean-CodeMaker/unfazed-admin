@@ -426,6 +426,13 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
               const detailEditable = (modelDesc.attrs as any)
                 ?.detail_editable as string[] | undefined;
 
+              // Debug: log detail_display configuration
+              console.log('=== ModelDetail Debug ===');
+              console.log('detail_display:', detailDisplay);
+              console.log('detail_editable:', detailEditable);
+              console.log('can_edit:', canEdit);
+              console.log('all fields:', Object.keys(modelDesc.fields));
+
               // Get field entries
               let fieldEntries = Object.entries(modelDesc.fields);
 
@@ -434,10 +441,21 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                 fieldEntries = fieldEntries.filter(([fieldName]) =>
                   detailDisplay.includes(fieldName),
                 );
+                console.log(
+                  'after detail_display filter:',
+                  fieldEntries.map(([name]) => name),
+                );
+              } else {
+                console.log('detail_display not applied (empty or undefined)');
               }
 
               // Sort by detail_order if defined
+              console.log('detail_order:', detailOrder);
               if (detailOrder && detailOrder.length > 0) {
+                console.log(
+                  'before detail_order sort:',
+                  fieldEntries.map(([name]) => name),
+                );
                 fieldEntries = fieldEntries.sort(([a], [b]) => {
                   const indexA = detailOrder.indexOf(a);
                   const indexB = detailOrder.indexOf(b);
@@ -447,15 +465,31 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                     indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
                   return orderA - orderB;
                 });
+                console.log(
+                  'after detail_order sort:',
+                  fieldEntries.map(([name]) => name),
+                );
+              } else {
+                console.log('detail_order not applied (empty or undefined)');
               }
 
               return fieldEntries.map(
                 ([fieldName, fieldConfig]: [string, any]) => {
-                  if (!fieldConfig.show) return null;
+                  if (!fieldConfig.show) {
+                    console.log(`field "${fieldName}" hidden by show=false`);
+                    return null;
+                  }
+                  console.log(`rendering field: ${fieldName}`);
 
                   // Determine if field is editable
                   // If can_edit is false, all fields are readonly
                   let isReadonly = !canEdit || fieldConfig.readonly;
+                  console.log(
+                    `  ${fieldName} initial readonly:`,
+                    isReadonly,
+                    `(canEdit: ${canEdit}, fieldConfig.readonly: ${fieldConfig.readonly})`,
+                  );
+
                   if (
                     canEdit &&
                     !isReadonly &&
@@ -463,6 +497,11 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                     detailEditable.length > 0
                   ) {
                     isReadonly = !detailEditable.includes(fieldName);
+                    console.log(
+                      `  ${fieldName} after detail_editable check:`,
+                      isReadonly,
+                      `(in list: ${detailEditable.includes(fieldName)})`,
+                    );
                   }
 
                   return renderFormField(fieldName, fieldConfig, formRef, {

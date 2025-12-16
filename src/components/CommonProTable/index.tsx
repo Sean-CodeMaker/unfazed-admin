@@ -70,7 +70,10 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
     const columns: ProColumns<Record<string, any>>[] = [];
 
-    // Get field entries and sort by list_order if available
+    // Get field entries and filter by list_display if available
+    const listDisplay = (modelDesc.attrs as any)?.list_display as
+      | string[]
+      | undefined;
     const listOrder = (modelDesc.attrs as any)?.list_order as
       | string[]
       | undefined;
@@ -78,6 +81,13 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       | string[]
       | undefined;
     let fieldEntries = Object.entries(modelDesc.fields || {});
+
+    // Filter by list_display if defined
+    if (listDisplay && listDisplay.length > 0) {
+      fieldEntries = fieldEntries.filter(([fieldName]) =>
+        listDisplay.includes(fieldName),
+      );
+    }
 
     if (listOrder && listOrder.length > 0) {
       // Sort fields by list_order, fields not in list_order go to the end

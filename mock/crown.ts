@@ -937,8 +937,11 @@ const crownModelDesc = {
         list_range_search: ['price', 'weight', 'created_at', 'updated_at'],
         list_filter: ['type', 'level', 'material', 'region', 'status', 'is_active'],
         list_sort: ['id', 'name', 'price', 'level', 'created_at', 'updated_at'],
-        list_order: ['-created_at'],
-        detail_display: ['id', 'name', 'type', 'level', 'price', 'description', 'owner', 'weight', 'material', 'region', 'status', 'is_active', 'created_at', 'updated_at']
+        list_order: ['created_at', 'updated_at'],
+        list_display: ['id', 'name', 'type', 'price', 'owner', 'status', 'is_active', 'created_at', 'updated_at'],
+        detail_display: ['id', 'name', 'type', 'level', 'price', 'description', 'owner', 'weight', 'material', 'region', 'status', 'is_active', 'created_at', 'updated_at'],
+        detail_order: ['owner', 'status', 'is_active'],
+        detail_editable: ['type', 'price']
     }
 };
 
@@ -1178,6 +1181,7 @@ const userModelDesc = {
         list_filter: ['is_active', 'is_staff', 'department', 'role'],
         list_sort: ['id', 'username', 'created_at'],
         list_order: ['-id'],
+        list_display: ['id', 'username', 'email', 'is_active', 'is_staff', 'department', 'role', 'created_at'],
         detail_display: ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'department', 'role']
     }
 };
