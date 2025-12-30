@@ -554,16 +554,18 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={onBack}>
             Back
           </Button>,
-          modelDesc.attrs.can_delete && !isCreateMode && (
-            <Button
-              key="delete"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
-          ),
+          modelDesc.attrs.can_delete &&
+            !isCreateMode &&
+            activeTab === 'main' && (
+              <Button
+                key="delete"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            ),
         ],
       }}
     >
