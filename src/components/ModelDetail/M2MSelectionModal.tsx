@@ -160,7 +160,8 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
                 },
                 {},
               );
-              column.render = (value: any) => {
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
                 const choice = fieldConf.choices.find(
                   ([choiceValue]: [string, string]) => choiceValue === value,
@@ -169,16 +170,21 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
               };
             } else if (fieldConf.field_type === 'BooleanField') {
               column.valueType = 'switch';
-              column.render = (value: any) => (value ? '✓' : '✗');
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
+                return value ? '✓' : '✗';
+              };
             } else if (fieldConf.field_type === 'DateField') {
               column.valueType = 'date';
-              column.render = (value: any) => {
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
                 return value;
               };
             } else if (fieldConf.field_type === 'DatetimeField') {
               column.valueType = 'dateTime';
-              column.render = (value: any) => {
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
                 return value;
               };
@@ -187,13 +193,17 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
               fieldConf.field_type === 'FloatField'
             ) {
               column.valueType = 'digit';
-              column.render = (value: any) => {
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
-                return Number(value).toLocaleString();
+                const num = Number(value);
+                if (Number.isNaN(num)) return '-';
+                return num.toLocaleString();
               };
             } else {
               column.valueType = 'text';
-              column.render = (value: any) => {
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
                 // Handle text truncation
                 if (typeof value === 'string' && value.length > 30) {

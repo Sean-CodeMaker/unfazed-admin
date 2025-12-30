@@ -285,7 +285,9 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
                   const actualValue = record?.[fieldName] ?? value;
                   if (actualValue === null || actualValue === undefined)
                     return '-';
-                  return Number(actualValue).toLocaleString();
+                  const num = Number(actualValue);
+                  if (Number.isNaN(num)) return '-';
+                  return num.toLocaleString();
                 };
               } else {
                 column.valueType = 'text';

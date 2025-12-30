@@ -219,29 +219,60 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                             (fieldConfig as any).show !== false,
                         )
                         .slice(0, 3)
-                        .map(([fieldName, fieldConfig]) => ({
-                          title: (fieldConfig as any).name || fieldName,
-                          dataIndex: fieldName,
-                          key: fieldName,
-                          width: 120,
-                          ellipsis: true,
-                          render: (value: any) => {
-                            if (value === null || value === undefined)
-                              return '-';
-                            if (
-                              typeof value === 'string' &&
-                              value.length > 20
-                            ) {
-                              return `${value.substring(0, 20)}...`;
-                            }
-                            return value;
-                          },
-                        })),
+                        .map(([fieldName, fieldConfig]) => {
+                          const fieldConf = fieldConfig as any;
+                          const attrs = inlineDesc.attrs || {};
+                          const column: any = {
+                            title: fieldConf.name || fieldName,
+                            dataIndex: fieldName,
+                            key: fieldName,
+                            width: 120,
+                            ellipsis: true,
+                            hideInSearch:
+                              !attrs.list_search?.includes(fieldName),
+                          };
+
+                          // Set valueType and valueEnum for fields with choices
+                          if (
+                            fieldConf.choices &&
+                            fieldConf.choices.length > 0
+                          ) {
+                            column.valueType = 'select';
+                            column.valueEnum = fieldConf.choices.reduce(
+                              (acc: any, [value, label]: [string, string]) => {
+                                acc[value] = { text: label };
+                                return acc;
+                              },
+                              {},
+                            );
+                            column.render = (_: any, rec: any) => {
+                              const val = rec?.[fieldName];
+                              if (val === null || val === undefined) return '-';
+                              const choice = fieldConf.choices.find(
+                                ([choiceValue]: [string, string]) =>
+                                  choiceValue === val,
+                              );
+                              return choice ? choice[1] : val;
+                            };
+                          } else {
+                            column.render = (_: any, rec: any) => {
+                              const val = rec?.[fieldName];
+                              if (val === null || val === undefined) return '-';
+                              if (typeof val === 'string' && val.length > 20) {
+                                return `${val.substring(0, 20)}...`;
+                              }
+                              return val;
+                            };
+                          }
+
+                          return column;
+                        }),
                       {
                         title: 'Actions',
                         key: 'actions',
                         width: 80,
-                        render: (_: any, record: any) => (
+                        hideInSearch: true,
+                        render: (_: any, rec: any) => (
                           <Button
                             type="link"
                             size="small"
@@ -250,7 +281,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                               await handleM2MRemove(
                                 inlineName,
                                 inlineDesc,
-                                record,
+                                rec,
                               );
                             }}
                           >
@@ -268,7 +299,14 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                       showSizeChanger: false,
                       showQuickJumper: false,
                     }}
-                    search={false}
+                    search={
+                      inlineDesc.attrs?.list_search?.length > 0
+                        ? {
+                            labelWidth: 100,
+                            defaultCollapsed: true,
+                          }
+                        : false
+                    }
                     options={false}
                     toolBarRender={false}
                   />
