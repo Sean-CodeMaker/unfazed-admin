@@ -186,102 +186,122 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
                 width: 150,
                 ellipsis: true,
                 hideInSearch: !attrs.list_search?.includes(fieldName),
-                render: (value: any, record: any) => {
-                  // Debug: log the value and field type
-                  console.log(
-                    `[BackRelationModal] Field: ${fieldName}, Type: ${fieldConf.field_type}, Value:`,
-                    value,
-                    'Record value:',
-                    record?.[fieldName],
-                  );
+              };
 
-                  // Use record value directly if available (more reliable)
+              // Set valueType and valueEnum for fields with choices
+              if (fieldConf.choices && fieldConf.choices.length > 0) {
+                column.valueType = 'select';
+                column.valueEnum = fieldConf.choices.reduce(
+                  (acc: any, [value, label]: [string, string]) => {
+                    acc[value] = { text: label };
+                    return acc;
+                  },
+                  {},
+                );
+                column.render = (value: any, record: any) => {
                   const actualValue = record?.[fieldName] ?? value;
-
                   if (actualValue === null || actualValue === undefined)
                     return '-';
-
-                  // Handle choice fields
-                  if (fieldConf.choices && fieldConf.choices.length > 0) {
-                    const choice = fieldConf.choices.find(
-                      ([choiceValue]: [string, string]) =>
-                        choiceValue === actualValue,
-                    );
-                    return choice ? choice[1] : actualValue;
-                  }
-
-                  // Handle boolean fields
-                  if (fieldConf.field_type === 'BooleanField') {
-                    return actualValue ? '✓' : '✗';
-                  }
-
-                  // Handle date fields (timestamp in seconds)
-                  if (fieldConf.field_type === 'DateField') {
-                    // Convert seconds timestamp to milliseconds for dayjs
-                    const numValue =
-                      typeof actualValue === 'string'
-                        ? Number(actualValue)
-                        : actualValue;
-                    const timestamp =
-                      typeof numValue === 'number' &&
-                      !Number.isNaN(numValue) &&
-                      numValue > 0 &&
-                      numValue < 10000000000
-                        ? numValue * 1000
-                        : numValue;
-                    const result = dayjs(timestamp);
-                    return result.isValid() ? result.format('YYYY-MM-DD') : '-';
-                  }
-
-                  // Handle datetime fields (timestamp)
-                  if (fieldConf.field_type === 'DatetimeField') {
-                    // Convert seconds timestamp to milliseconds for dayjs
-                    const numValue =
-                      typeof actualValue === 'string'
-                        ? Number(actualValue)
-                        : actualValue;
-                    const timestamp =
-                      typeof numValue === 'number' &&
-                      !Number.isNaN(numValue) &&
-                      numValue > 0 &&
-                      numValue < 10000000000
-                        ? numValue * 1000
-                        : numValue;
-                    const result = dayjs(timestamp);
-                    return result.isValid()
-                      ? result.format('YYYY-MM-DD HH:mm:ss')
-                      : '-';
-                  }
-
-                  // Handle time fields (timestamp in seconds)
-                  if (fieldConf.field_type === 'TimeField') {
-                    // Convert seconds timestamp to milliseconds for dayjs
-                    const numValue =
-                      typeof actualValue === 'string'
-                        ? Number(actualValue)
-                        : actualValue;
-                    const timestamp =
-                      typeof numValue === 'number' &&
-                      !Number.isNaN(numValue) &&
-                      numValue > 0 &&
-                      numValue < 10000000000
-                        ? numValue * 1000
-                        : numValue;
-                    const result = dayjs(timestamp);
-                    return result.isValid() ? result.format('HH:mm:ss') : '-';
-                  }
-
-                  // Handle text truncation
+                  const choice = fieldConf.choices.find(
+                    ([choiceValue]: [string, string]) =>
+                      choiceValue === actualValue,
+                  );
+                  return choice ? choice[1] : actualValue;
+                };
+              } else if (fieldConf.field_type === 'BooleanField') {
+                column.valueType = 'switch';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  return actualValue ? '✓' : '✗';
+                };
+              } else if (fieldConf.field_type === 'DateField') {
+                column.valueType = 'date';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  if (actualValue === null || actualValue === undefined)
+                    return '-';
+                  const numValue =
+                    typeof actualValue === 'string'
+                      ? Number(actualValue)
+                      : actualValue;
+                  const timestamp =
+                    typeof numValue === 'number' &&
+                    !Number.isNaN(numValue) &&
+                    numValue > 0 &&
+                    numValue < 10000000000
+                      ? numValue * 1000
+                      : numValue;
+                  const result = dayjs(timestamp);
+                  return result.isValid() ? result.format('YYYY-MM-DD') : '-';
+                };
+              } else if (fieldConf.field_type === 'DatetimeField') {
+                column.valueType = 'dateTime';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  if (actualValue === null || actualValue === undefined)
+                    return '-';
+                  const numValue =
+                    typeof actualValue === 'string'
+                      ? Number(actualValue)
+                      : actualValue;
+                  const timestamp =
+                    typeof numValue === 'number' &&
+                    !Number.isNaN(numValue) &&
+                    numValue > 0 &&
+                    numValue < 10000000000
+                      ? numValue * 1000
+                      : numValue;
+                  const result = dayjs(timestamp);
+                  return result.isValid()
+                    ? result.format('YYYY-MM-DD HH:mm:ss')
+                    : '-';
+                };
+              } else if (fieldConf.field_type === 'TimeField') {
+                column.valueType = 'time';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  if (actualValue === null || actualValue === undefined)
+                    return '-';
+                  const numValue =
+                    typeof actualValue === 'string'
+                      ? Number(actualValue)
+                      : actualValue;
+                  const timestamp =
+                    typeof numValue === 'number' &&
+                    !Number.isNaN(numValue) &&
+                    numValue > 0 &&
+                    numValue < 10000000000
+                      ? numValue * 1000
+                      : numValue;
+                  const result = dayjs(timestamp);
+                  return result.isValid() ? result.format('HH:mm:ss') : '-';
+                };
+              } else if (
+                fieldConf.field_type === 'IntegerField' ||
+                fieldConf.field_type === 'FloatField'
+              ) {
+                column.valueType = 'digit';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  if (actualValue === null || actualValue === undefined)
+                    return '-';
+                  return Number(actualValue).toLocaleString();
+                };
+              } else {
+                column.valueType = 'text';
+                column.render = (value: any, record: any) => {
+                  const actualValue = record?.[fieldName] ?? value;
+                  if (actualValue === null || actualValue === undefined)
+                    return '-';
                   if (
                     typeof actualValue === 'string' &&
                     actualValue.length > 30
                   ) {
                     return `${actualValue.substring(0, 30)}...`;
                   }
-
                   return actualValue;
-                },
-              };
+                };
+              }
 
               // Add sort based on list_sort
               if (attrs.list_sort?.includes(fieldName)) {

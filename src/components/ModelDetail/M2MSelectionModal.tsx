@@ -148,49 +148,64 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
               width: 150,
               ellipsis: true,
               hideInSearch: !attrs.list_search?.includes(fieldName),
-              render: (value: any) => {
+            };
+
+            // Set valueType and valueEnum for fields with choices
+            if (fieldConf.choices && fieldConf.choices.length > 0) {
+              column.valueType = 'select';
+              column.valueEnum = fieldConf.choices.reduce(
+                (acc: any, [value, label]: [string, string]) => {
+                  acc[value] = { text: label };
+                  return acc;
+                },
+                {},
+              );
+              column.render = (value: any) => {
                 if (value === null || value === undefined) return '-';
-
-                // Handle choice fields
-                if (fieldConf.choices && fieldConf.choices.length > 0) {
-                  const choice = fieldConf.choices.find(
-                    ([choiceValue]: [string, string]) => choiceValue === value,
-                  );
-                  return choice ? choice[1] : value;
-                }
-
-                // Handle boolean fields
-                if (fieldConf.field_type === 'BooleanField') {
-                  return value ? '✓' : '✗';
-                }
-
+                const choice = fieldConf.choices.find(
+                  ([choiceValue]: [string, string]) => choiceValue === value,
+                );
+                return choice ? choice[1] : value;
+              };
+            } else if (fieldConf.field_type === 'BooleanField') {
+              column.valueType = 'switch';
+              column.render = (value: any) => (value ? '✓' : '✗');
+            } else if (fieldConf.field_type === 'DateField') {
+              column.valueType = 'date';
+              column.render = (value: any) => {
+                if (value === null || value === undefined) return '-';
+                return value;
+              };
+            } else if (fieldConf.field_type === 'DatetimeField') {
+              column.valueType = 'dateTime';
+              column.render = (value: any) => {
+                if (value === null || value === undefined) return '-';
+                return value;
+              };
+            } else if (
+              fieldConf.field_type === 'IntegerField' ||
+              fieldConf.field_type === 'FloatField'
+            ) {
+              column.valueType = 'digit';
+              column.render = (value: any) => {
+                if (value === null || value === undefined) return '-';
+                return Number(value).toLocaleString();
+              };
+            } else {
+              column.valueType = 'text';
+              column.render = (value: any) => {
+                if (value === null || value === undefined) return '-';
                 // Handle text truncation
                 if (typeof value === 'string' && value.length > 30) {
                   return `${value.substring(0, 30)}...`;
                 }
-
                 return value;
-              },
-            };
+              };
+            }
 
             // Add sort based on list_sort
             if (attrs.list_sort?.includes(fieldName)) {
               column.sorter = true;
-            }
-
-            // Add filter based on list_filter
-            if (attrs.list_filter?.includes(fieldName)) {
-              if (fieldConf.choices && fieldConf.choices.length > 0) {
-                column.filters = fieldConf.choices.map(
-                  ([value, label]: [string, string]) => ({
-                    text: label,
-                    value: value,
-                  }),
-                );
-                column.onFilter = (value: any, record: any) => {
-                  return record[fieldName] === value;
-                };
-              }
             }
 
             return column;
