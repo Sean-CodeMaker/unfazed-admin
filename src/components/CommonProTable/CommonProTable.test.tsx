@@ -236,7 +236,7 @@ describe('CommonProTable', () => {
   });
 
   describe('list_editable', () => {
-    it('should make only fields in list_editable editable', () => {
+    it('should make all fields editable except id when list_editable is defined', () => {
       const modelDescWithEditable = {
         ...mockModelDesc,
         attrs: {
@@ -254,13 +254,14 @@ describe('CommonProTable', () => {
         />,
       );
 
-      // Fields in list_editable should be editable
+      // All fields should be editable except id
       expect(screen.getByTestId('editable-name')).toBeTruthy();
       expect(screen.getByTestId('editable-status')).toBeTruthy();
 
-      // Fields not in list_editable should not be editable
+      // id field should not be editable
       expect(screen.queryByTestId('editable-id')).toBeNull();
-      expect(screen.queryByTestId('editable-created_at')).toBeNull();
+      // Non-readonly fields should be editable when list_editable exists
+      expect(screen.getByTestId('editable-created_at')).toBeTruthy();
     });
 
     it('should not have editable columns when can_edit is false', () => {
@@ -306,13 +307,13 @@ describe('CommonProTable', () => {
       expect(screen.queryByTestId('editable-name')).toBeNull();
     });
 
-    it('should not make readonly fields editable even if in list_editable', () => {
+    it('should not make readonly fields or id editable when list_editable is defined', () => {
       const modelDescWithReadonly = {
         ...mockModelDesc,
         attrs: {
           ...mockModelDesc.attrs,
           can_edit: true,
-          list_editable: ['id', 'name', 'created_at'], // id and created_at are readonly
+          list_editable: ['id', 'name', 'created_at'], // created_at is readonly
         },
       };
 
@@ -324,11 +325,12 @@ describe('CommonProTable', () => {
         />,
       );
 
-      // name is not readonly, should be editable
+      // name is not readonly and not id, should be editable
       expect(screen.getByTestId('editable-name')).toBeTruthy();
 
-      // id and created_at are readonly, should NOT be editable even in list_editable
+      // id should NOT be editable
       expect(screen.queryByTestId('editable-id')).toBeNull();
+      // created_at is readonly, should NOT be editable
       expect(screen.queryByTestId('editable-created_at')).toBeNull();
     });
   });

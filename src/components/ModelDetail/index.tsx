@@ -278,7 +278,14 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           return (
             <Card>
               <CommonProTable
-                modelDesc={inlineDesc}
+                modelDesc={{
+                  ...inlineDesc,
+                  attrs: {
+                    ...inlineDesc.attrs,
+                    can_add: false, // Disable Add button for inline tables
+                    can_edit: false, // Disable Edit button for inline tables
+                  },
+                }}
                 modelName={inlineName}
                 data={data}
                 onAction={(

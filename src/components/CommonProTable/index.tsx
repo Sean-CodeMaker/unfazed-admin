@@ -487,12 +487,11 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         // Readonly fields are never editable
         column.editable = false;
       } else if (modelDesc.attrs.can_edit) {
-        // Only fields in list_editable are editable
+        // If list_editable is defined and not empty, all fields except 'id' are editable
         // If list_editable is not defined or empty, no columns are editable
         if (listEditable && listEditable.length > 0) {
-          column.editable = listEditable.includes(fieldName)
-            ? () => true
-            : false;
+          // All fields are editable except 'id'
+          column.editable = fieldName !== 'id' ? () => true : false;
         } else {
           // No list_editable defined, columns are not editable
           column.editable = false;
@@ -503,7 +502,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     });
 
     // 添加操作列
-    const hasDetailAction = true; // Always show Detail button
+    const hasDetailAction = !!onDetail; // Only show Detail button if onDetail callback is provided
     const hasEditAction = modelDesc.attrs.can_edit;
     const hasDeleteAction = modelDesc.attrs.can_delete;
     const nonBatchActions = Object.values(modelDesc.actions || {}).filter(
@@ -517,17 +516,18 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       hasDeleteAction ||
       hasCustomActions
     ) {
-      let actionWidth = 80;
-      if (hasDetailAction) actionWidth += 60;
-      if (hasEditAction) actionWidth += 100;
-      if (hasDeleteAction) actionWidth += 80;
-      if (hasCustomActions) actionWidth += 60;
+      // Calculate action column width based on actual buttons
+      let actionWidth = 40; // Base padding
+      if (hasDetailAction) actionWidth += 70;
+      if (hasEditAction) actionWidth += 70;
+      if (hasDeleteAction) actionWidth += 70;
+      if (hasCustomActions) actionWidth += 70;
 
       columns.push({
         title: 'Actions',
         dataIndex: 'option',
         valueType: 'option',
-        width: Math.min(actionWidth, 300),
+        width: actionWidth,
         fixed: 'right',
         render: (_, record, __, action) => {
           const actions = [];

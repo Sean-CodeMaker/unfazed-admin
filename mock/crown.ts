@@ -2199,6 +2199,68 @@ export default {
           deleted_count: deletedCount,
         },
       });
+    } else if (name === 'crown_certificates') {
+      // Crown certificates 删除操作
+      const deletedCount = Array.isArray(data) ? data.length : 1;
+
+      // 模拟从数据源删除记录
+      if (Array.isArray(data)) {
+        data.forEach((record: any) => {
+          const index = crownCertificatesData.findIndex(
+            (item) => item.id === record.id,
+          );
+          if (index > -1) {
+            crownCertificatesData.splice(index, 1);
+          }
+        });
+      } else {
+        const index = crownCertificatesData.findIndex(
+          (item) => item.id === data.id,
+        );
+        if (index > -1) {
+          crownCertificatesData.splice(index, 1);
+        }
+      }
+
+      res.send({
+        code: 0,
+        message: 'success',
+        data: {
+          message: `Successfully deleted ${deletedCount} certificate(s)`,
+          deleted_count: deletedCount,
+        },
+      });
+    } else if (name === 'crown_insurance') {
+      // Crown insurance 删除操作
+      const deletedCount = Array.isArray(data) ? data.length : 1;
+
+      // 模拟从数据源删除记录
+      if (Array.isArray(data)) {
+        data.forEach((record: any) => {
+          const index = crownInsuranceData.findIndex(
+            (item) => item.id === record.id,
+          );
+          if (index > -1) {
+            crownInsuranceData.splice(index, 1);
+          }
+        });
+      } else {
+        const index = crownInsuranceData.findIndex(
+          (item) => item.id === data.id,
+        );
+        if (index > -1) {
+          crownInsuranceData.splice(index, 1);
+        }
+      }
+
+      res.send({
+        code: 0,
+        message: 'success',
+        data: {
+          message: `Successfully deleted ${deletedCount} insurance record(s)`,
+          deleted_count: deletedCount,
+        },
+      });
     } else {
       res.send({
         code: 1,
@@ -2292,6 +2354,96 @@ export default {
         data: {
           message: 'Crown tag relation saved successfully',
           saved_data: newRecord,
+        },
+      });
+    } else if (name === 'crown_certificates') {
+      // Crown certificates 保存操作
+      const isUpdate = data.id && data.id !== -1;
+      let savedData: any = null;
+
+      if (isUpdate) {
+        // 更新现有记录
+        const index = crownCertificatesData.findIndex(
+          (item) => item.id === data.id,
+        );
+        if (index > -1) {
+          savedData = {
+            ...crownCertificatesData[index],
+            ...data,
+            updated_at: new Date().toISOString(),
+          };
+          crownCertificatesData[index] = savedData;
+        } else {
+          savedData = {
+            ...data,
+            updated_at: new Date().toISOString(),
+          };
+        }
+      } else {
+        // 创建新记录
+        savedData = {
+          ...data,
+          id: Math.max(...crownCertificatesData.map((item) => item.id), 0) + 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        crownCertificatesData.push(savedData);
+      }
+
+      res.send({
+        code: 0,
+        message: 'success',
+        data: {
+          message: isUpdate
+            ? 'Certificate updated successfully'
+            : 'New certificate created successfully',
+          saved_data: savedData,
+          is_update: isUpdate,
+        },
+      });
+    } else if (name === 'crown_insurance') {
+      // Crown insurance 保存操作
+      const isUpdate = data.id && data.id !== -1;
+      let savedData: any = null;
+
+      if (isUpdate) {
+        // 更新现有记录
+        const index = crownInsuranceData.findIndex(
+          (item) => item.id === data.id,
+        );
+        if (index > -1) {
+          savedData = {
+            ...crownInsuranceData[index],
+            ...data,
+            updated_at: new Date().toISOString(),
+          };
+          crownInsuranceData[index] = savedData;
+        } else {
+          savedData = {
+            ...data,
+            updated_at: new Date().toISOString(),
+          };
+        }
+      } else {
+        // 创建新记录
+        savedData = {
+          ...data,
+          id: Math.max(...crownInsuranceData.map((item) => item.id), 0) + 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        crownInsuranceData.push(savedData);
+      }
+
+      res.send({
+        code: 0,
+        message: 'success',
+        data: {
+          message: isUpdate
+            ? 'Insurance record updated successfully'
+            : 'New insurance record created successfully',
+          saved_data: savedData,
+          is_update: isUpdate,
         },
       });
     } else {
