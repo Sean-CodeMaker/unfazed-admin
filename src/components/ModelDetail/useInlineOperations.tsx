@@ -380,6 +380,76 @@ export const useInlineOperations = ({
     [mainRecord, inlineData, messageApi, loadInlineData],
   );
 
+  // Handle back relation link (for bk_fk and bk_o2o)
+  // This updates the target record's foreign key field to point to the current main record
+  const handleBackRelationLink = useCallback(
+    async (inlineName: string, inlineDesc: any, targetRecords: any[]) => {
+      try {
+        const relation = inlineDesc.relation;
+        if (relation?.relation === 'bk_fk' || relation?.relation === 'bk_o2o') {
+          // Link each selected record to the main record
+          for (const targetRecord of targetRecords) {
+            // Send full record data with updated FK field and current timestamp (seconds)
+            const response = await saveModelData({
+              name: inlineName,
+              data: {
+                ...targetRecord,
+                [relation.target_field]: mainRecord[relation.source_field],
+                updated_at: Math.floor(Date.now() / 1000),
+              },
+            });
+
+            if (response?.code !== 0) {
+              messageApi.error(`Failed to link record ${targetRecord.id}`);
+              return;
+            }
+          }
+
+          messageApi.success(
+            `Successfully linked ${targetRecords.length} record(s)`,
+          );
+          await loadInlineData(inlineName, inlineDesc, mainRecord);
+        }
+      } catch (error) {
+        messageApi.error('Failed to link records');
+        console.error('Link back relation error:', error);
+      }
+    },
+    [mainRecord, messageApi, loadInlineData],
+  );
+
+  // Handle back relation unlink (for bk_fk and bk_o2o)
+  // This sets the target record's foreign key field to null
+  const handleBackRelationUnlink = useCallback(
+    async (inlineName: string, inlineDesc: any, targetRecord: any) => {
+      try {
+        const relation = inlineDesc.relation;
+        if (relation?.relation === 'bk_fk' || relation?.relation === 'bk_o2o') {
+          // Send full record data with FK field set to -1 and current timestamp (seconds)
+          const response = await saveModelData({
+            name: inlineName,
+            data: {
+              ...targetRecord,
+              [relation.target_field]: -1,
+              updated_at: Math.floor(Date.now() / 1000),
+            },
+          });
+
+          if (response?.code === 0) {
+            messageApi.success('Unlinked successfully');
+            await loadInlineData(inlineName, inlineDesc, mainRecord);
+          } else {
+            messageApi.error(response?.message || 'Failed to unlink');
+          }
+        }
+      } catch (error) {
+        messageApi.error('Failed to unlink');
+        console.error('Unlink back relation error:', error);
+      }
+    },
+    [mainRecord, messageApi, loadInlineData],
+  );
+
   // Mark tab as loaded
   const markTabLoaded = useCallback((tabKey: string) => {
     setLoadedTabs((prev) => new Set([...prev, tabKey]));
@@ -415,6 +485,8 @@ export const useInlineOperations = ({
     loadInlineData,
     handleM2MAdd,
     handleM2MRemove,
+    handleBackRelationLink,
+    handleBackRelationUnlink,
     addInlineRecord,
   };
 };

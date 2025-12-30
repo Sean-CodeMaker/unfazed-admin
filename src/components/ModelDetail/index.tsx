@@ -16,6 +16,7 @@ import {
 } from '@/services/api';
 import { renderFormField } from '@/utils/formFieldRenderer';
 import { CommonProTable } from '../index';
+import BackRelationSelectionModal from './BackRelationSelectionModal';
 import M2MSelectionModal from './M2MSelectionModal';
 import { useInlineOperations } from './useInlineOperations';
 
@@ -62,6 +63,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     loadInlineData,
     handleM2MAdd,
     handleM2MRemove,
+    handleBackRelationLink,
+    handleBackRelationUnlink,
     addInlineRecord,
   } = useInlineOperations({ mainRecord: record });
 
@@ -71,6 +74,10 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
   const [m2mModalVisible, setM2MModalVisible] = useState<
     Record<string, boolean>
   >({});
+  const [backRelationModalVisible, setBackRelationModalVisible] = useState<
+    Record<string, boolean>
+  >({});
+  const [linkLoading, setLinkLoading] = useState(false);
 
   // Load inline model data
   const { loading: detailLoading } = useRequest(
@@ -273,8 +280,6 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
 
         case 'fk':
         case 'o2o':
-        case 'bk_fk':
-        case 'bk_o2o':
           return (
             <Card>
               <CommonProTable
@@ -295,24 +300,14 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                   isBatch?: boolean,
                   records?: any[],
                 ) => {
-                  if (actionKey === 'add') {
-                    const destField =
-                      (inlineDesc as any)?.relation?.target_field || 'crown_id';
-                    const newRecord = {
-                      id: -1,
-                      [destField]: record.id,
-                    };
-                    addInlineRecord(inlineName, newRecord);
-                  } else {
-                    handleInlineAction(
-                      inlineName,
-                      actionKey,
-                      action,
-                      actionRecord,
-                      isBatch,
-                      records,
-                    );
-                  }
+                  handleInlineAction(
+                    inlineName,
+                    actionKey,
+                    action,
+                    actionRecord,
+                    isBatch,
+                    records,
+                  );
                 }}
                 onSave={async (saveRecord: any) => {
                   await handleInlineSave(inlineName, saveRecord);
@@ -332,6 +327,71 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
               />
             </Card>
           );
+
+        case 'bk_fk':
+        case 'bk_o2o': {
+          // For back relations, use Link/Unlink instead of Add/Edit/Delete
+          const isBkO2O = relationType === 'bk_o2o';
+          const hasLinkedData = data.length > 0;
+
+          return (
+            <Card>
+              <CommonProTable
+                modelDesc={{
+                  ...inlineDesc,
+                  attrs: {
+                    ...inlineDesc.attrs,
+                    can_add: false, // Disable Add button for back relation tables
+                    can_edit: false, // Disable Edit button for back relation tables
+                    can_delete: false, // Disable Delete button, use Unlink instead
+                  },
+                }}
+                modelName={inlineName}
+                data={data}
+                onAction={(
+                  actionKey: string,
+                  action: any,
+                  actionRecord?: any,
+                  isBatch?: boolean,
+                  records?: any[],
+                ) => {
+                  handleInlineAction(
+                    inlineName,
+                    actionKey,
+                    action,
+                    actionRecord,
+                    isBatch,
+                    records,
+                  );
+                }}
+                onUnlink={async (unlinkRecord: any) => {
+                  await handleBackRelationUnlink(
+                    inlineName,
+                    inlineDesc,
+                    unlinkRecord,
+                  );
+                }}
+                onLink={() =>
+                  setBackRelationModalVisible((prev) => ({
+                    ...prev,
+                    [inlineName]: true,
+                  }))
+                }
+                // For bk_o2o, disable Link if already has one record
+                linkDisabled={isBkO2O && hasLinkedData}
+                tableProps={{
+                  pagination: {
+                    pageSize: inlineDesc.attrs?.list_per_page || 10,
+                    pageSizeOptions: inlineDesc.attrs
+                      ?.list_per_page_options || [10, 20, 50, 100],
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                  },
+                }}
+              />
+            </Card>
+          );
+        }
 
         default:
           console.error(
@@ -359,6 +419,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
       loadedTabs,
       handleInlineAction,
       handleM2MRemove,
+      handleBackRelationUnlink,
       addInlineRecord,
     ],
   );
@@ -627,6 +688,51 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
               } catch (error) {
                 console.error('M2M batch operation error:', error);
                 messageApi.error('Batch operation failed');
+              }
+            }}
+          />
+        );
+      })}
+
+      {/* Back relation (bk_fk/bk_o2o) selection modals */}
+      {Object.entries(backRelationModalVisible).map(([inlineName, visible]) => {
+        if (!visible || !inlineDescs[inlineName]) return null;
+
+        const inlineDesc = inlineDescs[inlineName];
+        const relation = inlineDesc.relation;
+        const isBkO2O = relation?.relation === 'bk_o2o';
+
+        return (
+          <BackRelationSelectionModal
+            key={inlineName}
+            visible={visible}
+            title={inlineDesc.attrs?.label || inlineName}
+            modelName={inlineName}
+            modelDesc={inlineDesc}
+            relation={relation}
+            mainRecordId={record.id}
+            isSingleSelect={isBkO2O}
+            loading={linkLoading}
+            onCancel={() => {
+              setBackRelationModalVisible((prev) => ({
+                ...prev,
+                [inlineName]: false,
+              }));
+            }}
+            onLink={async (selectedRecords) => {
+              setLinkLoading(true);
+              try {
+                await handleBackRelationLink(
+                  inlineName,
+                  inlineDesc,
+                  selectedRecords,
+                );
+                setBackRelationModalVisible((prev) => ({
+                  ...prev,
+                  [inlineName]: false,
+                }));
+              } finally {
+                setLinkLoading(false);
               }
             }}
           />

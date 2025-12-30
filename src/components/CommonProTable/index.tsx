@@ -1,7 +1,9 @@
 import {
   DeleteOutlined,
+  DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
+  LinkOutlined,
   MoreOutlined,
   PlusOutlined,
   SaveOutlined,
@@ -38,6 +40,12 @@ interface CommonProTableProps {
   onSave?: (record: Record<string, any>) => Promise<void>;
   /** 删除操作回调 */
   onDelete?: (record: Record<string, any>) => Promise<void>;
+  /** 解除关联回调（用于 bk_fk/bk_o2o 关系） */
+  onUnlink?: (record: Record<string, any>) => Promise<void>;
+  /** 建立关联回调（用于 bk_fk/bk_o2o 关系，点击后打开选择弹窗） */
+  onLink?: () => void;
+  /** Link 按钮是否禁用（用于 bk_o2o 已有关联时禁用） */
+  linkDisabled?: boolean;
   /** 数据请求函数（当不提供 data 时使用） */
   onRequest?: (
     params: any,
@@ -55,6 +63,9 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   onAction,
   onSave,
   onDelete,
+  onUnlink,
+  onLink,
+  linkDisabled,
   onRequest,
   tableProps = {},
   actionRef,
@@ -148,10 +159,20 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           } else {
             column.valueType = 'date';
           }
-          column.render = (_, record) =>
-            record[fieldName]
-              ? dayjs(record[fieldName]).format('YYYY-MM-DD')
-              : '-';
+          column.render = (_, record) => {
+            const value = record[fieldName];
+            if (!value) return '-';
+            const numValue = typeof value === 'string' ? Number(value) : value;
+            const timestamp =
+              typeof numValue === 'number' &&
+              !Number.isNaN(numValue) &&
+              numValue > 0 &&
+              numValue < 10000000000
+                ? numValue * 1000
+                : numValue;
+            const result = dayjs(timestamp);
+            return result.isValid() ? result.format('YYYY-MM-DD') : '-';
+          };
           break;
         case 'DatetimeField':
           // Use dateTimeRange for list_range_search fields
@@ -167,22 +188,39 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
           } else {
             column.valueType = 'dateTime';
           }
-          column.render = (_, record) =>
-            record[fieldName]
-              ? dayjs(
-                  typeof record[fieldName] === 'number' &&
-                    `${record[fieldName]}`.length === 10
-                    ? record[fieldName] * 1000
-                    : record[fieldName],
-                ).format('YYYY-MM-DD HH:mm:ss')
+          column.render = (_, record) => {
+            const value = record[fieldName];
+            if (!value) return '-';
+            const numValue = typeof value === 'string' ? Number(value) : value;
+            const timestamp =
+              typeof numValue === 'number' &&
+              !Number.isNaN(numValue) &&
+              numValue > 0 &&
+              numValue < 10000000000
+                ? numValue * 1000
+                : numValue;
+            const result = dayjs(timestamp);
+            return result.isValid()
+              ? result.format('YYYY-MM-DD HH:mm:ss')
               : '-';
+          };
           break;
         case 'TimeField':
           column.valueType = 'time';
-          column.render = (_, record) =>
-            record[fieldName]
-              ? dayjs(record[fieldName]).format('HH:mm:ss')
-              : '-';
+          column.render = (_, record) => {
+            const value = record[fieldName];
+            if (!value) return '-';
+            const numValue = typeof value === 'string' ? Number(value) : value;
+            const timestamp =
+              typeof numValue === 'number' &&
+              !Number.isNaN(numValue) &&
+              numValue > 0 &&
+              numValue < 10000000000
+                ? numValue * 1000
+                : numValue;
+            const result = dayjs(timestamp);
+            return result.isValid() ? result.format('HH:mm:ss') : '-';
+          };
           break;
         case 'IntegerField':
         case 'FloatField':
@@ -504,7 +542,8 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     // 添加操作列
     const hasDetailAction = !!onDetail; // Only show Detail button if onDetail callback is provided
     const hasEditAction = modelDesc.attrs.can_edit;
-    const hasDeleteAction = modelDesc.attrs.can_delete;
+    const hasDeleteAction = modelDesc.attrs.can_delete && !onUnlink; // Hide delete if unlink is provided
+    const hasUnlinkAction = !!onUnlink;
     const nonBatchActions = Object.values(modelDesc.actions || {}).filter(
       (action) => !action.batch,
     );
@@ -514,6 +553,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       hasDetailAction ||
       hasEditAction ||
       hasDeleteAction ||
+      hasUnlinkAction ||
       hasCustomActions
     ) {
       // Calculate action column width based on actual buttons
@@ -521,6 +561,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       if (hasDetailAction) actionWidth += 70;
       if (hasEditAction) actionWidth += 70;
       if (hasDeleteAction) actionWidth += 70;
+      if (hasUnlinkAction) actionWidth += 80; // Unlink is slightly wider
       if (hasCustomActions) actionWidth += 70;
 
       columns.push({
@@ -604,20 +645,47 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
             }
           }
 
-          // 删除按钮
-          if (hasDeleteAction) {
+          // Unlink button (for bk_fk/bk_o2o relations)
+          if (onUnlink) {
             const recordKey = record.id || record.key || JSON.stringify(record);
             const isEditing = editableKeys.includes(recordKey);
 
-            // 只有在非编辑状态时才显示删除按钮
+            if (!isEditing) {
+              actions.push(
+                <Popconfirm
+                  key="unlink"
+                  title="Unlink this record?"
+                  description="This will remove the link but won't delete the record."
+                  onConfirm={() => onUnlink(record)}
+                  okText="Unlink"
+                  cancelText="Cancel"
+                >
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    icon={<DisconnectOutlined />}
+                  >
+                    Unlink
+                  </Button>
+                </Popconfirm>,
+              );
+            }
+          }
+          // Delete button (only show if no onUnlink provided)
+          else if (hasDeleteAction) {
+            const recordKey = record.id || record.key || JSON.stringify(record);
+            const isEditing = editableKeys.includes(recordKey);
+
+            // Only show delete button when not editing
             if (!isEditing) {
               actions.push(
                 <Popconfirm
                   key="delete"
-                  title="确定要删除这条记录吗？"
+                  title="Are you sure you want to delete this record?"
                   onConfirm={() => onDelete?.(record)}
-                  okText="确定"
-                  cancelText="取消"
+                  okText="Delete"
+                  cancelText="Cancel"
                 >
                   <Button
                     type="link"
@@ -664,7 +732,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return columns;
-  }, [modelDesc, onDetail, onAction, onSave, onDelete, editableKeys]);
+  }, [modelDesc, onDetail, onAction, onSave, onDelete, onUnlink, editableKeys]);
 
   // 生成批量操作菜单项
   const getBatchActionMenuItems = useCallback(() => {
@@ -699,6 +767,22 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   const renderToolBar = useCallback(() => {
     const buttons: React.ReactNode[] = [];
 
+    // Link button for back relations (bk_fk/bk_o2o)
+    if (onLink) {
+      buttons.push(
+        <Button
+          key="link"
+          type="primary"
+          icon={<LinkOutlined />}
+          onClick={onLink}
+          disabled={linkDisabled}
+        >
+          Link
+        </Button>,
+      );
+    }
+
+    // Add button
     if (modelDesc.attrs.can_add) {
       buttons.push(
         <Button
@@ -713,7 +797,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return buttons;
-  }, [modelDesc, onAction]);
+  }, [modelDesc, onAction, onLink, linkDisabled]);
 
   const columns = useMemo(() => generateColumns(), [generateColumns]);
 
@@ -762,6 +846,21 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                     : [];
 
                   const buttons = [...originalButtons];
+
+                  // Link button for back relations (bk_fk/bk_o2o)
+                  if (onLink) {
+                    buttons.push(
+                      <Button
+                        key="link"
+                        type="primary"
+                        icon={<LinkOutlined />}
+                        onClick={onLink}
+                        disabled={linkDisabled}
+                      >
+                        Link
+                      </Button>,
+                    );
+                  }
 
                   if (hasBatchActions) {
                     // Build batch action items dynamically with access to form
