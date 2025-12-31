@@ -1005,16 +1005,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             onLink={async (selectedRecords, unlinkedRecords) => {
               setLinkLoading(true);
               try {
-                // Handle newly linked records
-                if (selectedRecords.length > 0) {
-                  await handleBackRelationLink(
-                    inlineName,
-                    inlineDesc,
-                    selectedRecords,
-                  );
-                }
-
-                // Handle unlinked records (set FK to -1)
+                // IMPORTANT: For O2O relations, must unlink first, then link
+                // Handle unlinked records first (set FK to negative of record's own ID)
                 if (unlinkedRecords.length > 0) {
                   for (const unlinkRecord of unlinkedRecords) {
                     await handleBackRelationUnlink(
@@ -1023,6 +1015,15 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                       unlinkRecord,
                     );
                   }
+                }
+
+                // Handle newly linked records after unlinking
+                if (selectedRecords.length > 0) {
+                  await handleBackRelationLink(
+                    inlineName,
+                    inlineDesc,
+                    selectedRecords,
+                  );
                 }
 
                 setBackRelationModalVisible((prev) => ({

@@ -505,18 +505,23 @@ export const useInlineOperations = ({
   );
 
   // Handle back relation unlink (for bk_fk and bk_o2o)
-  // This sets the target record's foreign key field to null
+  // This sets the target record's foreign key field to negative of the record's own ID
   const handleBackRelationUnlink = useCallback(
     async (inlineName: string, inlineDesc: any, targetRecord: any) => {
       try {
         const relation = inlineDesc.relation;
         if (relation?.relation === 'bk_fk' || relation?.relation === 'bk_o2o') {
-          // Send full record data with FK field set to -1 and current timestamp (seconds)
+          // Set FK field to negative of the record's own ID
+          const recordId = targetRecord.id;
+          const negativeFkValue =
+            typeof recordId === 'number' && recordId > 0 ? -recordId : -1;
+
+          // Send full record data with FK field set to negative of record's own ID
           const response = await saveModelData({
             name: inlineName,
             data: {
               ...targetRecord,
-              [relation.target_field]: -1,
+              [relation.target_field]: negativeFkValue,
               updated_at: Math.floor(Date.now() / 1000),
             },
           });
