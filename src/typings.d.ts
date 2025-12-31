@@ -234,7 +234,6 @@ declare namespace API {
     list_per_page_options?: number[];
     list_search?: string[];
     list_range_search?: string[];
-    list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
     list_editable?: string[];
@@ -334,7 +333,6 @@ declare namespace API {
     list_per_page_options?: number[];
     list_search?: string[];
     list_range_search?: string[];
-    list_filter?: string[];
     list_sort?: string[];
     list_order?: string[];
     list_editable?: string[];

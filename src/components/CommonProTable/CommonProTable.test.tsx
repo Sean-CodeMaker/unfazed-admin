@@ -335,50 +335,6 @@ describe('CommonProTable', () => {
     });
   });
 
-  describe('list_filter', () => {
-    it('should make fields with choices in list_filter filterable', () => {
-      const modelDescWithFilter = {
-        ...mockModelDesc,
-        attrs: {
-          ...mockModelDesc.attrs,
-          list_filter: ['status'],
-        },
-      };
-
-      render(
-        <CommonProTable
-          modelDesc={modelDescWithFilter}
-          modelName="test"
-          data={mockData}
-        />,
-      );
-
-      // Status has choices and is in list_filter, should be filterable
-      expect(screen.getByTestId('filter-status')).toBeTruthy();
-    });
-
-    it('should not make fields without choices filterable', () => {
-      const modelDescWithFilter = {
-        ...mockModelDesc,
-        attrs: {
-          ...mockModelDesc.attrs,
-          list_filter: ['name'], // name has no choices
-        },
-      };
-
-      render(
-        <CommonProTable
-          modelDesc={modelDescWithFilter}
-          modelName="test"
-          data={mockData}
-        />,
-      );
-
-      // Name has no choices, should not be filterable
-      expect(screen.queryByTestId('filter-name')).toBeNull();
-    });
-  });
-
   describe('Detail button', () => {
     it('should always show Detail button', () => {
       render(
