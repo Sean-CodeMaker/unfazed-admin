@@ -76,6 +76,68 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   const [currentSearchParams, setCurrentSearchParams] = useState<
     Record<string, any>
   >({});
+  // Filtered data for client-side search (when using data mode)
+  const [filteredData, setFilteredData] = useState<any[] | undefined>(
+    undefined,
+  );
+  // Track pending unlink operations to prevent duplicate submissions
+  const pendingUnlinkRef = useRef<Set<string | number>>(new Set());
+
+  // Client-side filter function for data mode
+  const filterDataBySearchParams = useCallback(
+    (sourceData: any[], params: Record<string, any>) => {
+      if (!sourceData || sourceData.length === 0) return sourceData;
+
+      const searchFields = (modelDesc.attrs as any)?.list_search || [];
+      if (searchFields.length === 0) return sourceData;
+
+      // Check if any search param has value
+      const hasSearchValue = Object.entries(params).some(
+        ([key, value]) =>
+          value &&
+          key !== 'current' &&
+          key !== 'pageSize' &&
+          searchFields.includes(key),
+      );
+
+      if (!hasSearchValue) return sourceData;
+
+      return sourceData.filter((record) => {
+        return Object.entries(params).every(([key, value]) => {
+          if (
+            !value ||
+            key === 'current' ||
+            key === 'pageSize' ||
+            !searchFields.includes(key)
+          ) {
+            return true;
+          }
+
+          const fieldValue = record[key];
+          if (fieldValue === null || fieldValue === undefined) return false;
+
+          // String contains match (case-insensitive)
+          const searchStr = String(value).toLowerCase();
+          const fieldStr = String(fieldValue).toLowerCase();
+          return fieldStr.includes(searchStr);
+        });
+      });
+    },
+    [modelDesc.attrs],
+  );
+
+  // Reset filtered data when source data changes
+  React.useEffect(() => {
+    if (data) {
+      // Re-apply current search params when data changes
+      if (Object.keys(currentSearchParams).length > 0) {
+        const filtered = filterDataBySearchParams(data, currentSearchParams);
+        setFilteredData(filtered);
+      } else {
+        setFilteredData(undefined);
+      }
+    }
+  }, [data, filterDataBySearchParams, currentSearchParams]);
 
   // 生成列配置（基于 ModelList 的实现）
   const generateColumns = useCallback((): ProColumns<Record<string, any>>[] => {
@@ -502,21 +564,6 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         };
       }
 
-      // 设置筛选
-      if ((modelDesc.attrs as any)?.list_filter?.includes(fieldName)) {
-        if (fieldConfig.choices && fieldConfig.choices.length > 0) {
-          column.filters = fieldConfig.choices.map(
-            ([value, label]: [string, string]) => ({
-              text: label,
-              value: value,
-            }),
-          );
-          column.onFilter = (value: any, record: Record<string, any>) => {
-            return record[fieldName] === value;
-          };
-        }
-      }
-
       // 设置可编辑 (readonly fields are never editable)
       const listEditable = (modelDesc.attrs as any)?.list_editable as
         | string[]
@@ -656,7 +703,20 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
                   key="unlink"
                   title="Unlink this record?"
                   description="This will remove the link but won't delete the record."
-                  onConfirm={() => onUnlink(record)}
+                  onConfirm={async () => {
+                    // Prevent duplicate submissions
+                    const recordId = record.id;
+                    if (pendingUnlinkRef.current.has(recordId)) {
+                      return;
+                    }
+
+                    pendingUnlinkRef.current.add(recordId);
+                    try {
+                      await onUnlink(record);
+                    } finally {
+                      pendingUnlinkRef.current.delete(recordId);
+                    }
+                  }}
                   okText="Unlink"
                   cancelText="Cancel"
                 >
@@ -847,21 +907,6 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
 
                   const buttons = [...originalButtons];
 
-                  // Link button for back relations (bk_fk/bk_o2o)
-                  if (onLink) {
-                    buttons.push(
-                      <Button
-                        key="link"
-                        type="primary"
-                        icon={<LinkOutlined />}
-                        onClick={onLink}
-                        disabled={linkDisabled}
-                      >
-                        Link
-                      </Button>,
-                    );
-                  }
-
                   if (hasBatchActions) {
                     // Build batch action items dynamically with access to form
                     const batchActionItems = Object.entries(
@@ -928,9 +973,14 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         beforeSearchSubmit={(params) => {
           // Save search params for batch actions
           setCurrentSearchParams(params);
+          // Client-side filtering when using data mode
+          if (data) {
+            const filtered = filterDataBySearchParams(data, params);
+            setFilteredData(filtered);
+          }
           return params;
         }}
-        dataSource={data}
+        dataSource={data ? (filteredData ?? data) : undefined}
         columns={columns}
         editable={
           modelDesc.attrs.can_edit
@@ -954,7 +1004,6 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
         pagination={{
           showSizeChanger: true,
           showQuickJumper: true,
-          ...(data ? { pageSize: 20 } : {}),
         }}
         options={{
           search: false,

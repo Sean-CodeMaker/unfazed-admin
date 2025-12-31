@@ -1,16 +1,19 @@
 import {
   ArrowLeftOutlined,
   DeleteOutlined,
+  DisconnectOutlined,
   EditOutlined,
+  LinkOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
-import type { ProFormInstance } from '@ant-design/pro-components';
+import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
 import { PageContainer, ProForm, ProTable } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { Button, Card, Divider, Modal, Space, Tabs } from 'antd';
+import { Button, Card, Divider, Modal, Space, Spin, Tabs } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   deleteModelData,
+  getModelData,
   getModelInlines,
   saveModelData,
 } from '@/services/api';
@@ -78,6 +81,262 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     Record<string, boolean>
   >({});
   const [linkLoading, setLinkLoading] = useState(false);
+  // Global loading state for inline operations
+  const [operationLoading, setOperationLoading] = useState(false);
+  // Action refs for inline tables to enable reload
+  const inlineActionRefs = useRef<Record<string, ActionType | undefined>>({});
+
+  // Memoized request handlers for each inline table to prevent unnecessary re-requests
+  const inlineRequestHandlers = useRef<Record<string, any>>({});
+
+  // Track reload timestamps to prevent duplicate reloads
+  const lastReloadTime = useRef<Record<string, number>>({});
+
+  // Helper function to reload table with debounce (prevents duplicate requests)
+  const debouncedReload = useCallback((inlineName: string) => {
+    const now = Date.now();
+    const lastTime = lastReloadTime.current[inlineName] || 0;
+    if (now - lastTime > 500) {
+      // Only reload if more than 500ms since last reload
+      lastReloadTime.current[inlineName] = now;
+      inlineActionRefs.current[inlineName]?.reload();
+    }
+  }, []);
+
+  // Create stable request handler for back relation tables
+  const createBackRelationRequestHandler = useCallback(
+    (inlineName: string, inlineDesc: any) => {
+      // Return cached handler if exists
+      const cacheKey = `bk_${inlineName}`;
+      if (inlineRequestHandlers.current[cacheKey]) {
+        return inlineRequestHandlers.current[cacheKey];
+      }
+
+      // Create new handler
+      const handler = async (params: any) => {
+        try {
+          const relation = inlineDesc.relation;
+          // Build base conditions for back relation
+          const baseConditions = [
+            {
+              field: relation.target_field,
+              eq: record[relation.source_field],
+            },
+          ];
+
+          // Add search conditions
+          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchConditions: any[] = [];
+          Object.entries(params).forEach(([key, value]) => {
+            if (
+              value &&
+              key !== 'current' &&
+              key !== 'pageSize' &&
+              searchFields.includes(key)
+            ) {
+              searchConditions.push({
+                field: key,
+                icontains: String(value),
+              });
+            }
+          });
+
+          const response = await getModelData({
+            name: inlineName,
+            page: params.current || 1,
+            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
+            cond: [...baseConditions, ...searchConditions],
+          });
+
+          if (response?.code === 0) {
+            return {
+              data: response.data?.data || [],
+              total: response.data?.count || 0,
+              success: true,
+            };
+          }
+
+          return { data: [], total: 0, success: false };
+        } catch (error) {
+          console.error('Request error:', error);
+          return { data: [], total: 0, success: false };
+        }
+      };
+
+      // Cache it
+      inlineRequestHandlers.current[cacheKey] = handler;
+      return handler;
+    },
+    [record],
+  );
+
+  // Create stable request handler for forward relation (fk/o2o) tables
+  const createForwardRelationRequestHandler = useCallback(
+    (inlineName: string, inlineDesc: any) => {
+      // Return cached handler if exists
+      const cacheKey = `fk_${inlineName}`;
+      if (inlineRequestHandlers.current[cacheKey]) {
+        return inlineRequestHandlers.current[cacheKey];
+      }
+
+      // Create new handler
+      const handler = async (params: any) => {
+        try {
+          const fkRelation = inlineDesc.relation;
+          // Build base conditions for fk/o2o relation
+          const baseConditions = [
+            {
+              field: fkRelation.source_field,
+              eq: record[fkRelation.target_field],
+            },
+          ];
+
+          // Add search conditions
+          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchConditions: any[] = [];
+          Object.entries(params).forEach(([key, value]) => {
+            if (
+              value &&
+              key !== 'current' &&
+              key !== 'pageSize' &&
+              searchFields.includes(key)
+            ) {
+              searchConditions.push({
+                field: key,
+                icontains: String(value),
+              });
+            }
+          });
+
+          const response = await getModelData({
+            name: inlineName,
+            page: params.current || 1,
+            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
+            cond: [...baseConditions, ...searchConditions],
+          });
+
+          if (response?.code === 0) {
+            return {
+              data: response.data?.data || [],
+              total: response.data?.count || 0,
+              success: true,
+            };
+          }
+
+          return { data: [], total: 0, success: false };
+        } catch (error) {
+          console.error('Request error:', error);
+          return { data: [], total: 0, success: false };
+        }
+      };
+
+      // Cache it
+      inlineRequestHandlers.current[cacheKey] = handler;
+      return handler;
+    },
+    [record],
+  );
+
+  // Create stable request handler for M2M tables
+  // M2M table shows ONLY linked records
+  const createM2MRequestHandler = useCallback(
+    (inlineName: string, inlineDesc: any) => {
+      // Return cached handler if exists
+      const cacheKey = `m2m_${inlineName}`;
+      if (inlineRequestHandlers.current[cacheKey]) {
+        return inlineRequestHandlers.current[cacheKey];
+      }
+
+      // Create new handler
+      const handler = async (params: any) => {
+        try {
+          const m2mRelation = inlineDesc.relation;
+          const throughInfo = m2mRelation?.through;
+
+          if (!throughInfo) {
+            return { data: [], total: 0, success: false };
+          }
+
+          // Step 1: Get linked IDs from through table
+          const throughResponse = await getModelData({
+            name: throughInfo.through,
+            page: 1,
+            size: 10000, // Get all linked IDs
+            cond: [
+              {
+                field: throughInfo.source_to_through_field,
+                eq: record[throughInfo.source_field],
+              },
+            ],
+          });
+
+          if (throughResponse?.code !== 0) {
+            return { data: [], total: 0, success: false };
+          }
+
+          const linkedIds = (throughResponse.data?.data || []).map(
+            (item: any) => item[throughInfo.target_to_through_field],
+          );
+
+          if (linkedIds.length === 0) {
+            return { data: [], total: 0, success: true };
+          }
+
+          // Step 2: Build conditions for target table
+          const baseConditions = [
+            {
+              field: throughInfo.target_field,
+              in: linkedIds,
+            },
+          ];
+
+          // Add search conditions
+          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchConditions: any[] = [];
+          Object.entries(params).forEach(([key, value]) => {
+            if (
+              value &&
+              key !== 'current' &&
+              key !== 'pageSize' &&
+              searchFields.includes(key)
+            ) {
+              searchConditions.push({
+                field: key,
+                icontains: String(value),
+              });
+            }
+          });
+
+          // Step 3: Get target records with pagination
+          const targetModelName = m2mRelation.target || inlineName;
+          const response = await getModelData({
+            name: targetModelName,
+            page: params.current || 1,
+            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
+            cond: [...baseConditions, ...searchConditions],
+          });
+
+          if (response?.code === 0) {
+            return {
+              data: response.data?.data || [],
+              total: response.data?.count || 0,
+              success: true,
+            };
+          }
+
+          return { data: [], total: 0, success: false };
+        } catch (error) {
+          console.error('M2M request error:', error);
+          return { data: [], total: 0, success: false };
+        }
+      };
+
+      // Cache it
+      inlineRequestHandlers.current[cacheKey] = handler;
+      return handler;
+    },
+    [record],
+  );
 
   // Load inline model data
   const { loading: detailLoading } = useRequest(
@@ -110,23 +369,12 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
 
       setActiveTab(key);
 
+      // Mark tab as loaded (CommonProTable's onRequest will handle data fetching)
       if (key !== 'main' && !loadedTabs.has(key)) {
-        const inlineDesc = inlineDescs[key];
-        if (inlineDesc && record) {
-          loadInlineData(key, inlineDesc, record);
-          markTabLoaded(key);
-        }
+        markTabLoaded(key);
       }
     },
-    [
-      inlineDescs,
-      record,
-      loadInlineData,
-      loadedTabs,
-      hasMainDataSaved,
-      messageApi,
-      markTabLoaded,
-    ],
+    [loadedTabs, hasMainDataSaved, messageApi, markTabLoaded],
   );
 
   // Delete main record
@@ -176,201 +424,12 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
 
       switch (relationType) {
         case 'm2m': {
-          const selectedCount = data.filter((item) => item.selected).length;
-          const totalCount = data.length;
-
-          return (
-            <Card>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 16,
-                }}
-              >
-                <div>
-                  <span style={{ color: '#666' }}>
-                    Selected {selectedCount} / {totalCount} items
-                  </span>
-                </div>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() =>
-                    setM2MModalVisible((prev) => ({
-                      ...prev,
-                      [inlineName]: true,
-                    }))
-                  }
-                >
-                  Manage Relation
-                </Button>
-              </div>
-
-              {selectedCount > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <ProTable
-                    dataSource={data.filter((item) => item.selected)}
-                    columns={[
-                      ...Object.entries(inlineDesc.fields || {})
-                        .filter(
-                          ([_fieldName, fieldConfig]) =>
-                            (fieldConfig as any).show !== false,
-                        )
-                        .slice(0, 3)
-                        .map(([fieldName, fieldConfig]) => {
-                          const fieldConf = fieldConfig as any;
-                          const attrs = inlineDesc.attrs || {};
-                          const column: any = {
-                            title: fieldConf.name || fieldName,
-                            dataIndex: fieldName,
-                            key: fieldName,
-                            width: 120,
-                            ellipsis: true,
-                            hideInSearch:
-                              !attrs.list_search?.includes(fieldName),
-                          };
-
-                          // Set valueType and valueEnum for fields with choices
-                          if (
-                            fieldConf.choices &&
-                            fieldConf.choices.length > 0
-                          ) {
-                            column.valueType = 'select';
-                            column.valueEnum = fieldConf.choices.reduce(
-                              (acc: any, [value, label]: [string, string]) => {
-                                acc[value] = { text: label };
-                                return acc;
-                              },
-                              {},
-                            );
-                            column.render = (_: any, rec: any) => {
-                              const val = rec?.[fieldName];
-                              if (val === null || val === undefined) return '-';
-                              const choice = fieldConf.choices.find(
-                                ([choiceValue]: [string, string]) =>
-                                  choiceValue === val,
-                              );
-                              return choice ? choice[1] : val;
-                            };
-                          } else {
-                            column.render = (_: any, rec: any) => {
-                              const val = rec?.[fieldName];
-                              if (val === null || val === undefined) return '-';
-                              if (typeof val === 'string' && val.length > 20) {
-                                return `${val.substring(0, 20)}...`;
-                              }
-                              return val;
-                            };
-                          }
-
-                          return column;
-                        }),
-                      {
-                        title: 'Actions',
-                        key: 'actions',
-                        width: 80,
-                        hideInSearch: true,
-                        render: (_: any, rec: any) => (
-                          <Button
-                            type="link"
-                            size="small"
-                            danger
-                            onClick={async () => {
-                              await handleM2MRemove(
-                                inlineName,
-                                inlineDesc,
-                                rec,
-                              );
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        ),
-                      },
-                    ]}
-                    rowKey="id"
-                    size="small"
-                    scroll={{ y: 200 }}
-                    pagination={{
-                      pageSize: 5,
-                      size: 'small',
-                      showSizeChanger: false,
-                      showQuickJumper: false,
-                    }}
-                    search={
-                      inlineDesc.attrs?.list_search?.length > 0
-                        ? {
-                            labelWidth: 100,
-                            defaultCollapsed: true,
-                          }
-                        : false
-                    }
-                    options={false}
-                    toolBarRender={false}
-                  />
-                </div>
-              )}
-            </Card>
+          // M2M table uses request mode to show ONLY linked records with pagination
+          // Use stable request handler to prevent unnecessary re-requests
+          const handleM2MRequest = createM2MRequestHandler(
+            inlineName,
+            inlineDesc,
           );
-        }
-
-        case 'fk':
-        case 'o2o':
-          return (
-            <Card>
-              <CommonProTable
-                modelDesc={{
-                  ...inlineDesc,
-                  attrs: {
-                    ...inlineDesc.attrs,
-                    can_add: false, // Disable Add button for inline tables
-                    can_edit: false, // Disable Edit button for inline tables
-                  },
-                }}
-                modelName={inlineName}
-                data={data}
-                onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                  );
-                }}
-                onSave={async (saveRecord: any) => {
-                  await handleInlineSave(inlineName, saveRecord);
-                }}
-                onDelete={async (deleteRecord: any) => {
-                  await handleInlineDelete(inlineName, deleteRecord);
-                }}
-                tableProps={{
-                  pagination: {
-                    pageSize: inlineDesc.attrs?.list_per_page || 10,
-                    pageSizeOptions: inlineDesc.attrs
-                      ?.list_per_page_options || [10, 20, 50, 100],
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                  },
-                }}
-              />
-            </Card>
-          );
-
-        case 'bk_fk':
-        case 'bk_o2o': {
-          // For back relations, use Link/Unlink instead of Add/Edit/Delete
-          const isBkO2O = relationType === 'bk_o2o';
-          const hasLinkedData = data.length > 0;
 
           return (
             <Card>
@@ -379,13 +438,13 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                   ...inlineDesc,
                   attrs: {
                     ...inlineDesc.attrs,
-                    can_add: false, // Disable Add button for back relation tables
-                    can_edit: false, // Disable Edit button for back relation tables
-                    can_delete: false, // Disable Delete button, use Unlink instead
+                    can_add: false,
+                    can_edit: false,
+                    can_delete: false,
                   },
                 }}
                 modelName={inlineName}
-                data={data}
+                onRequest={handleM2MRequest}
                 onAction={(
                   actionKey: string,
                   action: any,
@@ -403,11 +462,174 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                   );
                 }}
                 onUnlink={async (unlinkRecord: any) => {
-                  await handleBackRelationUnlink(
+                  setOperationLoading(true);
+                  try {
+                    await handleM2MRemove(inlineName, inlineDesc, unlinkRecord);
+                    debouncedReload(inlineName);
+                  } finally {
+                    setOperationLoading(false);
+                  }
+                }}
+                onLink={() =>
+                  setM2MModalVisible((prev) => ({
+                    ...prev,
+                    [inlineName]: true,
+                  }))
+                }
+                actionRef={
+                  {
+                    get current() {
+                      return inlineActionRefs.current[inlineName];
+                    },
+                    set current(ref: ActionType | undefined) {
+                      inlineActionRefs.current[inlineName] = ref;
+                    },
+                  } as React.MutableRefObject<ActionType | undefined>
+                }
+                tableProps={{
+                  pagination: {
+                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
+                    pageSizeOptions: inlineDesc.attrs
+                      ?.list_per_page_options || [10, 20, 50, 100],
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                  },
+                }}
+              />
+            </Card>
+          );
+        }
+
+        case 'fk':
+        case 'o2o': {
+          // Use stable request handler to prevent unnecessary re-requests
+          const handleFkRequest = createForwardRelationRequestHandler(
+            inlineName,
+            inlineDesc,
+          );
+
+          return (
+            <Card>
+              <CommonProTable
+                modelDesc={{
+                  ...inlineDesc,
+                  attrs: {
+                    ...inlineDesc.attrs,
+                    can_add: false, // Disable Add button for inline tables
+                    can_edit: false, // Disable Edit button for inline tables
+                  },
+                }}
+                modelName={inlineName}
+                onRequest={handleFkRequest}
+                onAction={(
+                  actionKey: string,
+                  action: any,
+                  actionRecord?: any,
+                  isBatch?: boolean,
+                  records?: any[],
+                ) => {
+                  handleInlineAction(
                     inlineName,
-                    inlineDesc,
-                    unlinkRecord,
+                    actionKey,
+                    action,
+                    actionRecord,
+                    isBatch,
+                    records,
                   );
+                }}
+                onSave={async (saveRecord: any) => {
+                  setOperationLoading(true);
+                  try {
+                    await handleInlineSave(inlineName, saveRecord);
+                    debouncedReload(inlineName);
+                  } finally {
+                    setOperationLoading(false);
+                  }
+                }}
+                onDelete={async (deleteRecord: any) => {
+                  setOperationLoading(true);
+                  try {
+                    await handleInlineDelete(inlineName, deleteRecord);
+                    debouncedReload(inlineName);
+                  } finally {
+                    setOperationLoading(false);
+                  }
+                }}
+                actionRef={
+                  {
+                    get current() {
+                      return inlineActionRefs.current[inlineName];
+                    },
+                    set current(ref: ActionType | undefined) {
+                      inlineActionRefs.current[inlineName] = ref;
+                    },
+                  } as React.MutableRefObject<ActionType | undefined>
+                }
+                tableProps={{
+                  pagination: {
+                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
+                    pageSizeOptions: inlineDesc.attrs
+                      ?.list_per_page_options || [10, 20, 50, 100],
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                  },
+                }}
+              />
+            </Card>
+          );
+        }
+
+        case 'bk_fk':
+        case 'bk_o2o': {
+          // For back relations, use Link/Unlink instead of Add/Edit/Delete
+          // Use stable request handler to prevent unnecessary re-requests
+          const handleRequest = createBackRelationRequestHandler(
+            inlineName,
+            inlineDesc,
+          );
+
+          return (
+            <Card>
+              <CommonProTable
+                modelDesc={{
+                  ...inlineDesc,
+                  attrs: {
+                    ...inlineDesc.attrs,
+                    can_add: false, // Disable Add button for back relation tables
+                    can_edit: false, // Disable Edit button for back relation tables
+                    can_delete: false, // Disable Delete button, use Unlink instead
+                  },
+                }}
+                modelName={inlineName}
+                onRequest={handleRequest}
+                onAction={(
+                  actionKey: string,
+                  action: any,
+                  actionRecord?: any,
+                  isBatch?: boolean,
+                  records?: any[],
+                ) => {
+                  handleInlineAction(
+                    inlineName,
+                    actionKey,
+                    action,
+                    actionRecord,
+                    isBatch,
+                    records,
+                  );
+                }}
+                onUnlink={async (unlinkRecord: any) => {
+                  setOperationLoading(true);
+                  try {
+                    await handleBackRelationUnlink(
+                      inlineName,
+                      inlineDesc,
+                      unlinkRecord,
+                    );
+                    debouncedReload(inlineName);
+                  } finally {
+                    setOperationLoading(false);
+                  }
                 }}
                 onLink={() =>
                   setBackRelationModalVisible((prev) => ({
@@ -415,11 +637,21 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                     [inlineName]: true,
                   }))
                 }
-                // For bk_o2o, disable Link if already has one record
-                linkDisabled={isBkO2O && hasLinkedData}
+                // bk_o2o can always open modal to change the linked record
+                linkDisabled={false}
+                actionRef={
+                  {
+                    get current() {
+                      return inlineActionRefs.current[inlineName];
+                    },
+                    set current(ref: ActionType | undefined) {
+                      inlineActionRefs.current[inlineName] = ref;
+                    },
+                  } as React.MutableRefObject<ActionType | undefined>
+                }
                 tableProps={{
                   pagination: {
-                    pageSize: inlineDesc.attrs?.list_per_page || 10,
+                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
                     pageSizeOptions: inlineDesc.attrs
                       ?.list_per_page_options || [10, 20, 50, 100],
                     showSizeChanger: true,
@@ -459,6 +691,10 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
       handleM2MRemove,
       handleBackRelationUnlink,
       addInlineRecord,
+      createBackRelationRequestHandler,
+      createForwardRelationRequestHandler,
+      createM2MRequestHandler,
+      debouncedReload,
     ],
   );
 
@@ -670,17 +906,20 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     >
       {contextHolder}
 
-      <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
+      <Spin spinning={operationLoading} tip="Processing...">
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={tabItems}
+        />
+      </Spin>
 
       {/* M2M relation selection modals */}
       {Object.entries(m2mModalVisible).map(([inlineName, visible]) => {
         if (!visible || !inlineDescs[inlineName]) return null;
 
         const inlineDesc = inlineDescs[inlineName];
-        const data = inlineData[inlineName] || [];
-        const selectedIds = data
-          .filter((item) => item.selected)
-          .map((item) => item.id);
+        const relation = inlineDesc.relation;
 
         return (
           <M2MSelectionModal
@@ -688,44 +927,55 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             visible={visible}
             title={inlineDesc.attrs?.verbose_name || inlineName}
             modelDesc={inlineDesc}
-            data={data}
-            selectedIds={selectedIds}
+            relation={relation}
+            mainRecordId={record[relation.through.source_field]}
             onCancel={() => {
               setM2MModalVisible((prev) => ({ ...prev, [inlineName]: false }));
             }}
-            onOk={async (newSelectedIds) => {
-              const currentSelectedIds = data
-                .filter((item) => item.selected)
-                .map((item) => item.id);
-
-              const addedIds = newSelectedIds.filter(
-                (id) => !currentSelectedIds.includes(id),
-              );
-              const removedIds = currentSelectedIds.filter(
-                (id) => !newSelectedIds.includes(id),
-              );
-
+            onOk={async (
+              newSelectedIds,
+              selectedRecords,
+              initialSelectedIds,
+            ) => {
               try {
-                for (const addedId of addedIds) {
-                  const targetRecord = data.find((item) => item.id === addedId);
-                  if (targetRecord) {
-                    await handleM2MAdd(inlineName, inlineDesc, targetRecord);
-                  }
+                const addedIds = newSelectedIds.filter(
+                  (id) => !initialSelectedIds.includes(id),
+                );
+                const removedIds = initialSelectedIds.filter(
+                  (id) => !newSelectedIds.includes(id),
+                );
+
+                // Add new relations one by one
+                const recordsToAdd = addedIds
+                  .map((addedId) =>
+                    selectedRecords.find((item) => item.id === addedId),
+                  )
+                  .filter(Boolean);
+
+                if (recordsToAdd.length > 0) {
+                  await handleM2MAdd(inlineName, inlineDesc, recordsToAdd);
                 }
 
-                for (const removedId of removedIds) {
-                  const targetRecord = data.find(
-                    (item) => item.id === removedId,
+                // Remove relations one by one
+                const recordsToRemove = removedIds
+                  .map((removedId) =>
+                    selectedRecords.find((item) => item.id === removedId),
+                  )
+                  .filter(Boolean);
+
+                if (recordsToRemove.length > 0) {
+                  await handleM2MRemove(
+                    inlineName,
+                    inlineDesc,
+                    recordsToRemove,
                   );
-                  if (targetRecord) {
-                    await handleM2MRemove(inlineName, inlineDesc, targetRecord);
-                  }
                 }
 
-                await loadInlineData(inlineName, inlineDesc, record);
+                // Reload the inline table
+                debouncedReload(inlineName);
               } catch (error) {
-                console.error('M2M batch operation error:', error);
-                messageApi.error('Batch operation failed');
+                console.error('M2M operation error:', error);
+                messageApi.error('Operation failed');
               }
             }}
           />
@@ -757,18 +1007,36 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                 [inlineName]: false,
               }));
             }}
-            onLink={async (selectedRecords) => {
+            onLink={async (selectedRecords, unlinkedRecords) => {
               setLinkLoading(true);
               try {
-                await handleBackRelationLink(
-                  inlineName,
-                  inlineDesc,
-                  selectedRecords,
-                );
+                // Handle newly linked records
+                if (selectedRecords.length > 0) {
+                  await handleBackRelationLink(
+                    inlineName,
+                    inlineDesc,
+                    selectedRecords,
+                  );
+                }
+
+                // Handle unlinked records (set FK to -1)
+                if (unlinkedRecords.length > 0) {
+                  for (const unlinkRecord of unlinkedRecords) {
+                    await handleBackRelationUnlink(
+                      inlineName,
+                      inlineDesc,
+                      unlinkRecord,
+                    );
+                  }
+                }
+
                 setBackRelationModalVisible((prev) => ({
                   ...prev,
                   [inlineName]: false,
                 }));
+
+                // Reload the inline table after linking/unlinking
+                debouncedReload(inlineName);
               } finally {
                 setLinkLoading(false);
               }
