@@ -8,7 +8,7 @@ import { getModelData } from '@/services/api';
 interface BackRelationSelectionModalProps {
   visible: boolean;
   onCancel: () => void;
-  onLink: (selectedRecords: any[]) => void;
+  onLink: (selectedRecords: any[], unlinkedRecords: any[]) => void;
   title: string;
   modelName: string;
   modelDesc: any;
@@ -33,18 +33,38 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
 }) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  // Track initially linked record IDs (already linked before opening modal)
+  const [initialLinkedIds, setInitialLinkedIds] = useState<React.Key[]>([]);
+  // Track initially linked records (for unlink operation)
+  const [initialLinkedRecords, setInitialLinkedRecords] = useState<any[]>([]);
 
   // Reset selection state when modal opens
   useEffect(() => {
     if (visible) {
       setSelectedRowKeys([]);
       setSelectedRows([]);
+      setInitialLinkedIds([]);
+      setInitialLinkedRecords([]);
     }
   }, [visible]);
 
   const handleOk = () => {
-    if (selectedRows.length > 0) {
-      onLink(selectedRows);
+    // Calculate newly linked records (selected but not initially linked)
+    const newlyLinkedRecords = selectedRows.filter(
+      (record) => !initialLinkedIds.includes(record.id),
+    );
+
+    // Calculate unlinked records (initially linked but now unchecked)
+    const unlinkedRecords = initialLinkedRecords.filter(
+      (record) => !selectedRowKeys.includes(record.id),
+    );
+
+    // If there are any changes (new links or unlinks), call the handler
+    if (newlyLinkedRecords.length > 0 || unlinkedRecords.length > 0) {
+      onLink(newlyLinkedRecords, unlinkedRecords);
+    } else {
+      // No changes, just close
+      onCancel();
     }
   };
 
@@ -54,17 +74,39 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
     return fkValue === mainRecordId;
   };
 
+  // Calculate newly selected count (excluding already linked)
+  const newlySelectedCount = selectedRowKeys.filter(
+    (key) => !initialLinkedIds.includes(key),
+  ).length;
+
+  // Calculate unlinked count (initially linked but now unchecked)
+  const unlinkedCount = initialLinkedIds.filter(
+    (id) => !selectedRowKeys.includes(id),
+  ).length;
+
+  // Check if there are any changes
+  const hasChanges = newlySelectedCount > 0 || unlinkedCount > 0;
+
   const rowSelection = {
     type: isSingleSelect ? ('radio' as const) : ('checkbox' as const),
     selectedRowKeys,
+    preserveSelectedRowKeys: true,
     onChange: (newSelectedRowKeys: React.Key[], newSelectedRows: any[]) => {
       setSelectedRowKeys(newSelectedRowKeys);
-      setSelectedRows(newSelectedRows);
+      // Merge new selected rows with existing ones (preserve across pages)
+      setSelectedRows((prevRows) => {
+        const existingRowsMap = new Map(prevRows.map((row) => [row.id, row]));
+        // Add new rows from current page
+        newSelectedRows.forEach((row) => {
+          existingRowsMap.set(row.id, row);
+        });
+        // Remove rows that are no longer selected
+        const selectedKeysSet = new Set(newSelectedRowKeys);
+        return Array.from(existingRowsMap.values()).filter((row) =>
+          selectedKeysSet.has(row.id),
+        );
+      });
     },
-    // Disable selection for records already linked to current record
-    getCheckboxProps: (record: any) => ({
-      disabled: isLinkedToCurrentRecord(record),
-    }),
   };
 
   return (
@@ -84,22 +126,22 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
           Cancel
         </Button>,
         <Button
-          key="link"
+          key="save"
           type="primary"
           icon={<LinkOutlined />}
           onClick={handleOk}
-          disabled={selectedRowKeys.length === 0}
+          disabled={!hasChanges}
           loading={loading}
         >
-          Link Selected ({selectedRowKeys.length})
+          Save
         </Button>,
       ]}
     >
       <div style={{ marginBottom: 16 }}>
         <span style={{ color: '#666' }}>
           {isSingleSelect
-            ? 'Select one record to link'
-            : `Select records to link (${selectedRowKeys.length} selected)`}
+            ? `Select one record to link${initialLinkedIds.length > 0 ? ` (Current: ${initialLinkedIds.length} linked)` : ''}`
+            : `Already linked: ${initialLinkedIds.length} | To link: ${newlySelectedCount} | To unlink: ${unlinkedCount}`}
         </span>
       </div>
 
@@ -108,12 +150,6 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
         size="small"
         scroll={{ y: 400 }}
         rowSelection={rowSelection}
-        rowClassName={(record) => {
-          if (isLinkedToCurrentRecord(record)) {
-            return 'linked-to-current';
-          }
-          return '';
-        }}
         request={async (params) => {
           try {
             // Build search conditions - show ALL records
@@ -145,6 +181,46 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
             if (response?.code === 0) {
               const responseData = response.data?.data || [];
               const total = response.data?.count || 0;
+
+              // Find already linked records on current page
+              const linkedRecordsOnPage = responseData.filter((record: any) =>
+                isLinkedToCurrentRecord(record),
+              );
+              const linkedIdsOnPage = linkedRecordsOnPage.map((r: any) => r.id);
+
+              // Accumulate linked records across pages
+              if (linkedIdsOnPage.length > 0) {
+                setInitialLinkedIds((prev) => {
+                  const newIds = linkedIdsOnPage.filter(
+                    (id: React.Key) => !prev.includes(id),
+                  );
+                  return newIds.length > 0 ? [...prev, ...newIds] : prev;
+                });
+                setInitialLinkedRecords((prev) => {
+                  const existingIds = new Set(prev.map((r) => r.id));
+                  const newRecords = linkedRecordsOnPage.filter(
+                    (r: any) => !existingIds.has(r.id),
+                  );
+                  return newRecords.length > 0
+                    ? [...prev, ...newRecords]
+                    : prev;
+                });
+                setSelectedRowKeys((prev) => {
+                  const newIds = linkedIdsOnPage.filter(
+                    (id: React.Key) => !prev.includes(id),
+                  );
+                  return newIds.length > 0 ? [...prev, ...newIds] : prev;
+                });
+                setSelectedRows((prev) => {
+                  const existingIds = new Set(prev.map((r) => r.id));
+                  const newRecords = linkedRecordsOnPage.filter(
+                    (r: any) => !existingIds.has(r.id),
+                  );
+                  return newRecords.length > 0
+                    ? [...prev, ...newRecords]
+                    : prev;
+                });
+              }
 
               return {
                 data: responseData,
@@ -334,17 +410,6 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
         }}
         toolBarRender={false}
       />
-
-      <style>
-        {`
-          .linked-to-current {
-            background-color: #f5f5f5 !important;
-          }
-          .linked-to-current td {
-            color: #999 !important;
-          }
-        `}
-      </style>
     </Modal>
   );
 };

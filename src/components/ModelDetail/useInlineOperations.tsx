@@ -305,79 +305,101 @@ export const useInlineOperations = ({
     [buildConditions, messageApi],
   );
 
-  // Handle M2M add
+  // Handle M2M add (one by one, backend doesn't support batch)
   const handleM2MAdd = useCallback(
-    async (inlineName: string, inlineDesc: any, targetRecord: any) => {
+    async (inlineName: string, inlineDesc: any, targetRecords: any[]) => {
       try {
         const relation = inlineDesc.relation;
-        if (relation?.relation === 'm2m' && relation?.through) {
+        if (
+          relation?.relation === 'm2m' &&
+          relation?.through &&
+          targetRecords.length > 0
+        ) {
           const { through } = relation;
 
-          const throughData = {
-            [through.source_to_through_field]: mainRecord[through.source_field],
-            [through.target_to_through_field]:
-              targetRecord[through.target_field],
-          };
+          // Save each relation one by one (backend doesn't support batch)
+          for (const targetRecord of targetRecords) {
+            const throughData = {
+              [through.source_to_through_field]:
+                mainRecord[through.source_field],
+              [through.target_to_through_field]:
+                targetRecord[through.target_field],
+            };
 
-          const response = await saveModelData({
-            name: through.through,
-            data: throughData,
-          });
+            const response = await saveModelData({
+              name: through.through,
+              data: throughData,
+            });
 
-          if (response?.code === 0) {
-            messageApi.success('Relation added');
-            await loadInlineData(inlineName, inlineDesc, mainRecord);
-          } else {
-            messageApi.error('Failed to add relation');
+            if (response?.code !== 0) {
+              messageApi.error(
+                `Failed to add relation for record ${targetRecord.id}`,
+              );
+              return;
+            }
           }
+
+          messageApi.success(
+            `Successfully added ${targetRecords.length} relation(s)`,
+          );
         }
       } catch (error) {
-        messageApi.error('Failed to add relation');
+        messageApi.error('Failed to add relations');
         console.error('Add M2M error:', error);
       }
     },
-    [mainRecord, messageApi, loadInlineData],
+    [mainRecord, messageApi],
   );
 
-  // Handle M2M remove
+  // Handle M2M remove (one by one, backend doesn't support batch)
   const handleM2MRemove = useCallback(
-    async (inlineName: string, inlineDesc: any, targetRecord: any) => {
+    async (inlineName: string, inlineDesc: any, targetRecords: any | any[]) => {
       try {
         const relation = inlineDesc.relation;
         if (relation?.relation === 'm2m' && relation?.through) {
           const { through } = relation;
-          const throughData = inlineData[`${inlineName}_through`] || [];
 
-          const throughRecord = throughData.find(
-            (item: any) =>
-              item[through.source_to_through_field] ===
-                mainRecord[through.source_field] &&
-              item[through.target_to_through_field] ===
+          // Support both single record and array of records
+          const records = Array.isArray(targetRecords)
+            ? targetRecords
+            : [targetRecords];
+
+          if (records.length === 0) return;
+
+          // Delete each relation one by one (backend doesn't support batch)
+          for (const targetRecord of records) {
+            const throughData = {
+              [through.source_to_through_field]:
+                mainRecord[through.source_field],
+              [through.target_to_through_field]:
                 targetRecord[through.target_field],
-          );
+            };
 
-          if (throughRecord) {
             const response = await deleteModelData({
               name: through.through,
-              data: throughRecord,
+              data: throughData,
             } as any);
 
-            if (response?.code === 0) {
-              messageApi.success('Relation removed');
-              await loadInlineData(inlineName, inlineDesc, mainRecord);
-            } else {
-              messageApi.error('Failed to remove relation');
+            if (response?.code !== 0) {
+              messageApi.error(
+                `Failed to remove relation for record ${targetRecord.id}`,
+              );
+              return;
             }
-          } else {
-            messageApi.error('Relation record not found');
           }
+
+          messageApi.success(
+            records.length === 1
+              ? 'Relation removed'
+              : `Successfully removed ${records.length} relation(s)`,
+          );
         }
       } catch (error) {
         messageApi.error('Failed to remove relation');
         console.error('Remove M2M error:', error);
       }
     },
-    [mainRecord, inlineData, messageApi, loadInlineData],
+    [mainRecord, messageApi],
   );
 
   // Handle back relation link (for bk_fk and bk_o2o)
@@ -408,14 +430,15 @@ export const useInlineOperations = ({
           messageApi.success(
             `Successfully linked ${targetRecords.length} record(s)`,
           );
-          await loadInlineData(inlineName, inlineDesc, mainRecord);
+          // Note: Don't call loadInlineData here - back relation tables use onRequest
+          // The caller should call reload() on the table's actionRef instead
         }
       } catch (error) {
         messageApi.error('Failed to link records');
         console.error('Link back relation error:', error);
       }
     },
-    [mainRecord, messageApi, loadInlineData],
+    [mainRecord, messageApi],
   );
 
   // Handle back relation unlink (for bk_fk and bk_o2o)
@@ -437,7 +460,8 @@ export const useInlineOperations = ({
 
           if (response?.code === 0) {
             messageApi.success('Unlinked successfully');
-            await loadInlineData(inlineName, inlineDesc, mainRecord);
+            // Note: Don't call loadInlineData here - back relation tables use onRequest
+            // The caller should call reload() on the table's actionRef instead
           } else {
             messageApi.error(response?.message || 'Failed to unlink');
           }
@@ -447,7 +471,7 @@ export const useInlineOperations = ({
         console.error('Unlink back relation error:', error);
       }
     },
-    [mainRecord, messageApi, loadInlineData],
+    [mainRecord, messageApi],
   );
 
   // Mark tab as loaded
