@@ -2024,12 +2024,22 @@ export default {
     if (cond && cond.length > 0) {
       cond.forEach((condition: any) => {
         const { field, eq, lt, lte, gt, gte, contains, icontains } = condition;
+        const inValues = condition.in; // Handle 'in' operator
 
         filteredData = filteredData.filter((item) => {
           const value = (item as any)[field];
 
           if (eq !== undefined && eq !== null) {
             return value === eq || String(value) === String(eq);
+          }
+          if (
+            inValues !== undefined &&
+            inValues !== null &&
+            Array.isArray(inValues)
+          ) {
+            return inValues.some(
+              (v: any) => value === v || String(value) === String(v),
+            );
           }
           if (lt !== undefined && lt !== null) {
             return value < lt;
@@ -2167,24 +2177,36 @@ export default {
       });
     } else if (name === 'crown_tag_relations') {
       // Crown tag relations 删除操作 (M2M 中间表)
-      const deletedCount = Array.isArray(data) ? data.length : 1;
+      // Support deletion by id OR by crown_id + tag_id conditions
+      let deletedCount = 0;
 
-      // 模拟从数据源删除记录
       if (Array.isArray(data)) {
         data.forEach((record: any) => {
-          const index = crownTagRelationsData.findIndex(
-            (item) => item.id === record.id,
-          );
+          const index = crownTagRelationsData.findIndex((item) => {
+            if (record.id) {
+              return item.id === record.id;
+            }
+            // Find by crown_id and tag_id
+            return (
+              item.crown_id === record.crown_id && item.tag_id === record.tag_id
+            );
+          });
           if (index > -1) {
             crownTagRelationsData.splice(index, 1);
+            deletedCount++;
           }
         });
       } else {
-        const index = crownTagRelationsData.findIndex(
-          (item) => item.id === data.id,
-        );
+        const index = crownTagRelationsData.findIndex((item) => {
+          if (data.id) {
+            return item.id === data.id;
+          }
+          // Find by crown_id and tag_id
+          return item.crown_id === data.crown_id && item.tag_id === data.tag_id;
+        });
         if (index > -1) {
           crownTagRelationsData.splice(index, 1);
+          deletedCount = 1;
         }
       }
 
@@ -2338,19 +2360,27 @@ export default {
       });
     } else if (name === 'crown_tag_relations') {
       // Crown tag relations 保存操作 (M2M 中间表)
-      const newRecord = {
-        ...data,
-        id: Date.now(),
-        created_at: new Date().toISOString(),
-      };
-      crownTagRelationsData.push(newRecord);
+      // Support both single record and array of records (batch save)
+      const records = Array.isArray(data) ? data : [data];
+      const savedRecords: any[] = [];
+
+      records.forEach((record: any) => {
+        const newRecord = {
+          ...record,
+          id: Date.now() + Math.random(),
+          created_at: new Date().toISOString(),
+        };
+        crownTagRelationsData.push(newRecord);
+        savedRecords.push(newRecord);
+      });
 
       res.send({
         code: 0,
         message: 'success',
         data: {
-          message: 'Crown tag relation saved successfully',
-          saved_data: newRecord,
+          message: `${savedRecords.length} crown tag relation(s) saved successfully`,
+          saved_data:
+            savedRecords.length === 1 ? savedRecords[0] : savedRecords,
         },
       });
     } else if (name === 'crown_certificates') {
