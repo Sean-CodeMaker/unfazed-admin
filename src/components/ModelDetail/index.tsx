@@ -257,11 +257,16 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             return { data: [], total: 0, success: false };
           }
 
-          // Step 1: Get linked IDs from through table
+          const pageSize =
+            params.pageSize || inlineDesc.attrs?.list_per_page || 10;
+          const currentPage = params.current || 1;
+
+          // Step 1: Get linked IDs from through table with pagination
+          // Pagination is controlled by through table, not target table
           const throughResponse = await getModelData({
             name: throughInfo.through,
-            page: 1,
-            size: 10000, // Get all linked IDs
+            page: currentPage,
+            size: pageSize,
             cond: [
               {
                 field: throughInfo.source_to_through_field,
@@ -274,19 +279,23 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             return { data: [], total: 0, success: false };
           }
 
-          const linkedIds = (throughResponse.data?.data || []).map(
+          const throughData = throughResponse.data?.data || [];
+          const totalCount = throughResponse.data?.count || 0;
+
+          if (throughData.length === 0) {
+            return { data: [], total: totalCount, success: true };
+          }
+
+          // Get linked IDs for this page
+          const linkedIds = throughData.map(
             (item: any) => item[throughInfo.target_to_through_field],
           );
-
-          if (linkedIds.length === 0) {
-            return { data: [], total: 0, success: true };
-          }
 
           // Step 2: Build conditions for target table
           const baseConditions = [
             {
               field: throughInfo.target_field,
-              in: linkedIds,
+              in_: linkedIds,
             },
           ];
 
@@ -307,19 +316,21 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             }
           });
 
-          // Step 3: Get target records with pagination
+          // Step 3: Get target records for current page's linked IDs
+          // No pagination here since we already paginated in step 1
           const targetModelName = m2mRelation.target || inlineName;
           const response = await getModelData({
             name: targetModelName,
-            page: params.current || 1,
-            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
+            page: 1,
+            size: linkedIds.length, // Only fetch records for current page's linked IDs
             cond: [...baseConditions, ...searchConditions],
           });
 
           if (response?.code === 0) {
             return {
               data: response.data?.data || [],
-              total: response.data?.count || 0,
+              // Use through table's total count for pagination
+              total: totalCount,
               success: true,
             };
           }
@@ -934,7 +945,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             }}
             onOk={async (
               newSelectedIds,
-              selectedRecords,
+              _selectedRecords,
               initialSelectedIds,
             ) => {
               try {
@@ -945,30 +956,14 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                   (id) => !newSelectedIds.includes(id),
                 );
 
-                // Add new relations one by one
-                const recordsToAdd = addedIds
-                  .map((addedId) =>
-                    selectedRecords.find((item) => item.id === addedId),
-                  )
-                  .filter(Boolean);
-
-                if (recordsToAdd.length > 0) {
-                  await handleM2MAdd(inlineName, inlineDesc, recordsToAdd);
+                // Important: removed records are not part of the modal's selectedRows.
+                // Use IDs directly to ensure unlink works even if user never visited that page.
+                if (addedIds.length > 0) {
+                  await handleM2MAdd(inlineName, inlineDesc, addedIds);
                 }
 
-                // Remove relations one by one
-                const recordsToRemove = removedIds
-                  .map((removedId) =>
-                    selectedRecords.find((item) => item.id === removedId),
-                  )
-                  .filter(Boolean);
-
-                if (recordsToRemove.length > 0) {
-                  await handleM2MRemove(
-                    inlineName,
-                    inlineDesc,
-                    recordsToRemove,
-                  );
+                if (removedIds.length > 0) {
+                  await handleM2MRemove(inlineName, inlineDesc, removedIds);
                 }
 
                 // Reload the inline table

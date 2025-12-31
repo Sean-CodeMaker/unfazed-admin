@@ -305,25 +305,53 @@ export const useInlineOperations = ({
     [buildConditions, messageApi],
   );
 
+  const getM2MTargetKeyValue = useCallback(
+    (through: any, targetRecordOrId: any) => {
+      if (targetRecordOrId === null || targetRecordOrId === undefined) {
+        return undefined;
+      }
+
+      // Support both full record objects and primitive IDs.
+      if (typeof targetRecordOrId === 'object') {
+        const byTargetField = targetRecordOrId?.[through.target_field];
+        if (byTargetField !== null && byTargetField !== undefined) {
+          return byTargetField;
+        }
+        return targetRecordOrId?.id;
+      }
+
+      return targetRecordOrId;
+    },
+    [],
+  );
+
   // Handle M2M add (one by one, backend doesn't support batch)
   const handleM2MAdd = useCallback(
-    async (inlineName: string, inlineDesc: any, targetRecords: any[]) => {
+    async (inlineName: string, inlineDesc: any, targetRecordsOrIds: any[]) => {
       try {
         const relation = inlineDesc.relation;
         if (
           relation?.relation === 'm2m' &&
           relation?.through &&
-          targetRecords.length > 0
+          targetRecordsOrIds.length > 0
         ) {
           const { through } = relation;
 
           // Save each relation one by one (backend doesn't support batch)
-          for (const targetRecord of targetRecords) {
+          for (const targetRecordOrId of targetRecordsOrIds) {
+            const targetKeyValue = getM2MTargetKeyValue(
+              through,
+              targetRecordOrId,
+            );
+            if (targetKeyValue === undefined) {
+              messageApi.error('Failed to add relation: invalid target');
+              return;
+            }
+
             const throughData = {
               [through.source_to_through_field]:
                 mainRecord[through.source_field],
-              [through.target_to_through_field]:
-                targetRecord[through.target_field],
+              [through.target_to_through_field]: targetKeyValue,
             };
 
             const response = await saveModelData({
@@ -333,14 +361,14 @@ export const useInlineOperations = ({
 
             if (response?.code !== 0) {
               messageApi.error(
-                `Failed to add relation for record ${targetRecord.id}`,
+                `Failed to add relation for target ${String(targetKeyValue)}`,
               );
               return;
             }
           }
 
           messageApi.success(
-            `Successfully added ${targetRecords.length} relation(s)`,
+            `Successfully added ${targetRecordsOrIds.length} relation(s)`,
           );
         }
       } catch (error) {
@@ -348,26 +376,39 @@ export const useInlineOperations = ({
         console.error('Add M2M error:', error);
       }
     },
-    [mainRecord, messageApi],
+    [getM2MTargetKeyValue, mainRecord, messageApi],
   );
 
   // Handle M2M remove (one by one, backend doesn't support batch)
   const handleM2MRemove = useCallback(
-    async (inlineName: string, inlineDesc: any, targetRecords: any | any[]) => {
+    async (
+      inlineName: string,
+      inlineDesc: any,
+      targetRecordsOrIds: any | any[],
+    ) => {
       try {
         const relation = inlineDesc.relation;
         if (relation?.relation === 'm2m' && relation?.through) {
           const { through } = relation;
 
           // Support both single record and array of records
-          const records = Array.isArray(targetRecords)
-            ? targetRecords
-            : [targetRecords];
+          const recordsOrIds = Array.isArray(targetRecordsOrIds)
+            ? targetRecordsOrIds
+            : [targetRecordsOrIds];
 
-          if (records.length === 0) return;
+          if (recordsOrIds.length === 0) return;
 
           // Delete each relation one by one (backend doesn't support batch)
-          for (const targetRecord of records) {
+          for (const targetRecordOrId of recordsOrIds) {
+            const targetKeyValue = getM2MTargetKeyValue(
+              through,
+              targetRecordOrId,
+            );
+            if (targetKeyValue === undefined) {
+              messageApi.error('Failed to remove relation: invalid target');
+              return;
+            }
+
             // First, query the through table to get the record ID
             const queryResponse = await getModelData({
               name: through.through,
@@ -380,14 +421,14 @@ export const useInlineOperations = ({
                 },
                 {
                   field: through.target_to_through_field,
-                  eq: targetRecord[through.target_field],
+                  eq: targetKeyValue,
                 },
               ],
             });
 
             if (queryResponse?.code !== 0 || !queryResponse.data?.data?.[0]) {
               messageApi.error(
-                `Failed to find relation record for ${targetRecord.id}`,
+                `Failed to find relation record for target ${String(targetKeyValue)}`,
               );
               return;
             }
@@ -404,16 +445,16 @@ export const useInlineOperations = ({
 
             if (response?.code !== 0) {
               messageApi.error(
-                `Failed to remove relation for record ${targetRecord.id}`,
+                `Failed to remove relation for target ${String(targetKeyValue)}`,
               );
               return;
             }
           }
 
           messageApi.success(
-            records.length === 1
+            recordsOrIds.length === 1
               ? 'Relation removed'
-              : `Successfully removed ${records.length} relation(s)`,
+              : `Successfully removed ${recordsOrIds.length} relation(s)`,
           );
         }
       } catch (error) {
@@ -421,7 +462,7 @@ export const useInlineOperations = ({
         console.error('Remove M2M error:', error);
       }
     },
-    [mainRecord, messageApi],
+    [getM2MTargetKeyValue, mainRecord, messageApi],
   );
 
   // Handle back relation link (for bk_fk and bk_o2o)
