@@ -368,16 +368,38 @@ export const useInlineOperations = ({
 
           // Delete each relation one by one (backend doesn't support batch)
           for (const targetRecord of records) {
-            const throughData = {
-              [through.source_to_through_field]:
-                mainRecord[through.source_field],
-              [through.target_to_through_field]:
-                targetRecord[through.target_field],
-            };
+            // First, query the through table to get the record ID
+            const queryResponse = await getModelData({
+              name: through.through,
+              page: 1,
+              size: 1,
+              cond: [
+                {
+                  field: through.source_to_through_field,
+                  eq: mainRecord[through.source_field],
+                },
+                {
+                  field: through.target_to_through_field,
+                  eq: targetRecord[through.target_field],
+                },
+              ],
+            });
 
+            if (queryResponse?.code !== 0 || !queryResponse.data?.data?.[0]) {
+              messageApi.error(
+                `Failed to find relation record for ${targetRecord.id}`,
+              );
+              return;
+            }
+
+            const throughRecord = queryResponse.data.data[0];
+
+            // Delete using the record ID
             const response = await deleteModelData({
               name: through.through,
-              data: throughData,
+              data: {
+                id: throughRecord.id,
+              },
             } as any);
 
             if (response?.code !== 0) {
