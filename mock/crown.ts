@@ -2811,7 +2811,7 @@ export default {
             target: 'crown_certificates',
             source_field: 'id',
             target_field: 'crown_id',
-            target_field_nullable: false,
+            target_field_nullable: true,
             relation: 'bk_fk' as const,
           },
         },

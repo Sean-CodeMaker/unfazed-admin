@@ -601,9 +601,11 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             inlineDesc,
           );
 
-          // Check if target_field is nullable - if not, show Add button
-          const showAddButton =
-            inlineDesc.relation?.target_field_nullable === false;
+          // Check if target_field is nullable
+          // When nullable=false: show Add + Delete buttons (must create/delete records)
+          // When nullable=true: show Link + Unlink buttons (can link/unlink existing records)
+          const isTargetFieldNullable =
+            inlineDesc.relation?.target_field_nullable !== false;
 
           return (
             <Card>
@@ -635,28 +637,37 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                     records,
                   );
                 }}
-                onUnlink={async (unlinkRecord: any) => {
-                  setOperationLoading(true);
-                  try {
-                    await handleBackRelationUnlink(
-                      inlineName,
-                      inlineDesc,
-                      unlinkRecord,
-                    );
-                    debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
-                onLink={() =>
-                  setBackRelationModalVisible((prev) => ({
-                    ...prev,
-                    [inlineName]: true,
-                  }))
+                // Unlink button - only show when target_field is nullable
+                onUnlink={
+                  isTargetFieldNullable
+                    ? async (unlinkRecord: any) => {
+                        setOperationLoading(true);
+                        try {
+                          await handleBackRelationUnlink(
+                            inlineName,
+                            inlineDesc,
+                            unlinkRecord,
+                          );
+                          debouncedReload(inlineName);
+                        } finally {
+                          setOperationLoading(false);
+                        }
+                      }
+                    : undefined
                 }
-                // Add button for creating new related record (when FK is not nullable)
+                // Link button - only show when target_field is nullable
+                onLink={
+                  isTargetFieldNullable
+                    ? () =>
+                        setBackRelationModalVisible((prev) => ({
+                          ...prev,
+                          [inlineName]: true,
+                        }))
+                    : undefined
+                }
+                // Add button - only show when target_field is NOT nullable
                 onAddRelated={
-                  showAddButton
+                  !isTargetFieldNullable
                     ? () =>
                         setBackRelationAddModalVisible((prev) => ({
                           ...prev,
@@ -664,16 +675,20 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                         }))
                     : undefined
                 }
-                // Delete button for permanently deleting the related record
-                onDeleteRelated={async (deleteRecord: any) => {
-                  setOperationLoading(true);
-                  try {
-                    await handleInlineDelete(inlineName, deleteRecord);
-                    debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
+                // Delete button - only show when target_field is NOT nullable
+                onDeleteRelated={
+                  !isTargetFieldNullable
+                    ? async (deleteRecord: any) => {
+                        setOperationLoading(true);
+                        try {
+                          await handleInlineDelete(inlineName, deleteRecord);
+                          debouncedReload(inlineName);
+                        } finally {
+                          setOperationLoading(false);
+                        }
+                      }
+                    : undefined
+                }
                 // bk_o2o can always open modal to change the linked record
                 linkDisabled={false}
                 actionRef={
