@@ -46,6 +46,10 @@ interface CommonProTableProps {
   onLink?: () => void;
   /** Link 按钮是否禁用（用于 bk_o2o 已有关联时禁用） */
   linkDisabled?: boolean;
+  /** 新增关联记录回调（用于 bk_fk/bk_o2o 关系，点击后打开新增弹窗） */
+  onAddRelated?: () => void;
+  /** 删除关联记录回调（用于 bk_fk/bk_o2o 关系，彻底删除记录） */
+  onDeleteRelated?: (record: Record<string, any>) => Promise<void>;
   /** 数据请求函数（当不提供 data 时使用） */
   onRequest?: (
     params: any,
@@ -66,6 +70,8 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   onUnlink,
   onLink,
   linkDisabled,
+  onAddRelated,
+  onDeleteRelated,
   onRequest,
   tableProps = {},
   actionRef,
@@ -601,6 +607,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       hasEditAction ||
       hasDeleteAction ||
       hasUnlinkAction ||
+      onDeleteRelated ||
       hasCustomActions
     ) {
       // Calculate action column width based on actual buttons
@@ -609,6 +616,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       if (hasEditAction) actionWidth += 70;
       if (hasDeleteAction) actionWidth += 70;
       if (hasUnlinkAction) actionWidth += 80; // Unlink is slightly wider
+      if (onDeleteRelated) actionWidth += 80; // Delete for back relations
       if (hasCustomActions) actionWidth += 70;
 
       columns.push({
@@ -732,6 +740,38 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
               );
             }
           }
+
+          // Delete button for back relations (bk_fk/bk_o2o) - permanently deletes the record
+          if (onDeleteRelated) {
+            const recordKey = record.id || record.key || JSON.stringify(record);
+            const isEditing = editableKeys.includes(recordKey);
+
+            if (!isEditing) {
+              actions.push(
+                <Popconfirm
+                  key="delete-related"
+                  title="Delete this record?"
+                  description="This will permanently delete the record. This action cannot be undone."
+                  onConfirm={async () => {
+                    await onDeleteRelated(record);
+                  }}
+                  okText="Delete"
+                  cancelText="Cancel"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                  >
+                    Delete
+                  </Button>
+                </Popconfirm>,
+              );
+            }
+          }
+
           // Delete button (only show if no onUnlink provided)
           else if (hasDeleteAction) {
             const recordKey = record.id || record.key || JSON.stringify(record);
@@ -792,7 +832,16 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return columns;
-  }, [modelDesc, onDetail, onAction, onSave, onDelete, onUnlink, editableKeys]);
+  }, [
+    modelDesc,
+    onDetail,
+    onAction,
+    onSave,
+    onDelete,
+    onUnlink,
+    onDeleteRelated,
+    editableKeys,
+  ]);
 
   // 生成批量操作菜单项
   const getBatchActionMenuItems = useCallback(() => {
@@ -842,7 +891,21 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
       );
     }
 
-    // Add button
+    // Add button for back relations (bk_fk/bk_o2o) - creates new related record
+    if (onAddRelated) {
+      buttons.push(
+        <Button
+          key="add-related"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={onAddRelated}
+        >
+          Add
+        </Button>,
+      );
+    }
+
+    // Add button (standard add for main table)
     if (modelDesc.attrs.can_add) {
       buttons.push(
         <Button
@@ -857,7 +920,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     }
 
     return buttons;
-  }, [modelDesc, onAction, onLink, linkDisabled]);
+  }, [modelDesc, onAction, onLink, linkDisabled, onAddRelated]);
 
   const columns = useMemo(() => generateColumns(), [generateColumns]);
 

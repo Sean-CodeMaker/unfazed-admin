@@ -80,6 +80,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
   const [backRelationModalVisible, setBackRelationModalVisible] = useState<
     Record<string, boolean>
   >({});
+  const [backRelationAddModalVisible, setBackRelationAddModalVisible] =
+    useState<Record<string, boolean>>({});
   const [linkLoading, setLinkLoading] = useState(false);
   // Global loading state for inline operations
   const [operationLoading, setOperationLoading] = useState(false);
@@ -599,6 +601,10 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
             inlineDesc,
           );
 
+          // Check if target_field is nullable - if not, show Add button
+          const showAddButton =
+            inlineDesc.relation?.target_field_nullable === false;
+
           return (
             <Card>
               <CommonProTable
@@ -648,6 +654,26 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
                     [inlineName]: true,
                   }))
                 }
+                // Add button for creating new related record (when FK is not nullable)
+                onAddRelated={
+                  showAddButton
+                    ? () =>
+                        setBackRelationAddModalVisible((prev) => ({
+                          ...prev,
+                          [inlineName]: true,
+                        }))
+                    : undefined
+                }
+                // Delete button for permanently deleting the related record
+                onDeleteRelated={async (deleteRecord: any) => {
+                  setOperationLoading(true);
+                  try {
+                    await handleInlineDelete(inlineName, deleteRecord);
+                    debouncedReload(inlineName);
+                  } finally {
+                    setOperationLoading(false);
+                  }
+                }}
                 // bk_o2o can always open modal to change the linked record
                 linkDisabled={false}
                 actionRef={
@@ -1040,6 +1066,109 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           />
         );
       })}
+
+      {/* Back relation (bk_fk/bk_o2o) add modals - for creating new related records */}
+      {Object.entries(backRelationAddModalVisible).map(
+        ([inlineName, visible]) => {
+          if (!visible || !inlineDescs[inlineName]) return null;
+
+          const inlineDesc = inlineDescs[inlineName];
+          const relation = inlineDesc.relation;
+
+          return (
+            <Modal
+              key={`add-${inlineName}`}
+              open={visible}
+              title={`Add ${inlineDesc.attrs?.label || inlineName}`}
+              width={800}
+              destroyOnClose
+              onCancel={() => {
+                setBackRelationAddModalVisible((prev) => ({
+                  ...prev,
+                  [inlineName]: false,
+                }));
+              }}
+              footer={null}
+              styles={{
+                body: {
+                  paddingTop: 24,
+                },
+              }}
+            >
+              <ProForm
+                layout="horizontal"
+                labelCol={{ span: 6 }}
+                wrapperCol={{ span: 18 }}
+                onFinish={async (values) => {
+                  try {
+                    // Add the FK field value to link to main record
+                    const dataToSave = {
+                      ...values,
+                      [relation.target_field]: record[relation.source_field],
+                    };
+
+                    const response = await saveModelData({
+                      name: inlineName,
+                      data: dataToSave,
+                    });
+
+                    if (response?.code === 0) {
+                      messageApi.success('Created successfully');
+                      setBackRelationAddModalVisible((prev) => ({
+                        ...prev,
+                        [inlineName]: false,
+                      }));
+                      // Reload the inline table after adding
+                      debouncedReload(inlineName);
+                    } else {
+                      messageApi.error(response?.message || 'Create failed');
+                    }
+                  } catch (error) {
+                    messageApi.error('Create failed');
+                    console.error('Create error:', error);
+                  }
+                }}
+                submitter={{
+                  searchConfig: {
+                    submitText: 'Create',
+                    resetText: 'Cancel',
+                  },
+                  onReset: () => {
+                    setBackRelationAddModalVisible((prev) => ({
+                      ...prev,
+                      [inlineName]: false,
+                    }));
+                  },
+                }}
+              >
+                {Object.entries(inlineDesc.fields || {}).map(
+                  ([fieldName, fieldConfig]: [string, any]) => {
+                    // Skip the FK field (it will be set automatically)
+                    if (fieldName === relation.target_field) return null;
+                    // Skip readonly fields and hidden fields
+                    if (fieldConfig.readonly || fieldConfig.show === false)
+                      return null;
+
+                    return renderFormField(fieldName, fieldConfig, undefined, {
+                      commonProps: {
+                        rules:
+                          fieldConfig.blank === false
+                            ? [
+                                {
+                                  required: true,
+                                  message: `${fieldConfig.name || fieldName} is required`,
+                                },
+                              ]
+                            : [],
+                      },
+                    });
+                  },
+                )}
+              </ProForm>
+            </Modal>
+          );
+        },
+      )}
     </PageContainer>
   );
 };
