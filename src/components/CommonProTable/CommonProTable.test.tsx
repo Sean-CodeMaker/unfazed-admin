@@ -260,8 +260,8 @@ describe('CommonProTable', () => {
 
       // id field should not be editable
       expect(screen.queryByTestId('editable-id')).toBeNull();
-      // Non-readonly fields should be editable when list_editable exists
-      expect(screen.getByTestId('editable-created_at')).toBeTruthy();
+      // readonly fields should not be editable even when list_editable exists
+      expect(screen.queryByTestId('editable-created_at')).toBeNull();
     });
 
     it('should not have editable columns when can_edit is false', () => {

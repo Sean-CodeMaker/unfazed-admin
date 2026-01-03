@@ -1,40 +1,22 @@
-import {
-  ArrowLeftOutlined,
-  DeleteOutlined,
-  DisconnectOutlined,
-  EditOutlined,
-  LinkOutlined,
-  SaveOutlined,
-} from '@ant-design/icons';
-import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
-import { PageContainer, ProForm, ProTable } from '@ant-design/pro-components';
+import { ArrowLeftOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { ProFormInstance } from '@ant-design/pro-components';
+import { PageContainer } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { Button, Card, Divider, Modal, Space, Spin, Tabs } from 'antd';
+import { Button, Modal, Spin, Tabs } from 'antd';
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  deleteModelData,
-  getModelData,
-  getModelInlines,
-  saveModelData,
-} from '@/services/api';
-import { renderFormField } from '@/utils/formFieldRenderer';
-import { CommonProTable } from '../index';
+import { deleteModelData, getModelInlines } from '@/services/api';
+import BackRelationAddModal from './BackRelationAddModal';
 import BackRelationSelectionModal from './BackRelationSelectionModal';
+import { useInlineTabRenderer } from './InlineTabRenderer';
 import M2MSelectionModal from './M2MSelectionModal';
+import MainFormTab from './MainFormTab';
+import type {
+  InlineActionRefsMap,
+  ModalVisibilityState,
+  ModelDetailProps,
+} from './types';
 import { useInlineOperations } from './useInlineOperations';
-
-interface ModelDetailProps {
-  modelName: string;
-  routeLabel?: string;
-  modelDesc: API.AdminSerializeModel;
-  record: Record<string, any>;
-  onBack?: () => void;
-}
-
-// Utility function: capitalize first letter
-const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
+import { capitalizeFirstLetter } from './utils';
 
 const ModelDetail: React.FC<ModelDetailProps> = ({
   modelName,
@@ -56,14 +38,12 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
   const {
     contextHolder,
     messageApi,
-    inlineData,
     editingKeys,
     loadedTabs,
     markTabLoaded,
     handleInlineAction,
     handleInlineSave,
     handleInlineDelete,
-    loadInlineData,
     handleM2MAdd,
     handleM2MRemove,
     handleBackRelationLink,
@@ -74,282 +54,37 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
   // State management
   const [activeTab, setActiveTab] = useState('main');
   const [inlineDescs, setInlineDescs] = useState<Record<string, any>>({});
-  const [m2mModalVisible, setM2MModalVisible] = useState<
-    Record<string, boolean>
-  >({});
-  const [backRelationModalVisible, setBackRelationModalVisible] = useState<
-    Record<string, boolean>
-  >({});
+  const [m2mModalVisible, setM2MModalVisible] = useState<ModalVisibilityState>(
+    {},
+  );
+  const [backRelationModalVisible, setBackRelationModalVisible] =
+    useState<ModalVisibilityState>({});
   const [backRelationAddModalVisible, setBackRelationAddModalVisible] =
-    useState<Record<string, boolean>>({});
+    useState<ModalVisibilityState>({});
   const [linkLoading, setLinkLoading] = useState(false);
   // Global loading state for inline operations
   const [operationLoading, setOperationLoading] = useState(false);
   // Action refs for inline tables to enable reload
-  const inlineActionRefs = useRef<Record<string, ActionType | undefined>>({});
+  const inlineActionRefs = useRef<InlineActionRefsMap>({});
 
-  // Memoized request handlers for each inline table to prevent unnecessary re-requests
-  const inlineRequestHandlers = useRef<Record<string, any>>({});
-
-  // Track reload timestamps to prevent duplicate reloads
-  const lastReloadTime = useRef<Record<string, number>>({});
-
-  // Helper function to reload table with debounce (prevents duplicate requests)
-  const debouncedReload = useCallback((inlineName: string) => {
-    const now = Date.now();
-    const lastTime = lastReloadTime.current[inlineName] || 0;
-    if (now - lastTime > 500) {
-      // Only reload if more than 500ms since last reload
-      lastReloadTime.current[inlineName] = now;
-      inlineActionRefs.current[inlineName]?.reload();
-    }
-  }, []);
-
-  // Create stable request handler for back relation tables
-  const createBackRelationRequestHandler = useCallback(
-    (inlineName: string, inlineDesc: any) => {
-      // Return cached handler if exists
-      const cacheKey = `bk_${inlineName}`;
-      if (inlineRequestHandlers.current[cacheKey]) {
-        return inlineRequestHandlers.current[cacheKey];
-      }
-
-      // Create new handler
-      const handler = async (params: any) => {
-        try {
-          const relation = inlineDesc.relation;
-          // Build base conditions for back relation
-          const baseConditions = [
-            {
-              field: relation.target_field,
-              eq: record[relation.source_field],
-            },
-          ];
-
-          // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
-          const searchConditions: any[] = [];
-          Object.entries(params).forEach(([key, value]) => {
-            if (
-              value &&
-              key !== 'current' &&
-              key !== 'pageSize' &&
-              searchFields.includes(key)
-            ) {
-              searchConditions.push({
-                field: key,
-                icontains: String(value),
-              });
-            }
-          });
-
-          const response = await getModelData({
-            name: inlineName,
-            page: params.current || 1,
-            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
-            cond: [...baseConditions, ...searchConditions],
-          });
-
-          if (response?.code === 0) {
-            return {
-              data: response.data?.data || [],
-              total: response.data?.count || 0,
-              success: true,
-            };
-          }
-
-          return { data: [], total: 0, success: false };
-        } catch (error) {
-          console.error('Request error:', error);
-          return { data: [], total: 0, success: false };
-        }
-      };
-
-      // Cache it
-      inlineRequestHandlers.current[cacheKey] = handler;
-      return handler;
-    },
-    [record],
-  );
-
-  // Create stable request handler for forward relation (fk/o2o) tables
-  const createForwardRelationRequestHandler = useCallback(
-    (inlineName: string, inlineDesc: any) => {
-      // Return cached handler if exists
-      const cacheKey = `fk_${inlineName}`;
-      if (inlineRequestHandlers.current[cacheKey]) {
-        return inlineRequestHandlers.current[cacheKey];
-      }
-
-      // Create new handler
-      const handler = async (params: any) => {
-        try {
-          const fkRelation = inlineDesc.relation;
-          // Build base conditions for fk/o2o relation
-          const baseConditions = [
-            {
-              field: fkRelation.source_field,
-              eq: record[fkRelation.target_field],
-            },
-          ];
-
-          // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
-          const searchConditions: any[] = [];
-          Object.entries(params).forEach(([key, value]) => {
-            if (
-              value &&
-              key !== 'current' &&
-              key !== 'pageSize' &&
-              searchFields.includes(key)
-            ) {
-              searchConditions.push({
-                field: key,
-                icontains: String(value),
-              });
-            }
-          });
-
-          const response = await getModelData({
-            name: inlineName,
-            page: params.current || 1,
-            size: params.pageSize || inlineDesc.attrs?.list_per_page || 10,
-            cond: [...baseConditions, ...searchConditions],
-          });
-
-          if (response?.code === 0) {
-            return {
-              data: response.data?.data || [],
-              total: response.data?.count || 0,
-              success: true,
-            };
-          }
-
-          return { data: [], total: 0, success: false };
-        } catch (error) {
-          console.error('Request error:', error);
-          return { data: [], total: 0, success: false };
-        }
-      };
-
-      // Cache it
-      inlineRequestHandlers.current[cacheKey] = handler;
-      return handler;
-    },
-    [record],
-  );
-
-  // Create stable request handler for M2M tables
-  // M2M table shows ONLY linked records
-  const createM2MRequestHandler = useCallback(
-    (inlineName: string, inlineDesc: any) => {
-      // Return cached handler if exists
-      const cacheKey = `m2m_${inlineName}`;
-      if (inlineRequestHandlers.current[cacheKey]) {
-        return inlineRequestHandlers.current[cacheKey];
-      }
-
-      // Create new handler
-      const handler = async (params: any) => {
-        try {
-          const m2mRelation = inlineDesc.relation;
-          const throughInfo = m2mRelation?.through;
-
-          if (!throughInfo) {
-            return { data: [], total: 0, success: false };
-          }
-
-          const pageSize =
-            params.pageSize || inlineDesc.attrs?.list_per_page || 10;
-          const currentPage = params.current || 1;
-
-          // Step 1: Get linked IDs from through table with pagination
-          // Pagination is controlled by through table, not target table
-          const throughResponse = await getModelData({
-            name: throughInfo.through,
-            page: currentPage,
-            size: pageSize,
-            cond: [
-              {
-                field: throughInfo.source_to_through_field,
-                eq: record[throughInfo.source_field],
-              },
-            ],
-          });
-
-          if (throughResponse?.code !== 0) {
-            return { data: [], total: 0, success: false };
-          }
-
-          const throughData = throughResponse.data?.data || [];
-          const totalCount = throughResponse.data?.count || 0;
-
-          if (throughData.length === 0) {
-            return { data: [], total: totalCount, success: true };
-          }
-
-          // Get linked IDs for this page
-          const linkedIds = throughData.map(
-            (item: any) => item[throughInfo.target_to_through_field],
-          );
-
-          // Step 2: Build conditions for target table
-          const baseConditions = [
-            {
-              field: throughInfo.target_field,
-              in_: linkedIds,
-            },
-          ];
-
-          // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
-          const searchConditions: any[] = [];
-          Object.entries(params).forEach(([key, value]) => {
-            if (
-              value &&
-              key !== 'current' &&
-              key !== 'pageSize' &&
-              searchFields.includes(key)
-            ) {
-              searchConditions.push({
-                field: key,
-                icontains: String(value),
-              });
-            }
-          });
-
-          // Step 3: Get target records for current page's linked IDs
-          // No pagination here since we already paginated in step 1
-          const targetModelName = m2mRelation.target || inlineName;
-          const response = await getModelData({
-            name: targetModelName,
-            page: 1,
-            size: linkedIds.length, // Only fetch records for current page's linked IDs
-            cond: [...baseConditions, ...searchConditions],
-          });
-
-          if (response?.code === 0) {
-            return {
-              data: response.data?.data || [],
-              // Use through table's total count for pagination
-              total: totalCount,
-              success: true,
-            };
-          }
-
-          return { data: [], total: 0, success: false };
-        } catch (error) {
-          console.error('M2M request error:', error);
-          return { data: [], total: 0, success: false };
-        }
-      };
-
-      // Cache it
-      inlineRequestHandlers.current[cacheKey] = handler;
-      return handler;
-    },
-    [record],
-  );
+  // Use inline tab renderer hook
+  const { renderInlineComponent, debouncedReload } = useInlineTabRenderer({
+    record,
+    inlineDescs,
+    loadedTabs,
+    editingKeys,
+    handleInlineAction,
+    handleInlineSave,
+    handleInlineDelete,
+    handleM2MRemove,
+    handleBackRelationUnlink,
+    addInlineRecord,
+    setM2MModalVisible,
+    setBackRelationModalVisible,
+    setBackRelationAddModalVisible,
+    setOperationLoading,
+    inlineActionRefs,
+  });
 
   // Load inline model data
   const { loading: detailLoading } = useRequest(
@@ -415,341 +150,6 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
     });
   };
 
-  // Render inline component based on relation type
-  const renderInlineComponent = useCallback(
-    (inlineName: string) => {
-      const inlineDesc = inlineDescs[inlineName];
-      const data = inlineData[inlineName] || [];
-      const relationType = (inlineDesc as any)?.relation?.relation;
-      const isLoaded = loadedTabs.has(inlineName);
-
-      if (!inlineDesc) return null;
-
-      if (!isLoaded) {
-        return (
-          <Card>
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-              <span>Loading...</span>
-            </div>
-          </Card>
-        );
-      }
-
-      switch (relationType) {
-        case 'm2m': {
-          // M2M table uses request mode to show ONLY linked records with pagination
-          // Use stable request handler to prevent unnecessary re-requests
-          const handleM2MRequest = createM2MRequestHandler(
-            inlineName,
-            inlineDesc,
-          );
-
-          return (
-            <Card>
-              <CommonProTable
-                modelDesc={{
-                  ...inlineDesc,
-                  attrs: {
-                    ...inlineDesc.attrs,
-                    can_add: false,
-                    can_edit: false,
-                    can_delete: false,
-                  },
-                }}
-                modelName={inlineName}
-                onRequest={handleM2MRequest}
-                onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                  );
-                }}
-                onUnlink={async (unlinkRecord: any) => {
-                  setOperationLoading(true);
-                  try {
-                    await handleM2MRemove(inlineName, inlineDesc, unlinkRecord);
-                    debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
-                onLink={() =>
-                  setM2MModalVisible((prev) => ({
-                    ...prev,
-                    [inlineName]: true,
-                  }))
-                }
-                actionRef={
-                  {
-                    get current() {
-                      return inlineActionRefs.current[inlineName];
-                    },
-                    set current(ref: ActionType | undefined) {
-                      inlineActionRefs.current[inlineName] = ref;
-                    },
-                  } as React.MutableRefObject<ActionType | undefined>
-                }
-                tableProps={{
-                  pagination: {
-                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
-                    pageSizeOptions: inlineDesc.attrs
-                      ?.list_per_page_options || [10, 20, 50, 100],
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                  },
-                }}
-              />
-            </Card>
-          );
-        }
-
-        case 'fk':
-        case 'o2o': {
-          // Use stable request handler to prevent unnecessary re-requests
-          const handleFkRequest = createForwardRelationRequestHandler(
-            inlineName,
-            inlineDesc,
-          );
-
-          return (
-            <Card>
-              <CommonProTable
-                modelDesc={{
-                  ...inlineDesc,
-                  attrs: {
-                    ...inlineDesc.attrs,
-                    can_add: false, // Disable Add button for inline tables
-                    can_edit: false, // Disable Edit button for inline tables
-                  },
-                }}
-                modelName={inlineName}
-                onRequest={handleFkRequest}
-                onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                  );
-                }}
-                onSave={async (saveRecord: any) => {
-                  setOperationLoading(true);
-                  try {
-                    await handleInlineSave(inlineName, saveRecord);
-                    debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
-                onDelete={async (deleteRecord: any) => {
-                  setOperationLoading(true);
-                  try {
-                    await handleInlineDelete(inlineName, deleteRecord);
-                    debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
-                actionRef={
-                  {
-                    get current() {
-                      return inlineActionRefs.current[inlineName];
-                    },
-                    set current(ref: ActionType | undefined) {
-                      inlineActionRefs.current[inlineName] = ref;
-                    },
-                  } as React.MutableRefObject<ActionType | undefined>
-                }
-                tableProps={{
-                  pagination: {
-                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
-                    pageSizeOptions: inlineDesc.attrs
-                      ?.list_per_page_options || [10, 20, 50, 100],
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                  },
-                }}
-              />
-            </Card>
-          );
-        }
-
-        case 'bk_fk':
-        case 'bk_o2o': {
-          // For back relations, use Link/Unlink instead of Add/Edit/Delete
-          // Use stable request handler to prevent unnecessary re-requests
-          const handleRequest = createBackRelationRequestHandler(
-            inlineName,
-            inlineDesc,
-          );
-
-          // Check if target_field is nullable
-          // When nullable=false: show Add + Delete buttons (must create/delete records)
-          // When nullable=true: show Link + Unlink buttons (can link/unlink existing records)
-          const isTargetFieldNullable =
-            inlineDesc.relation?.target_field_nullable !== false;
-
-          return (
-            <Card>
-              <CommonProTable
-                modelDesc={{
-                  ...inlineDesc,
-                  attrs: {
-                    ...inlineDesc.attrs,
-                    can_add: false, // Disable Add button for back relation tables
-                    can_edit: false, // Disable Edit button for back relation tables
-                    can_delete: false, // Disable Delete button, use Unlink instead
-                  },
-                }}
-                modelName={inlineName}
-                onRequest={handleRequest}
-                onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                  );
-                }}
-                // Unlink button - only show when target_field is nullable
-                onUnlink={
-                  isTargetFieldNullable
-                    ? async (unlinkRecord: any) => {
-                        setOperationLoading(true);
-                        try {
-                          await handleBackRelationUnlink(
-                            inlineName,
-                            inlineDesc,
-                            unlinkRecord,
-                          );
-                          debouncedReload(inlineName);
-                        } finally {
-                          setOperationLoading(false);
-                        }
-                      }
-                    : undefined
-                }
-                // Link button - only show when target_field is nullable
-                onLink={
-                  isTargetFieldNullable
-                    ? () =>
-                        setBackRelationModalVisible((prev) => ({
-                          ...prev,
-                          [inlineName]: true,
-                        }))
-                    : undefined
-                }
-                // Add button - only show when target_field is NOT nullable
-                onAddRelated={
-                  !isTargetFieldNullable
-                    ? () =>
-                        setBackRelationAddModalVisible((prev) => ({
-                          ...prev,
-                          [inlineName]: true,
-                        }))
-                    : undefined
-                }
-                // Delete button - only show when target_field is NOT nullable
-                onDeleteRelated={
-                  !isTargetFieldNullable
-                    ? async (deleteRecord: any) => {
-                        setOperationLoading(true);
-                        try {
-                          await handleInlineDelete(inlineName, deleteRecord);
-                          debouncedReload(inlineName);
-                        } finally {
-                          setOperationLoading(false);
-                        }
-                      }
-                    : undefined
-                }
-                // bk_o2o can always open modal to change the linked record
-                linkDisabled={false}
-                actionRef={
-                  {
-                    get current() {
-                      return inlineActionRefs.current[inlineName];
-                    },
-                    set current(ref: ActionType | undefined) {
-                      inlineActionRefs.current[inlineName] = ref;
-                    },
-                  } as React.MutableRefObject<ActionType | undefined>
-                }
-                tableProps={{
-                  pagination: {
-                    defaultPageSize: inlineDesc.attrs?.list_per_page || 10,
-                    pageSizeOptions: inlineDesc.attrs
-                      ?.list_per_page_options || [10, 20, 50, 100],
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                  },
-                }}
-              />
-            </Card>
-          );
-        }
-
-        default:
-          console.error(
-            `Unsupported relation type: ${(inlineDesc as any)?.relation?.relation}`,
-          );
-          return (
-            <Card>
-              <div
-                style={{ padding: 16, textAlign: 'center', color: '#ff4d4f' }}
-              >
-                Unsupported relation type:{' '}
-                {(inlineDesc as any)?.relation?.relation}
-              </div>
-            </Card>
-          );
-      }
-    },
-    [
-      inlineDescs,
-      inlineData,
-      record,
-      editingKeys,
-      handleInlineSave,
-      handleInlineDelete,
-      loadedTabs,
-      handleInlineAction,
-      handleM2MRemove,
-      handleBackRelationUnlink,
-      addInlineRecord,
-      createBackRelationRequestHandler,
-      createForwardRelationRequestHandler,
-      createM2MRequestHandler,
-      debouncedReload,
-    ],
-  );
-
   if (detailLoading || !modelDesc) {
     return <div>Loading...</div>;
   }
@@ -760,162 +160,16 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
       key: 'main',
       label: 'Main',
       children: (
-        <Card>
-          <ProForm
-            formRef={formRef}
-            layout="horizontal"
-            labelCol={{ span: 6 }}
-            wrapperCol={{ span: 18 }}
-            initialValues={record}
-            onFinish={async (values) => {
-              try {
-                const dataToSave = isCreateMode
-                  ? values
-                  : { ...record, ...values };
-
-                const response = await saveModelData({
-                  name: modelName,
-                  data: dataToSave,
-                });
-
-                if (response?.code === 0) {
-                  messageApi.success(
-                    isCreateMode
-                      ? 'Created successfully'
-                      : 'Saved successfully',
-                  );
-                  onBack?.();
-                } else {
-                  messageApi.error(response?.message || 'Save failed');
-                }
-              } catch (error) {
-                messageApi.error('Save failed');
-                console.error('Save error:', error);
-              }
-            }}
-            submitter={{
-              render: () =>
-                canEdit ? (
-                  <Space>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      icon={<SaveOutlined />}
-                    >
-                      Save
-                    </Button>
-                  </Space>
-                ) : null,
-            }}
-          >
-            <Divider orientation="left">Basic Information</Divider>
-            {(() => {
-              // Get detail config from attrs
-              const detailDisplay = (modelDesc.attrs as any)?.detail_display as
-                | string[]
-                | undefined;
-              const detailOrder = (modelDesc.attrs as any)?.detail_order as
-                | string[]
-                | undefined;
-              const detailEditable = (modelDesc.attrs as any)
-                ?.detail_editable as string[] | undefined;
-
-              // Debug: log detail_display configuration
-              console.log('=== ModelDetail Debug ===');
-              console.log('detail_display:', detailDisplay);
-              console.log('detail_editable:', detailEditable);
-              console.log('can_edit:', canEdit);
-              console.log('all fields:', Object.keys(modelDesc.fields));
-
-              // Get field entries
-              let fieldEntries = Object.entries(modelDesc.fields);
-
-              // Filter by detail_display if defined
-              if (detailDisplay && detailDisplay.length > 0) {
-                fieldEntries = fieldEntries.filter(([fieldName]) =>
-                  detailDisplay.includes(fieldName),
-                );
-                console.log(
-                  'after detail_display filter:',
-                  fieldEntries.map(([name]) => name),
-                );
-              } else {
-                console.log('detail_display not applied (empty or undefined)');
-              }
-
-              // Sort by detail_order if defined
-              console.log('detail_order:', detailOrder);
-              if (detailOrder && detailOrder.length > 0) {
-                console.log(
-                  'before detail_order sort:',
-                  fieldEntries.map(([name]) => name),
-                );
-                fieldEntries = fieldEntries.sort(([a], [b]) => {
-                  const indexA = detailOrder.indexOf(a);
-                  const indexB = detailOrder.indexOf(b);
-                  const orderA =
-                    indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
-                  const orderB =
-                    indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
-                  return orderA - orderB;
-                });
-                console.log(
-                  'after detail_order sort:',
-                  fieldEntries.map(([name]) => name),
-                );
-              } else {
-                console.log('detail_order not applied (empty or undefined)');
-              }
-
-              return fieldEntries.map(
-                ([fieldName, fieldConfig]: [string, any]) => {
-                  if (!fieldConfig.show) {
-                    console.log(`field "${fieldName}" hidden by show=false`);
-                    return null;
-                  }
-                  console.log(`rendering field: ${fieldName}`);
-
-                  // Determine if field is editable
-                  // If can_edit is false, all fields are readonly
-                  let isReadonly = !canEdit || fieldConfig.readonly;
-                  console.log(
-                    `  ${fieldName} initial readonly:`,
-                    isReadonly,
-                    `(canEdit: ${canEdit}, fieldConfig.readonly: ${fieldConfig.readonly})`,
-                  );
-
-                  if (
-                    canEdit &&
-                    !isReadonly &&
-                    detailEditable &&
-                    detailEditable.length > 0
-                  ) {
-                    isReadonly = !detailEditable.includes(fieldName);
-                    console.log(
-                      `  ${fieldName} after detail_editable check:`,
-                      isReadonly,
-                      `(in list: ${detailEditable.includes(fieldName)})`,
-                    );
-                  }
-
-                  return renderFormField(fieldName, fieldConfig, formRef, {
-                    commonProps: {
-                      readonly: isReadonly,
-                      rules: fieldConfig.required
-                        ? [
-                            {
-                              required: true,
-                              message: `${fieldConfig.name || fieldName} is required`,
-                            },
-                          ]
-                        : [],
-                    },
-                  });
-                },
-              );
-            })()}
-          </ProForm>
-        </Card>
+        <MainFormTab
+          modelName={modelName}
+          modelDesc={modelDesc}
+          record={record}
+          formRef={formRef}
+          canEdit={canEdit}
+          isCreateMode={isCreateMode}
+          messageApi={messageApi}
+          onBack={onBack}
+        />
       ),
     },
     // Only show inline tabs when main data is saved
@@ -1091,96 +345,24 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           const relation = inlineDesc.relation;
 
           return (
-            <Modal
+            <BackRelationAddModal
               key={`add-${inlineName}`}
-              open={visible}
-              title={`Add ${inlineDesc.attrs?.label || inlineName}`}
-              width={800}
-              destroyOnClose
-              onCancel={() => {
+              visible={visible}
+              inlineName={inlineName}
+              inlineDesc={inlineDesc}
+              relation={relation}
+              mainRecord={record}
+              messageApi={messageApi}
+              onClose={() => {
                 setBackRelationAddModalVisible((prev) => ({
                   ...prev,
                   [inlineName]: false,
                 }));
               }}
-              footer={null}
-              styles={{
-                body: {
-                  paddingTop: 24,
-                },
+              onSuccess={() => {
+                debouncedReload(inlineName);
               }}
-            >
-              <ProForm
-                layout="horizontal"
-                labelCol={{ span: 6 }}
-                wrapperCol={{ span: 18 }}
-                onFinish={async (values) => {
-                  try {
-                    // Add the FK field value to link to main record
-                    const dataToSave = {
-                      ...values,
-                      [relation.target_field]: record[relation.source_field],
-                    };
-
-                    const response = await saveModelData({
-                      name: inlineName,
-                      data: dataToSave,
-                    });
-
-                    if (response?.code === 0) {
-                      messageApi.success('Created successfully');
-                      setBackRelationAddModalVisible((prev) => ({
-                        ...prev,
-                        [inlineName]: false,
-                      }));
-                      // Reload the inline table after adding
-                      debouncedReload(inlineName);
-                    } else {
-                      messageApi.error(response?.message || 'Create failed');
-                    }
-                  } catch (error) {
-                    messageApi.error('Create failed');
-                    console.error('Create error:', error);
-                  }
-                }}
-                submitter={{
-                  searchConfig: {
-                    submitText: 'Create',
-                    resetText: 'Cancel',
-                  },
-                  onReset: () => {
-                    setBackRelationAddModalVisible((prev) => ({
-                      ...prev,
-                      [inlineName]: false,
-                    }));
-                  },
-                }}
-              >
-                {Object.entries(inlineDesc.fields || {}).map(
-                  ([fieldName, fieldConfig]: [string, any]) => {
-                    // Skip the FK field (it will be set automatically)
-                    if (fieldName === relation.target_field) return null;
-                    // Skip readonly fields and hidden fields
-                    if (fieldConfig.readonly || fieldConfig.show === false)
-                      return null;
-
-                    return renderFormField(fieldName, fieldConfig, undefined, {
-                      commonProps: {
-                        rules:
-                          fieldConfig.blank === false
-                            ? [
-                                {
-                                  required: true,
-                                  message: `${fieldConfig.name || fieldName} is required`,
-                                },
-                              ]
-                            : [],
-                      },
-                    });
-                  },
-                )}
-              </ProForm>
-            </Modal>
+            />
           );
         },
       )}
