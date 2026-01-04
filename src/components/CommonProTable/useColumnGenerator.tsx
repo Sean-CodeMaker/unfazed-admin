@@ -236,7 +236,11 @@ export const useColumnGenerator = ({
         column.editable = false;
       } else if (modelDesc.attrs.can_edit) {
         if (listEditable && listEditable.length > 0) {
-          column.editable = fieldName !== 'id' ? () => true : false;
+          // Only make field editable if it's in list_editable and not 'id'
+          column.editable =
+            listEditable.includes(fieldName) && fieldName !== 'id'
+              ? () => true
+              : false;
         } else {
           column.editable = false;
         }

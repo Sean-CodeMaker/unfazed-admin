@@ -236,7 +236,7 @@ describe('CommonProTable', () => {
   });
 
   describe('list_editable', () => {
-    it('should make all fields editable except id when list_editable is defined', () => {
+    it('should only make fields in list_editable editable (except id)', () => {
       const modelDescWithEditable = {
         ...mockModelDesc,
         attrs: {
@@ -254,13 +254,13 @@ describe('CommonProTable', () => {
         />,
       );
 
-      // All fields should be editable except id
+      // Only fields in list_editable should be editable
       expect(screen.getByTestId('editable-name')).toBeTruthy();
       expect(screen.getByTestId('editable-status')).toBeTruthy();
 
-      // id field should not be editable
+      // id field should not be editable even if in list_editable
       expect(screen.queryByTestId('editable-id')).toBeNull();
-      // readonly fields should not be editable even when list_editable exists
+      // readonly fields should not be editable even when in list_editable
       expect(screen.queryByTestId('editable-created_at')).toBeNull();
     });
 
