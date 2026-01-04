@@ -94,7 +94,14 @@ export const useColumnGenerator = ({
 
     // Generate data columns
     fieldEntries.forEach(([fieldName, fieldConfig]) => {
-      if (fieldConfig.show === false) {
+      // If list_display is defined and field is in it, show regardless of fieldConfig.show
+      // Otherwise, respect fieldConfig.show
+      const shouldShow =
+        listDisplay && listDisplay.length > 0
+          ? listDisplay.includes(fieldName)
+          : fieldConfig.show !== false;
+
+      if (!shouldShow) {
         return;
       }
 

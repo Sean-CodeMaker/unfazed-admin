@@ -131,8 +131,15 @@ const MainFormTab: React.FC<MainFormTabProps> = ({
           }
 
           return fieldEntries.map(([fieldName, fieldConfig]: [string, any]) => {
-            if (!fieldConfig.show) {
-              console.log(`field "${fieldName}" hidden by show=false`);
+            // If detail_display is defined and field is in it, show regardless of fieldConfig.show
+            // Otherwise, respect fieldConfig.show
+            const shouldShow =
+              detailDisplay && detailDisplay.length > 0
+                ? detailDisplay.includes(fieldName)
+                : fieldConfig.show !== false;
+
+            if (!shouldShow) {
+              console.log(`field "${fieldName}" hidden`);
               return null;
             }
             console.log(`rendering field: ${fieldName}`);
