@@ -237,6 +237,7 @@ declare namespace API {
     search_range_fields?: string[];
     list_sort?: string[];
     list_filter?: string[];
+    list_search?: string[];
     list_order?: string[];
     list_editable?: string[];
     list_display?: string[];
@@ -338,6 +339,7 @@ declare namespace API {
     search_range_fields?: string[];
     list_sort?: string[];
     list_filter?: string[];
+    list_search?: string[];
     list_order?: string[];
     list_editable?: string[];
     list_display?: string[];

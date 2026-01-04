@@ -7,12 +7,12 @@ import {
   DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
-  FilterOutlined,
   MoreOutlined,
   SaveOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Button, Dropdown, Popconfirm } from 'antd';
+import { Button, Dropdown, Input, Popconfirm, Space } from 'antd';
 import React, { useCallback } from 'react';
 import {
   renderBooleanField,
@@ -238,14 +238,17 @@ export const useColumnGenerator = ({
         };
       }
 
-      // Set filtering (front-end only)
+      // Set filtering and/or column search (front-end only)
       const isInListFilter = (modelDesc.attrs as any)?.list_filter?.includes(
         fieldName,
       );
-      if (isInListFilter) {
-        // Generate filter options from current page data
-        let filterOptions: { text: string; value: any }[] = [];
+      const isInListSearch = (modelDesc.attrs as any)?.list_search?.includes(
+        fieldName,
+      );
 
+      // Generate filter options if needed
+      let filterOptions: { text: string; value: any }[] = [];
+      if (isInListFilter) {
         if (data && data.length > 0) {
           // Collect unique values from data using Map for better deduplication
           const uniqueValuesMap = new Map<string, any>();
@@ -305,24 +308,74 @@ export const useColumnGenerator = ({
             { text: 'No', value: false },
           ];
         }
+      }
 
-        // Only set filters if we have options (icon only shows when filters has items)
-        if (filterOptions.length > 0) {
-          column.filters = filterOptions;
-          column.filterMultiple = true;
-          column.filterIcon = (filtered: boolean) => (
-            <FilterOutlined
-              style={{
-                color: filtered ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
-                fontSize: 12,
-              }}
+      // Filter only (use built-in table filters)
+      // Skip if list_search is also present (list_search takes priority)
+      if (isInListFilter && !isInListSearch && filterOptions.length > 0) {
+        column.filters = filterOptions;
+        column.filterMultiple = true;
+        // Use default Ant Design filter icon (consistent with sort icon style)
+        column.onFilter = (value: any, record: Record<string, any>) =>
+          record[fieldName] === value;
+      }
+
+      // Search (takes priority if both filter and search are present)
+      if (isInListSearch) {
+        column.filterDropdown = ({
+          setSelectedKeys,
+          selectedKeys,
+          confirm,
+          clearFilters,
+        }: any) => (
+          <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+            <Input
+              placeholder={`Search ${fieldConfig.name || fieldName}`}
+              value={selectedKeys[0]}
+              onChange={(e) =>
+                setSelectedKeys(e.target.value ? [e.target.value] : [])
+              }
+              onPressEnter={() => confirm()}
+              style={{ marginBottom: 8, display: 'block' }}
             />
-          );
-
-          // Set onFilter for filtering logic
-          column.onFilter = (value: any, record: Record<string, any>) =>
-            record[fieldName] === value;
-        }
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => confirm()}
+                icon={<SearchOutlined />}
+                size="small"
+                style={{ width: 90 }}
+              >
+                Search
+              </Button>
+              <Button
+                onClick={() => {
+                  clearFilters?.();
+                  confirm();
+                }}
+                size="small"
+                style={{ width: 90 }}
+              >
+                Reset
+              </Button>
+            </Space>
+          </div>
+        );
+        // Use default style (consistent with filter/sort icons)
+        column.filterIcon = (filtered: boolean) => (
+          <SearchOutlined
+            style={{ color: filtered ? '#1677ff' : 'rgba(0, 0, 0, 0.29)' }}
+          />
+        );
+        column.onFilter = (value: any, record: Record<string, any>) => {
+          const cellValue = record[fieldName];
+          if (cellValue === null || cellValue === undefined) {
+            return false;
+          }
+          return String(cellValue)
+            .toLowerCase()
+            .includes(String(value).toLowerCase());
+        };
       }
 
       // Set editable

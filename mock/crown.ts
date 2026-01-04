@@ -943,6 +943,7 @@ const crownModelDesc = {
     list_order: ['created_at', 'updated_at'],
     list_editable: ['name', 'type', 'price', 'owner', 'status'],
     list_filter: ['type', 'status', 'is_active', 'material', 'region'],
+    list_search: ['name', 'owner'],
     list_display: [
       'id',
       'name',
@@ -1208,6 +1209,7 @@ const userModelDesc = {
     list_sort: ['id', 'username', 'created_at'],
     list_order: ['-id'],
     list_filter: ['is_active', 'is_staff', 'department', 'role'],
+    list_search: ['username', 'email'],
     list_display: [
       'id',
       'username',
