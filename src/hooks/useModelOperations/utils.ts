@@ -38,8 +38,8 @@ export const buildSearchConditions = (
     ...searchParams
   } = searchValues;
 
-  // Get list_range_search fields
-  const listRangeSearch = (modelDesc.attrs as any)?.list_range_search || [];
+  // Get search_range_fields fields
+  const searchRangeFields = (modelDesc.attrs as any)?.search_range_fields || [];
 
   Object.entries(searchParams).forEach(([field, value]) => {
     if (value === undefined || value === null || value === '') return;
@@ -49,10 +49,10 @@ export const buildSearchConditions = (
 
     const condition: API.Condition = { field };
 
-    // Check if this field is in list_range_search
-    const isRangeField = listRangeSearch.includes(field);
+    // Check if this field is in search_range_fields
+    const isRangeField = searchRangeFields.includes(field);
 
-    // Handle list_range_search fields with range values
+    // Handle search_range_fields fields with range values
     if (isRangeField) {
       // Normalize value to array format [start, end]
       let start: any;

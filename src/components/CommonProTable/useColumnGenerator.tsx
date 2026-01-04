@@ -68,7 +68,7 @@ export const useColumnGenerator = ({
     const listOrder = (modelDesc.attrs as any)?.list_order as
       | string[]
       | undefined;
-    const listRangeSearch = (modelDesc.attrs as any)?.list_range_search as
+    const searchRangeFields = (modelDesc.attrs as any)?.search_range_fields as
       | string[]
       | undefined;
     let fieldEntries = Object.entries(modelDesc.fields || {});
@@ -109,9 +109,9 @@ export const useColumnGenerator = ({
       const isInListSearch = (modelDesc.attrs as any)?.list_search?.includes(
         fieldName,
       );
-      // list_range_search only works if field is also in list_search
+      // search_range_fields only works if field is also in list_search
       const isInListRangeSearch =
-        isInListSearch && listRangeSearch?.includes(fieldName);
+        isInListSearch && searchRangeFields?.includes(fieldName);
 
       const column: ProColumns<Record<string, any>> = {
         title: fieldConfig.name || fieldName,
