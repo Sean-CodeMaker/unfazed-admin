@@ -128,8 +128,8 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
             // Build search conditions
             const conditions: any[] = [];
 
-            // Process form search conditions, only search fields in list_search
-            const searchFields = modelDesc.attrs?.list_search || [];
+            // Process form search conditions, only search fields in search_fields
+            const searchFields = modelDesc.attrs?.search_fields || [];
             Object.entries(params).forEach(([key, value]) => {
               if (
                 value &&
@@ -191,7 +191,7 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
               key: fieldName,
               width: 150,
               ellipsis: true,
-              hideInSearch: !attrs.list_search?.includes(fieldName),
+              hideInSearch: !attrs.search_fields?.includes(fieldName),
             };
 
             // Set valueType and valueEnum for fields with choices
@@ -265,7 +265,7 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
             return column;
           })}
         search={
-          modelDesc.attrs?.list_search?.length > 0
+          modelDesc.attrs?.search_fields?.length > 0
             ? {
                 labelWidth: 120,
                 defaultCollapsed: false,

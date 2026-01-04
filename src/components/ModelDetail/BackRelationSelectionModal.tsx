@@ -156,7 +156,7 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
             const conditions: any[] = [];
 
             // Process form search conditions
-            const searchFields = modelDesc.attrs?.list_search || [];
+            const searchFields = modelDesc.attrs?.search_fields || [];
             Object.entries(params).forEach(([key, value]) => {
               if (
                 value &&
@@ -261,7 +261,7 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
                 key: fieldName,
                 width: 150,
                 ellipsis: true,
-                hideInSearch: !attrs.list_search?.includes(fieldName),
+                hideInSearch: !attrs.search_fields?.includes(fieldName),
               };
 
               // Set valueType and valueEnum for fields with choices
@@ -390,7 +390,7 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
             }),
         ]}
         search={
-          modelDesc.attrs?.list_search?.length > 0
+          modelDesc.attrs?.search_fields?.length > 0
             ? {
                 labelWidth: 120,
                 defaultCollapsed: true,

@@ -105,13 +105,13 @@ export const useColumnGenerator = ({
         return;
       }
 
-      // Check if field is in list_search
-      const isInListSearch = (modelDesc.attrs as any)?.list_search?.includes(
-        fieldName,
-      );
-      // search_range_fields only works if field is also in list_search
+      // Check if field is in search_fields
+      const isInSearchFields = (
+        modelDesc.attrs as any
+      )?.search_fields?.includes(fieldName);
+      // search_range_fields only works if field is also in search_fields
       const isInListRangeSearch =
-        isInListSearch && searchRangeFields?.includes(fieldName);
+        isInSearchFields && searchRangeFields?.includes(fieldName);
 
       const column: ProColumns<Record<string, any>> = {
         title: fieldConfig.name || fieldName,
@@ -121,7 +121,7 @@ export const useColumnGenerator = ({
         ellipsis: true,
         tooltip: fieldConfig.help_text,
         hideInTable: false,
-        hideInSearch: !isInListSearch,
+        hideInSearch: !isInSearchFields,
       };
 
       // Set valueType and render based on field type

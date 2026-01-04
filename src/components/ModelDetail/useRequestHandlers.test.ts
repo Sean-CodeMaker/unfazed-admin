@@ -38,7 +38,7 @@ describe('useRequestHandlers', () => {
           target_field: 'crown_id',
         },
         attrs: {
-          list_search: ['name'],
+          search_fields: ['name'],
           list_per_page: 10,
         },
       };
@@ -84,7 +84,7 @@ describe('useRequestHandlers', () => {
           target_field: 'crown_id',
         },
         attrs: {
-          list_search: ['name', 'description'],
+          search_fields: ['name', 'description'],
         },
       };
 

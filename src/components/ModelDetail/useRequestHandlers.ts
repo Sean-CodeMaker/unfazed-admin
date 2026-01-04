@@ -32,7 +32,7 @@ export const useRequestHandlers = ({ record }: UseRequestHandlersOptions) => {
           ];
 
           // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchFields = inlineDesc.attrs?.search_fields || [];
           const searchConditions: any[] = [];
           Object.entries(params).forEach(([key, value]) => {
             if (
@@ -99,7 +99,7 @@ export const useRequestHandlers = ({ record }: UseRequestHandlersOptions) => {
           ];
 
           // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchFields = inlineDesc.attrs?.search_fields || [];
           const searchConditions: any[] = [];
           Object.entries(params).forEach(([key, value]) => {
             if (
@@ -207,7 +207,7 @@ export const useRequestHandlers = ({ record }: UseRequestHandlersOptions) => {
           ];
 
           // Add search conditions
-          const searchFields = inlineDesc.attrs?.list_search || [];
+          const searchFields = inlineDesc.attrs?.search_fields || [];
           const searchConditions: any[] = [];
           Object.entries(params).forEach(([key, value]) => {
             if (

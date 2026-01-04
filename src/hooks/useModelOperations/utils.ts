@@ -122,7 +122,7 @@ export const buildSearchConditions = (
       return;
     }
 
-    // if the field is in attrs.list_search, prefer eq for text
+    // if the field is in attrs.search_fields, prefer eq for text
     switch (fieldConfig.field_type) {
       case 'CharField':
       case 'TextField':

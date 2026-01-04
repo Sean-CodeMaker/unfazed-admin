@@ -24,7 +24,7 @@ export const useTableState = ({ modelDesc, data }: UseTableStateOptions) => {
     (sourceData: any[], params: Record<string, any>) => {
       if (!sourceData || sourceData.length === 0) return sourceData;
 
-      const searchFields = (modelDesc.attrs as any)?.list_search || [];
+      const searchFields = (modelDesc.attrs as any)?.search_fields || [];
       if (searchFields.length === 0) return sourceData;
 
       // Check if any search param has value
