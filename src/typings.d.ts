@@ -229,6 +229,7 @@ declare namespace API {
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
+    can_search?: boolean;
     can_show_all?: boolean;
     list_per_page?: number;
     list_per_page_options?: number[];
@@ -328,6 +329,7 @@ declare namespace API {
     can_add?: boolean;
     can_delete?: boolean;
     can_edit?: boolean;
+    can_search?: boolean;
     can_show_all?: boolean;
     list_per_page?: number;
     list_per_page_options?: number[];

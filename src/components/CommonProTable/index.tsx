@@ -153,11 +153,13 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
   const columns = useMemo(() => generateColumns(), [generateColumns]);
 
   // Check for searchable fields and batch actions
+  const canSearch = modelDesc.attrs?.can_search !== false;
   const searchFields = (modelDesc.attrs as any)?.search_fields || [];
   const hasSearchableFields = searchFields.length > 0;
   const batchActions = getBatchActionMenuItems();
   const hasBatchActions = batchActions.length > 0;
-  const showSearchPanel = hasSearchableFields || hasBatchActions;
+  // Show search panel if can_search is not false AND (has searchable fields OR has batch actions)
+  const showSearchPanel = canSearch && (hasSearchableFields || hasBatchActions);
 
   return (
     <>
