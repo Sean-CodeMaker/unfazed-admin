@@ -7,6 +7,7 @@ import {
   DisconnectOutlined,
   EditOutlined,
   EyeOutlined,
+  FilterOutlined,
   MoreOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
@@ -32,6 +33,7 @@ interface UseColumnGeneratorOptions {
   editableKeys: React.Key[];
   setEditableKeys: React.Dispatch<React.SetStateAction<React.Key[]>>;
   pendingUnlinkRef: React.MutableRefObject<Set<string | number>>;
+  data?: Record<string, any>[];
   onDetail?: (record: Record<string, any>) => void;
   onAction?: (
     actionKey: string,
@@ -51,6 +53,7 @@ export const useColumnGenerator = ({
   editableKeys,
   setEditableKeys,
   pendingUnlinkRef,
+  data,
   onDetail,
   onAction,
   onSave,
@@ -233,6 +236,93 @@ export const useColumnGenerator = ({
           }
           return String(aVal).localeCompare(String(bVal));
         };
+      }
+
+      // Set filtering (front-end only)
+      const isInListFilter = (modelDesc.attrs as any)?.list_filter?.includes(
+        fieldName,
+      );
+      if (isInListFilter) {
+        // Generate filter options from current page data
+        let filterOptions: { text: string; value: any }[] = [];
+
+        if (data && data.length > 0) {
+          // Collect unique values from data using Map for better deduplication
+          const uniqueValuesMap = new Map<string, any>();
+          data.forEach((record) => {
+            const value = record[fieldName];
+            if (value !== null && value !== undefined && value !== '') {
+              // Use JSON.stringify as key for proper deduplication of all types
+              const key = JSON.stringify(value);
+              if (!uniqueValuesMap.has(key)) {
+                uniqueValuesMap.set(key, value);
+              }
+            }
+          });
+
+          // Generate filters from unique values
+          Array.from(uniqueValuesMap.values()).forEach((value) => {
+            // For choices fields, use the label
+            if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+              const choice = fieldConfig.choices.find(
+                ([v]: [string, string]) => v === value,
+              );
+              filterOptions.push({
+                text: choice ? choice[1] : String(value),
+                value: value,
+              });
+            } else if (fieldConfig.field_type === 'BooleanField') {
+              // For boolean fields
+              filterOptions.push({
+                text: value ? 'Yes' : 'No',
+                value: value,
+              });
+            } else {
+              // For other fields, use value as text
+              filterOptions.push({
+                text: String(value),
+                value: value,
+              });
+            }
+          });
+
+          // Sort filters by text
+          filterOptions.sort((a, b) =>
+            String(a.text).localeCompare(String(b.text)),
+          );
+        } else if (fieldConfig.choices && fieldConfig.choices.length > 0) {
+          // Use field choices as filter options when no data
+          filterOptions = fieldConfig.choices.map(
+            ([value, label]: [string, string]) => ({
+              text: label,
+              value: value,
+            }),
+          );
+        } else if (fieldConfig.field_type === 'BooleanField') {
+          // Default boolean filters
+          filterOptions = [
+            { text: 'Yes', value: true },
+            { text: 'No', value: false },
+          ];
+        }
+
+        // Only set filters if we have options (icon only shows when filters has items)
+        if (filterOptions.length > 0) {
+          column.filters = filterOptions;
+          column.filterMultiple = true;
+          column.filterIcon = (filtered: boolean) => (
+            <FilterOutlined
+              style={{
+                color: filtered ? '#1677ff' : 'rgba(0, 0, 0, 0.45)',
+                fontSize: 12,
+              }}
+            />
+          );
+
+          // Set onFilter for filtering logic
+          column.onFilter = (value: any, record: Record<string, any>) =>
+            record[fieldName] === value;
+        }
       }
 
       // Set editable
@@ -472,6 +562,7 @@ export const useColumnGenerator = ({
     return columns;
   }, [
     modelDesc,
+    data,
     onDetail,
     onAction,
     onSave,

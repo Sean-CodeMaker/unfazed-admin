@@ -65,6 +65,7 @@ const CommonProTable: React.FC<CommonProTableProps> = ({
     editableKeys,
     setEditableKeys,
     pendingUnlinkRef,
+    data: filteredData ?? data,
     onDetail,
     onAction,
     onSave,

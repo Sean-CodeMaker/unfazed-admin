@@ -942,6 +942,7 @@ const crownModelDesc = {
     list_sort: ['id', 'name', 'price', 'level', 'created_at', 'updated_at'],
     list_order: ['created_at', 'updated_at'],
     list_editable: ['name', 'type', 'price', 'owner', 'status'],
+    list_filter: ['type', 'status', 'is_active', 'material', 'region'],
     list_display: [
       'id',
       'name',
@@ -1206,6 +1207,7 @@ const userModelDesc = {
     search_range_fields: ['created_at', 'last_login'],
     list_sort: ['id', 'username', 'created_at'],
     list_order: ['-id'],
+    list_filter: ['is_active', 'is_staff', 'department', 'role'],
     list_display: [
       'id',
       'username',
