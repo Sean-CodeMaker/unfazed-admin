@@ -1,5 +1,6 @@
 import { Button, Input, Modal, Table } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
+import { isNumericTimestamp, toUnixTimestamp } from '@/utils/timestamp';
 
 interface BackRelationBatchAddModalProps {
   visible: boolean;
@@ -92,7 +93,18 @@ const validateAndCastValue = (rawValue: string, fieldConfig: any) => {
     return { value: castValueByFieldType(trimmed, fieldConfig), error: '' };
   }
 
-  if (fieldType === 'DatetimeField' || fieldType === 'DateField') {
+  if (fieldType === 'DatetimeField') {
+    const timestamp = toUnixTimestamp(trimmed);
+    if (timestamp === null) {
+      return { value: trimmed, error: 'must be a valid date/datetime' };
+    }
+    return { value: timestamp, error: '' };
+  }
+
+  if (fieldType === 'DateField') {
+    if (isNumericTimestamp(trimmed)) {
+      return { value: Number(trimmed), error: '' };
+    }
     const dt = new Date(trimmed);
     if (Number.isNaN(dt.getTime())) {
       return { value: trimmed, error: 'must be a valid date/datetime' };

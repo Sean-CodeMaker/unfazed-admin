@@ -338,7 +338,7 @@ const BackRelationSelectionModal: React.FC<BackRelationSelectionModalProps> = ({
                     return '-';
                   const num = Number(actualValue);
                   if (Number.isNaN(num)) return '-';
-                  return num.toLocaleString();
+                  return String(actualValue);
                 };
               } else {
                 column.valueType = 'text';

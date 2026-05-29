@@ -58,7 +58,7 @@ export const renderNumberField = (
 ): ProColumns<Record<string, any>>['render'] => {
   return (_, record) =>
     record[fieldName] !== null && record[fieldName] !== undefined
-      ? Number(record[fieldName]).toLocaleString()
+      ? String(record[fieldName])
       : '-';
 };
 
@@ -70,7 +70,7 @@ export const renderTextField = (
 ): ProColumns<Record<string, any>>['render'] => {
   return (_, record) => {
     const text = record[fieldName] || '-';
-    return text.length > 20 ? `${text.substring(0, 20)}...` : text;
+    return text;
   };
 };
 

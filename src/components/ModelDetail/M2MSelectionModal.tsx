@@ -261,7 +261,7 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
                 if (value === null || value === undefined) return '-';
                 const num = Number(value);
                 if (Number.isNaN(num)) return '-';
-                return num.toLocaleString();
+                return String(value);
               };
             } else {
               column.valueType = 'text';
