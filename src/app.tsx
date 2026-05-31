@@ -3,12 +3,14 @@ import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 // 扩展 LayoutSettings 以包含我们的自定义字段
 interface ExtendedLayoutSettings extends LayoutSettings {
   showWatermark?: boolean;
+  favicon?: string;
 }
 
 import { SettingDrawer } from '@ant-design/pro-components';
 import { AvatarDropdown, AvatarName, Footer, SelectLang } from '@/components';
 import { getAdminSettings } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
+import { setDocumentFavicon } from '@/utils/settings';
 import '@ant-design/v5-patch-for-react-19';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
@@ -71,6 +73,11 @@ export async function getInitialState(): Promise<{
           // ProLayout直接支持的字段
           title: apiData.title || defaultSettings.title,
           logo: apiData.logo || defaultSettings.logo,
+          favicon:
+            apiData.iconfontUrl ||
+            apiData.favicon ||
+            apiData.logo ||
+            defaultSettings.logo,
           navTheme: apiData.navTheme,
           colorPrimary: apiData.colorPrimary,
           layout: apiData.layout,
@@ -80,10 +87,10 @@ export async function getInitialState(): Promise<{
           colorWeak: apiData.colorWeak,
           // 前端特有字段
           pwa: apiData.pwa ?? defaultSettings.pwa,
-          iconfontUrl: apiData.iconfontUrl ?? defaultSettings.iconfontUrl,
           // 水印控制字段
           showWatermark: apiData.showWatermark ?? true,
         };
+        setDocumentFavicon(layoutSettings.favicon);
 
         // 应用级别的配置存储到localStorage
         const appSettings = {
@@ -92,7 +99,7 @@ export async function getInitialState(): Promise<{
           apiPrefix: apiData.apiPrefix,
           debug: apiData.debug,
           version: apiData.version,
-          extra: apiData.extra,
+          extra: apiData.extra ?? apiData.EXTRA,
           authPlugins: apiData.authPlugins,
         };
 
@@ -111,6 +118,7 @@ export async function getInitialState(): Promise<{
     } catch (_error) {
       console.warn('Failed to fetch settings, using default settings');
     }
+    setDocumentFavicon(defaultSettings.iconfontUrl || defaultSettings.logo);
     return defaultSettings as Partial<ExtendedLayoutSettings>;
   };
 
@@ -169,6 +177,12 @@ export const layout: RunTimeLayoutConfig = ({
   initialState,
   setInitialState,
 }) => {
+  const {
+    favicon: _favicon,
+    iconfontUrl: _iconfontUrl,
+    ...layoutSettings
+  } = initialState?.settings || {};
+
   return {
     actionsRender: () => [<SelectLang key="selectLang" />],
     avatarProps: {
@@ -263,7 +277,7 @@ export const layout: RunTimeLayoutConfig = ({
         </>
       );
     },
-    ...initialState?.settings,
+    ...layoutSettings,
   };
 };
 

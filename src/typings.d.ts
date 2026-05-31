@@ -119,14 +119,15 @@ declare namespace API {
 
   type AdminSettings = {
     // ProLayout 布局相关字段
-    title: string;
+    title?: string;
     navTheme: string;
     colorPrimary: string;
     layout: string;
     contentWidth: string;
     fixedHeader: boolean;
     colorWeak: boolean;
-    logo: string;
+    logo?: string;
+    favicon?: string;
     fixSiderbar?: boolean;
     pwa?: boolean;
     iconfontUrl?: string;
@@ -139,6 +140,7 @@ declare namespace API {
     version: string;
     defaultLoginType: boolean;
     extra?: Record<string, any>;
+    EXTRA?: Record<string, any>;
     authPlugins?: Record<string, any>[];
   };
 

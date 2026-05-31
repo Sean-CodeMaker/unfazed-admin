@@ -1,6 +1,9 @@
 import { render, waitFor } from '@testing-library/react';
 import OAuthLogin from './index';
 
+const React = require('react');
+void React.version;
+
 const mockUseModel = jest.fn();
 const mockLogin = jest.fn();
 const mockGetAdminSettings = jest.fn();

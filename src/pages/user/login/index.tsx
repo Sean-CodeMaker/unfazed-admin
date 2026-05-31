@@ -18,6 +18,7 @@ import { flushSync } from 'react-dom';
 import { Footer } from '@/components';
 import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
+import { setAppSettings, setDocumentFavicon } from '@/utils/settings';
 import { PATH_PREFIX } from '../../../../config/constants';
 import Settings from '../../../../config/defaultSettings';
 
@@ -150,6 +151,10 @@ const Login: React.FC = () => {
     API.AdminSettings['authPlugins']
   >([]);
   const [defaultLoginType, setDefaultLoginType] = useState<boolean>(false);
+  const [loginSettings, setLoginSettings] = useState({
+    logo: Settings.logo,
+    title: Settings.title,
+  });
   const { initialState: _initialState, setInitialState } =
     useModel('@@initialState');
   const { styles } = useStyles();
@@ -170,13 +175,25 @@ const Login: React.FC = () => {
         const response = await getAdminSettings({
           skipErrorHandler: true,
         });
-        if (response.code === 0 && response.data?.authPlugins) {
-          localStorage.setItem(
-            'authPlugins',
-            JSON.stringify(response.data.authPlugins),
-          );
-          setAuthPlugins(response.data.authPlugins);
-          setDefaultLoginType(response.data.defaultLoginType);
+        if (response.code === 0) {
+          const apiSettings = response.data || {};
+          const nextAuthPlugins = apiSettings.authPlugins || [];
+          const nextLogo = apiSettings.logo || Settings.logo;
+          const nextFavicon =
+            apiSettings.iconfontUrl || apiSettings.favicon || nextLogo;
+
+          localStorage.setItem('authPlugins', JSON.stringify(nextAuthPlugins));
+          setAppSettings({
+            extra: apiSettings.extra ?? apiSettings.EXTRA,
+            authPlugins: nextAuthPlugins,
+          });
+          setAuthPlugins(nextAuthPlugins);
+          setDefaultLoginType(apiSettings.defaultLoginType ?? false);
+          setDocumentFavicon(nextFavicon);
+          setLoginSettings({
+            logo: nextLogo,
+            title: apiSettings.title || Settings.title,
+          });
         }
       } catch (error) {
         console.warn('Failed to fetch auth plugins:', error);
@@ -215,13 +232,25 @@ const Login: React.FC = () => {
           skipErrorHandler: true,
         });
         if (response.code === 0) {
+          const nextFavicon =
+            response.data.iconfontUrl ||
+            response.data.favicon ||
+            response.data.logo ||
+            Settings.logo;
           // 合并API设置和默认设置，保留前端特有字段
           settings = {
             ...response.data,
+            logo: response.data.logo || Settings.logo,
+            title: response.data.title || Settings.title,
+            favicon: nextFavicon,
             fixSiderbar: response.data.fixSiderbar ?? Settings.fixSiderbar,
             pwa: response.data.pwa ?? Settings.pwa,
-            iconfontUrl: response.data.iconfontUrl ?? Settings.iconfontUrl,
           } as any;
+          setDocumentFavicon(nextFavicon);
+          setAppSettings({
+            extra: response.data.extra ?? response.data.EXTRA,
+            authPlugins: response.data.authPlugins,
+          });
 
           // 保存OAuth认证插件信息到本地存储
           if (response.data?.authPlugins) {
@@ -310,7 +339,7 @@ const Login: React.FC = () => {
             id: 'menu.login',
             defaultMessage: '登录页',
           })}
-          {Settings.title && ` - ${Settings.title}`}
+          {loginSettings.title && ` - ${loginSettings.title}`}
         </title>
       </Helmet>
       <Lang />
@@ -325,13 +354,8 @@ const Login: React.FC = () => {
             minWidth: 280,
             maxWidth: '75vw',
           }}
-          logo={
-            <img
-              alt="logo"
-              src="https://unfazed-eco.github.io/images/uz-logo.png"
-            />
-          }
-          title="Unfazed Admin"
+          logo={<img alt="logo" src={loginSettings.logo} />}
+          title={loginSettings.title}
           subTitle={intl.formatMessage({
             id: 'pages.layouts.userLayout.title',
           })}

@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
+import { setAppSettings, setDocumentFavicon } from '@/utils/settings';
 import { PATH_PREFIX } from '../../../../config/constants';
 import Settings from '../../../../config/defaultSettings';
 
@@ -40,15 +41,25 @@ const OAuthLogin: React.FC = () => {
           skipErrorHandler: true,
         });
         if (response.code === 0) {
+          const nextFavicon =
+            response.data.iconfontUrl ||
+            response.data.favicon ||
+            response.data.logo ||
+            Settings.logo;
           // 合并API设置和默认设置，保留前端特有字段
           settings = {
             ...response.data,
             logo: response.data.logo || Settings.logo,
             title: response.data.title || Settings.title,
+            favicon: nextFavicon,
             fixSiderbar: response.data.fixSiderbar ?? Settings.fixSiderbar,
             pwa: response.data.pwa ?? Settings.pwa,
-            iconfontUrl: response.data.iconfontUrl ?? Settings.iconfontUrl,
           } as any;
+          setDocumentFavicon(nextFavicon);
+          setAppSettings({
+            extra: response.data.extra ?? response.data.EXTRA,
+            authPlugins: response.data.authPlugins,
+          });
 
           // 保存OAuth认证插件信息到本地存储
           if (response.data?.authPlugins) {

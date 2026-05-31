@@ -1,3 +1,5 @@
+import defaultLayoutSettings from '../../config/defaultSettings';
+
 /**
  * 应用级别设置类型定义
  */
@@ -109,4 +111,25 @@ export const getExtraSettings = (): Record<string, any> => {
  */
 export const getAuthPlugins = (): Record<string, any>[] => {
   return getAppSettings().authPlugins || [];
+};
+
+/**
+ * 更新浏览器标签页图标
+ */
+export const setDocumentFavicon = (href?: string): void => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const iconHref = href || defaultLayoutSettings.logo;
+  let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/png';
+    document.head.appendChild(link);
+  }
+
+  link.href = iconHref;
 };
