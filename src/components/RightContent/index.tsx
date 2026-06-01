@@ -4,8 +4,10 @@ import { getExtraSettings } from '@/utils/settings';
 
 export type SiderTheme = 'light' | 'dark';
 
-export const SelectLang: React.FC = () => {
-  const languages = getExtraSettings().LANGUAGE;
+export const SelectLang: React.FC<{ languages?: string[] }> = ({
+  languages: languagesProp,
+}) => {
+  const languages = languagesProp ?? getExtraSettings().LANGUAGE;
   const allowedLocales =
     Array.isArray(languages) && languages.length > 0
       ? new Set(

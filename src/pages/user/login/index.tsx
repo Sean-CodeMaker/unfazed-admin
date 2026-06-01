@@ -4,18 +4,12 @@ import {
   ProFormCheckbox,
   ProFormText,
 } from '@ant-design/pro-components';
-import {
-  FormattedMessage,
-  Helmet,
-  SelectLang,
-  useIntl,
-  useModel,
-} from '@umijs/max';
+import { FormattedMessage, Helmet, useIntl, useModel } from '@umijs/max';
 import { Alert, App, Tabs } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Footer } from '@/components';
+import { Footer, SelectLang } from '@/components';
 import { getAdminSettings, login } from '@/services/api';
 import { getRouteAndMenuData } from '@/utils/routeManager';
 import { setAppSettings, setDocumentFavicon } from '@/utils/settings';
@@ -119,12 +113,12 @@ const ActionIcons: React.FC<{
   );
 };
 
-const Lang = () => {
+const Lang: React.FC<{ languages?: string[] }> = ({ languages }) => {
   const { styles } = useStyles();
 
   return (
     <div className={styles.lang} data-lang>
-      {SelectLang && <SelectLang />}
+      {SelectLang && <SelectLang languages={languages} />}
     </div>
   );
 };
@@ -155,6 +149,7 @@ const Login: React.FC = () => {
     logo: Settings.logo,
     title: Settings.title,
   });
+  const [languages, setLanguages] = useState<string[] | undefined>();
   const { initialState: _initialState, setInitialState } =
     useModel('@@initialState');
   const { styles } = useStyles();
@@ -182,9 +177,10 @@ const Login: React.FC = () => {
           const nextFavicon =
             apiSettings.iconfontUrl || apiSettings.favicon || nextLogo;
 
+          const nextExtra = apiSettings.extra ?? apiSettings.EXTRA;
           localStorage.setItem('authPlugins', JSON.stringify(nextAuthPlugins));
           setAppSettings({
-            extra: apiSettings.extra ?? apiSettings.EXTRA,
+            extra: nextExtra,
             authPlugins: nextAuthPlugins,
           });
           setAuthPlugins(nextAuthPlugins);
@@ -194,6 +190,9 @@ const Login: React.FC = () => {
             logo: nextLogo,
             title: apiSettings.title || Settings.title,
           });
+          if (Array.isArray(nextExtra?.LANGUAGE)) {
+            setLanguages(nextExtra.LANGUAGE);
+          }
         }
       } catch (error) {
         console.warn('Failed to fetch auth plugins:', error);
@@ -342,7 +341,7 @@ const Login: React.FC = () => {
           {loginSettings.title && ` - ${loginSettings.title}`}
         </title>
       </Helmet>
-      <Lang />
+      <Lang languages={languages} />
       <div
         style={{
           flex: '1',

@@ -155,6 +155,44 @@ export const renderFormField = (
             readOnly: isReadonly,
             config: {
               placeholder: commonProps.tooltip || 'Start writing your story...',
+              removePlugins: ['ImageUpload', 'EasyImage', 'CKFinder', 'CKBox'],
+              toolbar: {
+                removeItems: [
+                  'uploadImage',
+                  'imageUpload',
+                  'ckfinder',
+                  'ckbox',
+                  'mediaEmbed',
+                ],
+              },
+              image: {
+                insert: { type: 'auto' },
+                resizeUnit: 'px',
+                resizeOptions: [
+                  {
+                    name: 'resizeImage:original',
+                    value: null,
+                    label: 'Original',
+                  },
+                  {
+                    name: 'resizeImage:custom',
+                    label: 'Custom',
+                    value: 'custom',
+                  },
+                  { name: 'resizeImage:200', value: '200', label: '200px' },
+                  { name: 'resizeImage:400', value: '400', label: '400px' },
+                ],
+                toolbar: [
+                  'imageStyle:inline',
+                  'imageStyle:block',
+                  'imageStyle:wrapText',
+                  '|',
+                  'resizeImage',
+                  '|',
+                  'toggleImageCaption',
+                  'imageTextAlternative',
+                ],
+              },
             },
           }}
         />
