@@ -24,7 +24,7 @@ interface InlineTabRendererProps {
     isBatch?: boolean,
     records?: any[],
     searchParams?: Record<string, any>,
-  ) => void;
+  ) => Promise<void>;
   handleInlineSave: (
     inlineName: string,
     record: Record<string, any>,
@@ -115,6 +115,18 @@ export const useInlineTabRenderer = ({
     [inlineActionRefs],
   );
 
+  const withLoading = useCallback(
+    async (fn: () => Promise<void>) => {
+      setOperationLoading(true);
+      try {
+        await fn();
+      } finally {
+        setOperationLoading(false);
+      }
+    },
+    [setOperationLoading],
+  );
+
   // Render inline component based on relation type
   const renderInlineComponent = useCallback(
     (inlineName: string) => {
@@ -158,32 +170,31 @@ export const useInlineTabRenderer = ({
                 modelName={inlineName}
                 onRequest={handleM2MRequest}
                 onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                  searchParams?: Record<string, any>,
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                    searchParams,
-                  );
-                }}
-                onUnlink={async (unlinkRecord: any) => {
-                  setOperationLoading(true);
-                  try {
+                  actionKey,
+                  action,
+                  actionRecord,
+                  isBatch,
+                  records,
+                  searchParams,
+                ) =>
+                  withLoading(() =>
+                    handleInlineAction(
+                      inlineName,
+                      actionKey,
+                      action,
+                      actionRecord,
+                      isBatch,
+                      records,
+                      searchParams,
+                    ),
+                  )
+                }
+                onUnlink={(unlinkRecord: any) =>
+                  withLoading(async () => {
                     await handleM2MRemove(inlineName, inlineDesc, unlinkRecord);
                     debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
+                  })
+                }
                 onLink={() =>
                   setM2MModalVisible((prev) => ({
                     ...prev,
@@ -238,41 +249,37 @@ export const useInlineTabRenderer = ({
                 modelName={inlineName}
                 onRequest={handleFkRequest}
                 onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                  searchParams?: Record<string, any>,
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                    searchParams,
-                  );
-                }}
-                onSave={async (saveRecord: any) => {
-                  setOperationLoading(true);
-                  try {
+                  actionKey,
+                  action,
+                  actionRecord,
+                  isBatch,
+                  records,
+                  searchParams,
+                ) =>
+                  withLoading(() =>
+                    handleInlineAction(
+                      inlineName,
+                      actionKey,
+                      action,
+                      actionRecord,
+                      isBatch,
+                      records,
+                      searchParams,
+                    ),
+                  )
+                }
+                onSave={(saveRecord: any) =>
+                  withLoading(async () => {
                     await handleInlineSave(inlineName, saveRecord);
                     debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
-                onDelete={async (deleteRecord: any) => {
-                  setOperationLoading(true);
-                  try {
+                  })
+                }
+                onDelete={(deleteRecord: any) =>
+                  withLoading(async () => {
                     await handleInlineDelete(inlineName, deleteRecord);
                     debouncedReload(inlineName);
-                  } finally {
-                    setOperationLoading(false);
-                  }
-                }}
+                  })
+                }
                 onAddRelated={
                   isFk && canAdd
                     ? () =>
@@ -360,39 +367,37 @@ export const useInlineTabRenderer = ({
                 modelName={inlineName}
                 onRequest={handlePreviewAwareRequest}
                 onAction={(
-                  actionKey: string,
-                  action: any,
-                  actionRecord?: any,
-                  isBatch?: boolean,
-                  records?: any[],
-                  searchParams?: Record<string, any>,
-                ) => {
-                  handleInlineAction(
-                    inlineName,
-                    actionKey,
-                    action,
-                    actionRecord,
-                    isBatch,
-                    records,
-                    searchParams,
-                  );
-                }}
+                  actionKey,
+                  action,
+                  actionRecord,
+                  isBatch,
+                  records,
+                  searchParams,
+                ) =>
+                  withLoading(() =>
+                    handleInlineAction(
+                      inlineName,
+                      actionKey,
+                      action,
+                      actionRecord,
+                      isBatch,
+                      records,
+                      searchParams,
+                    ),
+                  )
+                }
                 // Unlink button - only show when target_field is nullable
                 onUnlink={
                   isTargetFieldNullable && canDelete
-                    ? async (unlinkRecord: any) => {
-                        setOperationLoading(true);
-                        try {
+                    ? (unlinkRecord: any) =>
+                        withLoading(async () => {
                           await handleBackRelationUnlink(
                             inlineName,
                             inlineDesc,
                             unlinkRecord,
                           );
                           debouncedReload(inlineName);
-                        } finally {
-                          setOperationLoading(false);
-                        }
-                      }
+                        })
                     : undefined
                 }
                 // Link button - only show when target_field is nullable
@@ -439,13 +444,10 @@ export const useInlineTabRenderer = ({
                           return;
                         }
 
-                        setOperationLoading(true);
-                        try {
+                        await withLoading(async () => {
                           await handleInlineDelete(inlineName, deleteRecord);
                           debouncedReload(inlineName);
-                        } finally {
-                          setOperationLoading(false);
-                        }
+                        });
                       }
                     : undefined
                 }
@@ -524,6 +526,7 @@ export const useInlineTabRenderer = ({
       createForwardRelationRequestHandler,
       createM2MRequestHandler,
       debouncedReload,
+      withLoading,
       inlineActionRefs,
       setM2MModalVisible,
       setBackRelationModalVisible,
@@ -533,7 +536,6 @@ export const useInlineTabRenderer = ({
       setBackRelationCopyModalRecord,
       previewInlineData,
       setPreviewInlineData,
-      setOperationLoading,
     ],
   );
 

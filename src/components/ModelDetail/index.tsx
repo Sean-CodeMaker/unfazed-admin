@@ -226,6 +226,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
       title: 'Confirm Delete',
       content: 'Are you sure you want to delete this record?',
       onOk: async () => {
+        setOperationLoading(true);
         try {
           const response = await deleteModelData({
             name: modelName,
@@ -240,6 +241,8 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           }
         } catch (_error) {
           messageApi.error('Delete failed');
+        } finally {
+          setOperationLoading(false);
         }
       },
     });
@@ -264,6 +267,7 @@ const ModelDetail: React.FC<ModelDetailProps> = ({
           isCreateMode={isCreateMode}
           messageApi={messageApi}
           onBack={onBack}
+          setOperationLoading={setOperationLoading}
           onValuesChange={(values) => {
             setMainRecordData((prev) => ({ ...prev, ...values }));
           }}

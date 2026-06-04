@@ -1,6 +1,7 @@
 ﻿import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 import { message, notification } from 'antd';
+import { getErrorMessage } from './errorCodeMap';
 
 // 错误处理方案： 错误类型
 enum ErrorShowType {
@@ -45,20 +46,21 @@ export const errorConfig: RequestConfig = {
       if (error.name === 'BizError') {
         const errorInfo: ResponseStructure | undefined = error.info;
         if (errorInfo) {
-          const { errorMessage, errorCode } = errorInfo;
+          const { errorCode } = errorInfo;
+          const displayMessage = getErrorMessage(errorInfo.errorMessage || '');
           switch (errorInfo.showType) {
             case ErrorShowType.SILENT:
               // do nothing
               break;
             case ErrorShowType.WARN_MESSAGE:
-              message.warning(errorMessage);
+              message.warning(displayMessage);
               break;
             case ErrorShowType.ERROR_MESSAGE:
-              message.error(errorMessage);
+              message.error(displayMessage);
               break;
             case ErrorShowType.NOTIFICATION:
               notification.open({
-                description: errorMessage,
+                description: displayMessage,
                 message: errorCode,
               });
               break;
@@ -66,7 +68,7 @@ export const errorConfig: RequestConfig = {
               // TODO: redirect
               break;
             default:
-              message.error(errorMessage);
+              message.error(displayMessage);
           }
         }
       } else if (error.response) {
@@ -98,12 +100,19 @@ export const errorConfig: RequestConfig = {
   // 响应拦截器
   responseInterceptors: [
     (response) => {
-      // 拦截响应数据，进行个性化处理
       const { data } = response as unknown as ResponseStructure;
 
       if (data?.success === false) {
         message.error('请求失败！');
       }
+
+      if (data?.errorMessage) {
+        data.errorMessage = getErrorMessage(data.errorMessage);
+      }
+      if (data?.message) {
+        data.message = getErrorMessage(data.message);
+      }
+
       return response;
     },
   ],
