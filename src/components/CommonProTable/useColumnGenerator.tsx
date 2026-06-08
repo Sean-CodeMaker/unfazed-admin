@@ -79,6 +79,9 @@ export const useColumnGenerator = ({
     const searchRangeFields = (modelDesc.attrs as any)?.search_range_fields as
       | string[]
       | undefined;
+    const listEditable = (modelDesc.attrs as any)?.list_editable as
+      | string[]
+      | undefined;
     let fieldEntries = Object.entries(modelDesc.fields || {});
 
     // Filter by list_display if defined
@@ -395,9 +398,6 @@ export const useColumnGenerator = ({
       }
 
       // Set editable
-      const listEditable = (modelDesc.attrs as any)?.list_editable as
-        | string[]
-        | undefined;
       if (fieldConfig.readonly) {
         column.editable = false;
       } else if (modelDesc.attrs.can_edit) {
@@ -417,7 +417,14 @@ export const useColumnGenerator = ({
 
     // Add action column
     const hasDetailAction = !!onDetail;
-    const hasInlineEditAction = modelDesc.attrs.can_edit && !onEditRelated;
+    const hasListEditableFields = listEditable
+      ? listEditable.some((fieldName) => {
+          const fieldConfig = modelDesc.fields[fieldName];
+          return fieldName !== 'id' && fieldConfig && !fieldConfig.readonly;
+        })
+      : false;
+    const hasInlineEditAction =
+      modelDesc.attrs.can_edit && !onEditRelated && hasListEditableFields;
     const hasPopupEditAction = !!onEditRelated;
     const hasCopyAction = !!onCopyRelated;
     const hasDeleteAction = modelDesc.attrs.can_delete && !onUnlink;
