@@ -18,7 +18,7 @@ export interface AppSettings {
  */
 export const defaultAppSettings: AppSettings = {
   pageSize: 20,
-  timeZone: 'Asia/Shanghai',
+  timeZone: 'UTC',
   apiPrefix: '/api',
   debug: false,
   version: '1.0.0',

@@ -192,7 +192,7 @@ export default {
         showWatermark: false, // 水印开关控制
         defaultLoginType: true,
         pageSize: 20,
-        timeZone: 'Asia/Shanghai',
+        timeZone: 'UTC',
         apiPrefix: '/api',
         debug: false,
         version: '1.0.0',
