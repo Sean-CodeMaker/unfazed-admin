@@ -1,6 +1,7 @@
-import { SelectLang as UmiSelectLang } from '@umijs/max';
+import { setLocale, SelectLang as UmiSelectLang } from '@umijs/max';
 import React from 'react';
 import { getExtraSettings } from '@/utils/settings';
+import { confirmUnsaved } from '@/utils/unsavedGuard';
 
 export type SiderTheme = 'light' | 'dark';
 
@@ -28,6 +29,9 @@ export const SelectLang: React.FC<{ languages?: string[] }> = ({
   return (
     <UmiSelectLang
       postLocalesData={postLocalesData}
+      onItemClick={({ key }: { key: string }) => {
+        confirmUnsaved(() => setLocale(key, true));
+      }}
       style={{
         padding: 4,
       }}

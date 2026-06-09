@@ -10,6 +10,7 @@ import { createStyles } from 'antd-style';
 import React from 'react';
 import { flushSync } from 'react-dom';
 import { outLogin } from '@/services/api';
+import { confirmUnsaved } from '@/utils/unsavedGuard';
 import HeaderDropdown from '../HeaderDropdown';
 
 export type GlobalHeaderRightProps = {
@@ -85,14 +86,15 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
   const onMenuClick: MenuProps['onClick'] = (event) => {
     const { key } = event;
     if (key === 'logout') {
-      // 清除本地存储的用户信息
-      localStorage.removeItem('userInfo');
-      localStorage.removeItem('userSettings');
+      confirmUnsaved(() => {
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('userSettings');
 
-      flushSync(() => {
-        setInitialState((s) => ({ ...s, currentUser: undefined }));
+        flushSync(() => {
+          setInitialState((s) => ({ ...s, currentUser: undefined }));
+        });
+        loginOut();
       });
-      loginOut();
       return;
     }
     history.push(`/account/${key}`);

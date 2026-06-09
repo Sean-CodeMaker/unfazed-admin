@@ -26,6 +26,9 @@ const mockUseRequestState = {
 jest.mock('@umijs/max', () => {
   const React = require('react');
   return {
+    history: {
+      block: jest.fn(() => jest.fn()),
+    },
     useRequest: (service: any, options: any) => {
       React.useEffect(() => {
         let active = true;
@@ -46,7 +49,13 @@ jest.mock('@umijs/max', () => {
 jest.mock('@ant-design/pro-components', () => {
   const React = require('react');
   return {
-    PageContainer: ({ children, header }: any) =>
+    PageContainer: ({
+      children,
+      header,
+      tabList,
+      _tabActiveKey,
+      onTabChange,
+    }: any) =>
       React.createElement(
         'div',
         { 'data-testid': 'page-container' },
@@ -60,6 +69,27 @@ jest.mock('@ant-design/pro-components', () => {
           { 'data-testid': 'header-extra' },
           header?.extra,
         ),
+        tabList &&
+          React.createElement(
+            'div',
+            { 'data-testid': 'tabs' },
+            ...(tabList || []).map((item: any) =>
+              React.createElement(
+                'div',
+                { key: item.key, 'data-testid': `tab-${item.key}` },
+                React.createElement(
+                  'button',
+                  { type: 'button', onClick: () => onTabChange?.(item.key) },
+                  `switch-${item.key}`,
+                ),
+                React.createElement(
+                  'div',
+                  { 'data-testid': `tab-label-${item.key}` },
+                  item.tab,
+                ),
+              ),
+            ),
+          ),
         children,
       ),
   };
@@ -75,28 +105,6 @@ jest.mock('antd', () => {
     },
     Spin: ({ children }: any) =>
       React.createElement('div', { 'data-testid': 'spin' }, children),
-    Tabs: ({ items, onChange }: any) =>
-      React.createElement(
-        'div',
-        { 'data-testid': 'tabs' },
-        ...(items || []).map((item: any) =>
-          React.createElement(
-            'div',
-            { key: item.key, 'data-testid': `tab-${item.key}` },
-            React.createElement(
-              'button',
-              { type: 'button', onClick: () => onChange?.(item.key) },
-              `switch-${item.key}`,
-            ),
-            React.createElement(
-              'div',
-              { 'data-testid': `tab-label-${item.key}` },
-              item.label,
-            ),
-            item.children,
-          ),
-        ),
-      ),
   };
 });
 

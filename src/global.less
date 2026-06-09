@@ -107,6 +107,18 @@ ol {
   white-space: nowrap !important;
 }
 
+// Sticky header for detail page (title + tabs)
+.detail-page-container {
+  [class*='ant-pro-page-container-warp-page-header'] {
+    position: sticky;
+    top: 56px;
+    z-index: 10;
+    background-color: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
 .ck-editor-wrapper {
   border: 1px solid #d9d9d9;
   border-radius: 6px;
