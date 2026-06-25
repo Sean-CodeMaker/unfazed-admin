@@ -20,20 +20,20 @@ import {
 } from '@/utils/timestamp';
 
 /**
- * 渲染表单字段的公共工具函数
- * @param fieldName 字段名称
- * @param fieldConfig 字段配置
- * @param formRef 表单引用（用于 ImageField 预览功能）
- * @param options 额外选项
+ * Shared helper for rendering form fields.
+ * @param fieldName Field name
+ * @param fieldConfig Field configuration
+ * @param formRef Form reference used for ImageField preview
+ * @param options Extra options
  */
 export const renderFormField = (
   fieldName: string,
   fieldConfig: any,
   formRef?: React.RefObject<ProFormInstance>,
   options?: {
-    /** 是否只读模式 */
+    /** Whether to render in readonly mode */
     readonly?: boolean;
-    /** 自定义通用属性 */
+    /** Custom shared props */
     commonProps?: any;
   },
 ) => {
@@ -62,7 +62,7 @@ export const renderFormField = (
     ...(isReadonly ? { readonly: true, disabled: true } : {}),
   };
 
-  // 根据字段类型渲染不同的组件
+  // Render different components based on the field type.
   switch (fieldConfig.field_type) {
     case 'CharField':
       if (fieldConfig.choices && fieldConfig.choices.length > 0) {
@@ -325,20 +325,20 @@ export const renderFormField = (
 };
 
 /**
- * 批量渲染表单字段
- * @param fields 字段配置对象
- * @param formRef 表单引用
- * @param options 额外选项
+ * Render multiple form fields in a batch.
+ * @param fields Field configuration map
+ * @param formRef Form reference
+ * @param options Extra options
  */
 export const renderFormFields = (
   fields: Record<string, any>,
   formRef?: React.RefObject<ProFormInstance>,
   options?: {
-    /** 是否只读模式 */
+    /** Whether to render in readonly mode */
     readonly?: boolean;
-    /** 字段过滤函数 */
+    /** Field filter function */
     fieldFilter?: (fieldName: string, fieldConfig: any) => boolean;
-    /** 自定义通用属性 */
+    /** Custom shared props */
     commonProps?: any;
   },
 ) => {
@@ -346,13 +346,13 @@ export const renderFormFields = (
 
   return Object.entries(fields)
     .map(([fieldName, fieldConfig]: [string, any]) => {
-      // 如果字段不显示，跳过
+      // Skip fields that should not be shown.
       if (fieldConfig.show === false) return null;
 
-      // 如果有自定义过滤函数，应用过滤
+      // Apply the custom field filter when provided.
       if (fieldFilter && !fieldFilter(fieldName, fieldConfig)) return null;
 
       return renderFormField(fieldName, fieldConfig, formRef, renderOptions);
     })
-    .filter(Boolean); // 过滤掉 null 值
+    .filter(Boolean); // Filter out null entries.
 };

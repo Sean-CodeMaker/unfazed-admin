@@ -77,9 +77,9 @@ const parseTimeZoneOffsetFromValue = (value: string): number | null => {
 };
 
 /**
- * 解析 UTC+X 格式的时区字符串，返回偏移分钟数
- * @param timeZone 时区字符串，如 'UTC', 'UTC+0', 'UTC+8', 'UTC-5'
- * @returns 偏移分钟数；'UTC' 返回 0，无效格式返回 null
+ * Parse a UTC+X style timezone string and return the offset in minutes.
+ * @param timeZone Timezone string such as 'UTC', 'UTC+0', 'UTC+8', 'UTC-5'
+ * @returns Offset minutes; 'UTC' returns 0 and invalid formats return null
  */
 const parseUtcOffset = (timeZone: string): number | null => {
   if (!timeZone) return null;

@@ -1,6 +1,6 @@
 /**
- * 后端返回的 errorMessage 到人类可读描述的映射
- * 当 API 返回的 message 字段匹配到映射中的 key 时，自动替换为对应的描述文案
+ * Map backend error messages to human-readable descriptions.
+ * When the API returns a known message key, replace it with the mapped copy.
  */
 const ERROR_MESSAGE_MAP: Record<string, string> = {
   TOAST_SERVER_BUSY:
@@ -8,8 +8,8 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
 };
 
 /**
- * 根据后端返回的 message 获取对应的展示文案
- * 若未在映射表中找到，则返回原始 message
+ * Get the display copy for a backend message.
+ * Return the original message when no mapping is found.
  */
 export function getErrorMessage(rawMessage: string): string {
   return ERROR_MESSAGE_MAP[rawMessage] || rawMessage;

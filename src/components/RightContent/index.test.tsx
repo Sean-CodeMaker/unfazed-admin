@@ -6,8 +6,7 @@ void React.version;
 
 const mockLocales = [
   { lang: 'en-US', label: 'English' },
-  { lang: 'zh-CN', label: '简体中文' },
-  { lang: 'ja-JP', label: '日本語' },
+  { lang: 'ja-JP', label: 'Japanese' },
 ];
 
 jest.mock('@umijs/max', () => ({
@@ -30,23 +29,21 @@ describe('RightContent SelectLang', () => {
     localStorage.clear();
   });
 
-  it('keeps default locale list when EXTRA.LANGUAGE is missing', () => {
+  it('hides language selector when only english locale is supported', () => {
     render(<SelectLang />);
 
-    expect(screen.getByTestId('umi-lang').textContent).toBe(
-      'en-US,zh-CN,ja-JP',
-    );
+    expect(screen.queryByTestId('umi-lang')).toBeNull();
   });
 
-  it('filters locale list by EXTRA.LANGUAGE values', () => {
+  it('ignores unsupported locale values from EXTRA.LANGUAGE', () => {
     localStorage.setItem(
       'unfazed_app_settings',
-      JSON.stringify({ extra: { LANGUAGE: ['zh-CN', 'ja-JP'] } }),
+      JSON.stringify({ extra: { LANGUAGE: ['ja-JP'] } }),
     );
 
     render(<SelectLang />);
 
-    expect(screen.getByTestId('umi-lang').textContent).toBe('zh-CN,ja-JP');
+    expect(screen.queryByTestId('umi-lang')).toBeNull();
   });
 
   it('hides language selector when only one language is allowed', () => {
@@ -60,14 +57,14 @@ describe('RightContent SelectLang', () => {
     expect(screen.queryByTestId('umi-lang')).toBeNull();
   });
 
-  it('supports multiple locale values together', () => {
+  it('keeps only supported locale values when multiple are configured', () => {
     localStorage.setItem(
       'unfazed_app_settings',
-      JSON.stringify({ extra: { LANGUAGE: ['en-US', 'zh-CN'] } }),
+      JSON.stringify({ extra: { LANGUAGE: ['en-US', 'ja-JP'] } }),
     );
 
     render(<SelectLang />);
 
-    expect(screen.getByTestId('umi-lang').textContent).toBe('en-US,zh-CN');
+    expect(screen.queryByTestId('umi-lang')).toBeNull();
   });
 });

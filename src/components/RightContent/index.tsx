@@ -5,6 +5,8 @@ import { confirmUnsaved } from '@/utils/unsavedGuard';
 
 export type SiderTheme = 'light' | 'dark';
 
+const SUPPORTED_LOCALES = new Set(['en-US']);
+
 export const SelectLang: React.FC<{ languages?: string[] }> = ({
   languages: languagesProp,
 }) => {
@@ -13,14 +15,13 @@ export const SelectLang: React.FC<{ languages?: string[] }> = ({
     Array.isArray(languages) && languages.length > 0
       ? new Set(
           languages.filter(
-            (language): language is string => typeof language === 'string',
+            (language): language is string =>
+              typeof language === 'string' && SUPPORTED_LOCALES.has(language),
           ),
         )
-      : undefined;
-  const postLocalesData = allowedLocales
-    ? (locales: { lang: string }[]) =>
-        locales.filter((locale) => allowedLocales.has(locale.lang))
-    : undefined;
+      : SUPPORTED_LOCALES;
+  const postLocalesData = (locales: { lang: string }[]) =>
+    locales.filter((locale) => allowedLocales.has(locale.lang));
 
   if (allowedLocales && allowedLocales.size <= 1) {
     return null;

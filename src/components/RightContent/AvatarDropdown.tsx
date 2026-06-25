@@ -47,16 +47,16 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
   children,
 }) => {
   /**
-   * 退出登录，并且将当前的 url 保存
+   * Sign out and preserve the current URL for redirect
    */
   const loginOut = async () => {
-    // 从localStorage获取用户信息，确定登录平台
+    // Read user info from localStorage to determine the login platform
     let platform: string | undefined;
     try {
       const userInfo = localStorage.getItem('userInfo');
       if (userInfo) {
         const user = JSON.parse(userInfo);
-        // 从用户的extra信息中获取platform
+        // Read platform from the user's extra payload
         platform = user.extra?.platform;
       }
     } catch (error) {
@@ -69,7 +69,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     const searchParams = new URLSearchParams({
       redirect: pathname + search,
     });
-    /** 此方法会跳转到 redirect 参数所在的位置 */
+    /** This will redirect to the location stored in the redirect param. */
     const redirect = urlParams.get('redirect');
     // Note: There may be security issues, please note
     if (window.location.pathname !== '/user/login' && !redirect) {
@@ -128,12 +128,12 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
           {
             key: 'center',
             icon: <UserOutlined />,
-            label: '个人中心',
+            label: 'Profile',
           },
           {
             key: 'settings',
             icon: <SettingOutlined />,
-            label: '个人设置',
+            label: 'Settings',
           },
           {
             type: 'divider' as const,
@@ -143,7 +143,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: 'Sign out',
     },
   ];
 

@@ -222,10 +222,10 @@ describe('Login Page', () => {
       expect(
         document.querySelector<HTMLLinkElement>('link[rel~="icon"]')?.href,
       ).toContain('/custom-tab-icon.svg');
-      expect(screen.getByTitle('使用 github 登录')).toBeTruthy();
+      expect(screen.getByTitle('Sign in with github')).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByTitle('使用 github 登录'));
+    fireEvent.click(screen.getByTitle('Sign in with github'));
     expect(localStorage.getItem('oauth_platform')).toBe('github');
     expect(mockLocationHref).toContain(
       '/api/auth/oauth-login-redirect?platform=github',
@@ -254,7 +254,9 @@ describe('Login Page', () => {
     fireEvent.click(screen.getByText('submit-login'));
 
     await waitFor(() => {
-      expect(mockMessage.success).toHaveBeenCalledWith('登录成功！');
+      expect(mockMessage.success).toHaveBeenCalledWith(
+        'Signed in successfully!',
+      );
       expect(mockSetInitialState).toHaveBeenCalledWith(expect.any(Function));
     });
 
@@ -281,7 +283,7 @@ describe('Login Page', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('alert').textContent).toBe(
-        '账户或密码错误(admin/ant.design)',
+        'Incorrect username or password (admin/ant.design)',
       );
     });
 
@@ -289,7 +291,9 @@ describe('Login Page', () => {
     fireEvent.click(screen.getByText('submit-login'));
 
     await waitFor(() => {
-      expect(mockMessage.error).toHaveBeenCalledWith('登录失败，请重试！');
+      expect(mockMessage.error).toHaveBeenCalledWith(
+        'Sign-in failed. Please try again!',
+      );
     });
   });
 });
