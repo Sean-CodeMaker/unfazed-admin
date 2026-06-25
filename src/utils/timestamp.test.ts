@@ -5,11 +5,19 @@ import {
   isEmptyDateTimeValue,
   isNumericTimestamp,
   toDateTimePickerValue,
+  toDisplayDateTimePickerValue,
   toTimestampMilliseconds,
   toUnixTimestamp,
 } from './timestamp';
 
 describe('timestamp utils', () => {
+  beforeEach(() => {
+    localStorage.setItem(
+      'unfazed_app_settings',
+      JSON.stringify({ timeZone: 'UTC+8' }),
+    );
+  });
+
   it('detects empty values and numeric timestamps', () => {
     expect(isEmptyDateTimeValue(undefined)).toBe(true);
     expect(isEmptyDateTimeValue(null)).toBe(true);
@@ -52,12 +60,40 @@ describe('timestamp utils', () => {
   });
 
   it('formats timestamp, date, and datetime values', () => {
-    expect(formatDateTimeValue(1700000000, 'YYYY-MM-DD')).toBe(
-      dayjs(1700000000 * 1000).format('YYYY-MM-DD'),
+    expect(formatDateTimeValue(1700000000, 'YYYY-MM-DD HH:mm:ss')).toBe(
+      '2023-11-15 06:13:20',
     );
     expect(formatDateTimeValue('2026-01-01', 'YYYY-MM-DD')).toBe('2026-01-01');
+    expect(
+      formatDateTimeValue('2026-01-01T00:00:00Z', 'YYYY-MM-DD HH:mm:ss'),
+    ).toBe('2026-01-01 00:00:00');
+    expect(
+      formatDateTimeValue('2026-01-01 00:00:00', 'YYYY-MM-DD HH:mm:ss'),
+    ).toBe('2026-01-01 08:00:00');
+    expect(
+      formatDateTimeValue('2026-01-01T00:00:00+05:30', 'YYYY-MM-DD HH:mm:ss'),
+    ).toBe('2026-01-01 00:00:00');
     expect(formatDateTimeValue('', 'YYYY-MM-DD')).toBe('-');
     expect(formatDateTimeValue('bad-date', 'YYYY-MM-DD')).toBe('-');
+  });
+
+  it('converts picker display values using configured time zone', () => {
+    const numeric = toDisplayDateTimePickerValue(1700000000);
+    expect(numeric?.format('YYYY-MM-DD HH:mm:ss')).toBe('2023-11-15 06:13:20');
+
+    const iso = toDisplayDateTimePickerValue('2026-01-01T00:00:00Z');
+    expect(iso?.format('YYYY-MM-DD HH:mm:ss')).toBe('2026-01-01 00:00:00');
+  });
+
+  it('keeps UTC display in UTC instead of browser local time', () => {
+    localStorage.setItem(
+      'unfazed_app_settings',
+      JSON.stringify({ timeZone: 'UTC' }),
+    );
+
+    expect(formatDateTimeValue(1700000000, 'YYYY-MM-DD HH:mm:ss')).toBe(
+      '2023-11-14 22:13:20',
+    );
   });
 
   it('returns the current unix timestamp in seconds', () => {

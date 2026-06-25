@@ -2,6 +2,7 @@ import { ProTable } from '@ant-design/pro-components';
 import { Modal } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { getModelData } from '@/services/api';
+import { formatDateTimeValue } from '@/utils/timestamp';
 
 interface M2MSelectionModalProps {
   visible: boolean;
@@ -242,14 +243,21 @@ const M2MSelectionModal: React.FC<M2MSelectionModalProps> = ({
               column.render = (_: any, record: any) => {
                 const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
-                return value;
+                return formatDateTimeValue(value, 'YYYY-MM-DD');
               };
             } else if (fieldConf.field_type === 'DatetimeField') {
               column.valueType = 'dateTime';
               column.render = (_: any, record: any) => {
                 const value = record?.[fieldName];
                 if (value === null || value === undefined) return '-';
-                return value;
+                return formatDateTimeValue(value, 'YYYY-MM-DD HH:mm:ss');
+              };
+            } else if (fieldConf.field_type === 'TimeField') {
+              column.valueType = 'time';
+              column.render = (_: any, record: any) => {
+                const value = record?.[fieldName];
+                if (value === null || value === undefined) return '-';
+                return formatDateTimeValue(value, 'HH:mm:ss');
               };
             } else if (
               fieldConf.field_type === 'IntegerField' ||

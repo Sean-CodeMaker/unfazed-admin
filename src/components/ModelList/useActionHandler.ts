@@ -85,7 +85,7 @@ export const useActionHandler = ({
             (result.actionConfig as any)?.output === 'display' &&
             result.data
           ) {
-            showDisplayModal(result.data, result.actionConfig);
+            showDisplayModal(result.data, result.actionConfig, modelDesc);
           } else {
             // Other output types handled in hook
             actionRef.current?.reload?.();

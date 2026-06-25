@@ -50,6 +50,10 @@ describe('formFieldRenderer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.setItem(
+      'unfazed_app_settings',
+      JSON.stringify({ timeZone: 'UTC+8' }),
+    );
   });
 
   it('renders CharField as select when choices exist', () => {
@@ -118,15 +122,15 @@ describe('formFieldRenderer', () => {
 
     expect(element.type.displayName).toBe('ProFormDateTimePicker');
     expect(element.props.convertValue(undefined)).toBeUndefined();
-    expect(element.props.convertValue(1700000000).valueOf()).toBe(
-      1700000000 * 1000,
-    );
-    expect(element.props.convertValue('1700000000').valueOf()).toBe(
-      1700000000 * 1000,
-    );
+    expect(
+      element.props.convertValue(1700000000).format('YYYY-MM-DD HH:mm:ss'),
+    ).toBe('2023-11-15 06:13:20');
+    expect(
+      element.props.convertValue('1700000000').format('YYYY-MM-DD HH:mm:ss'),
+    ).toBe('2023-11-15 06:13:20');
 
     const thirteen = element.props.convertValue(1700000000000);
-    expect(thirteen.valueOf()).toBe(1700000000000);
+    expect(thirteen.format('YYYY-MM-DD HH:mm:ss')).toBe('2023-11-15 06:13:20');
 
     expect(element.props.transform(undefined)).toEqual({
       created_at: undefined,
@@ -143,6 +147,18 @@ describe('formFieldRenderer', () => {
     expect(element.props.transform(1700000000000)).toEqual({
       created_at: 1700000000,
     });
+  });
+
+  it('converts date and time fields for display using configured time zone', () => {
+    const dateElement: any = renderFormField('d', { field_type: 'DateField' });
+    const timeElement: any = renderFormField('t', { field_type: 'TimeField' });
+
+    expect(
+      dateElement.props.convertValue(1700000000).format('YYYY-MM-DD'),
+    ).toBe('2023-11-15');
+    expect(
+      timeElement.props.convertValue('2026-01-01T00:00:00Z').format('HH:mm:ss'),
+    ).toBe('00:00:00');
   });
 
   it('renders editor and default field', () => {

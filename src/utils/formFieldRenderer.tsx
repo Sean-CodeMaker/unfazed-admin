@@ -14,7 +14,10 @@ import { Button, Modal } from 'antd';
 import React from 'react';
 import { JsonFieldEditor, ProFormEditorJS } from '@/components';
 import { toJsonString, validateJson } from '@/utils/json';
-import { toDateTimePickerValue, toUnixTimestamp } from '@/utils/timestamp';
+import {
+  toDisplayDateTimePickerValue,
+  toUnixTimestamp,
+} from '@/utils/timestamp';
 
 /**
  * 渲染表单字段的公共工具函数
@@ -121,7 +124,15 @@ export const renderFormField = (
       return <ProFormSwitch key={fieldName} {...commonProps} />;
 
     case 'DateField':
-      return <ProFormDatePicker key={fieldName} {...commonProps} />;
+      return (
+        <ProFormDatePicker
+          key={fieldName}
+          {...commonProps}
+          convertValue={(value: any) => {
+            return toDisplayDateTimePickerValue(value);
+          }}
+        />
+      );
 
     case 'DatetimeField':
       return (
@@ -134,7 +145,7 @@ export const renderFormField = (
           }}
           // Convert timestamp to dayjs for display
           convertValue={(value: any) => {
-            return toDateTimePickerValue(value);
+            return toDisplayDateTimePickerValue(value);
           }}
           // Convert dayjs back to timestamp for submission
           transform={(value: any) => {
@@ -144,7 +155,15 @@ export const renderFormField = (
       );
 
     case 'TimeField':
-      return <ProFormTimePicker key={fieldName} {...commonProps} />;
+      return (
+        <ProFormTimePicker
+          key={fieldName}
+          {...commonProps}
+          convertValue={(value: any) => {
+            return toDisplayDateTimePickerValue(value);
+          }}
+        />
+      );
 
     case 'EditorField':
       return (

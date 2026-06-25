@@ -59,13 +59,31 @@ export const toUnixTimestamp = (value: any) => {
 
 export const currentUnixTimestamp = () => Math.floor(Date.now() / 1000);
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_ONLY_PATTERN = /^\d{2}:\d{2}(?::\d{2})?$/;
+const HAS_TIME_ZONE_PATTERN = /(Z|[+-]\d{2}:?\d{2})$/i;
+
+const parseTimeZoneOffsetFromValue = (value: string): number | null => {
+  if (/Z$/i.test(value)) return 0;
+
+  const match = value.match(/([+-])(\d{2}):?(\d{2})$/);
+  if (!match) return null;
+
+  const sign = match[1] === '+' ? 1 : -1;
+  const hours = parseInt(match[2], 10);
+  const minutes = parseInt(match[3], 10);
+
+  return sign * (hours * 60 + minutes);
+};
+
 /**
  * 解析 UTC+X 格式的时区字符串，返回偏移分钟数
  * @param timeZone 时区字符串，如 'UTC', 'UTC+0', 'UTC+8', 'UTC-5'
- * @returns 偏移分钟数；'UTC' 返回 null（浏览器本地时区），无效格式返回 null
+ * @returns 偏移分钟数；'UTC' 返回 0，无效格式返回 null
  */
 const parseUtcOffset = (timeZone: string): number | null => {
-  if (!timeZone || timeZone === 'UTC') return null;
+  if (!timeZone) return null;
+  if (timeZone === 'UTC') return 0;
 
   const match = timeZone.match(/^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i);
   if (!match) return null;
@@ -77,6 +95,71 @@ const parseUtcOffset = (timeZone: string): number | null => {
   return sign * (hours * 60 + minutes);
 };
 
+const getDisplayDayjs = (value: any) => {
+  if (isEmptyDateTimeValue(value)) return null;
+
+  const timeZone = getTimeZone();
+  const offsetMinutes = parseUtcOffset(timeZone);
+
+  if (isNumericTimestamp(value)) {
+    const timestampMs = Number(toTimestampMilliseconds(value));
+    if (offsetMinutes !== null) {
+      return dayjs.utc(timestampMs).utcOffset(offsetMinutes);
+    }
+    return dayjs(timestampMs);
+  }
+
+  if (value instanceof Date) {
+    const timestampMs = value.getTime();
+    if (!Number.isFinite(timestampMs)) return null;
+    if (offsetMinutes !== null) {
+      return dayjs.utc(timestampMs).utcOffset(offsetMinutes);
+    }
+    return dayjs(timestampMs);
+  }
+
+  if (typeof (value as any)?.valueOf === 'function') {
+    const maybeTimestamp = Number((value as any).valueOf());
+    if (
+      Number.isFinite(maybeTimestamp) &&
+      typeof (value as any)?.format === 'function'
+    ) {
+      if (offsetMinutes !== null) {
+        return dayjs.utc(maybeTimestamp).utcOffset(offsetMinutes);
+      }
+      return dayjs(maybeTimestamp);
+    }
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (DATE_ONLY_PATTERN.test(trimmed) || TIME_ONLY_PATTERN.test(trimmed)) {
+      const parsed = dayjs(trimmed);
+      return parsed.isValid() ? parsed : null;
+    }
+
+    if (HAS_TIME_ZONE_PATTERN.test(trimmed)) {
+      const absolute = dayjs(trimmed);
+      const embeddedOffset = parseTimeZoneOffsetFromValue(trimmed);
+      if (!absolute.isValid() || embeddedOffset === null) return null;
+
+      return dayjs.utc(absolute.valueOf()).utcOffset(embeddedOffset);
+    }
+
+    if (offsetMinutes !== null) {
+      const parsedAsUtc = dayjs.utc(trimmed);
+      return parsedAsUtc.isValid()
+        ? parsedAsUtc.utcOffset(offsetMinutes)
+        : null;
+    }
+  }
+
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed : null;
+};
+
 export const formatDateTimeValue = (
   value: any,
   format: string,
@@ -84,22 +167,13 @@ export const formatDateTimeValue = (
 ) => {
   if (isEmptyDateTimeValue(value)) return fallback;
 
-  const timeZone = getTimeZone();
-  const offsetMinutes = parseUtcOffset(timeZone);
+  const parsed = getDisplayDayjs(value);
+  return parsed?.isValid() ? parsed.format(format) : fallback;
+};
 
-  // 尝试作为数值时间戳处理
-  if (isNumericTimestamp(value)) {
-    const timestampMs = Number(toTimestampMilliseconds(value));
+export const toDisplayDateTimePickerValue = (value: any) => {
+  if (isEmptyDateTimeValue(value)) return value;
 
-    if (offsetMinutes !== null) {
-      return dayjs.utc(timestampMs).utcOffset(offsetMinutes).format(format);
-    }
-
-    return dayjs(timestampMs).format(format);
-  }
-
-  // 非数值类型（日期字符串等），直接解析
-  const parsed = toDateTimePickerValue(value);
-  const result = dayjs(parsed);
-  return result.isValid() ? result.format(format) : fallback;
+  const parsed = getDisplayDayjs(value);
+  return parsed?.isValid() ? parsed : value;
 };
