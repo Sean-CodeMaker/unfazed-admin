@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { buildSearchConditions, getStoredSettings } from './utils';
 
 describe('useModelOperations/utils', () => {
@@ -48,8 +49,10 @@ describe('useModelOperations/utils', () => {
     } as any;
 
     const fakeDate = { format: jest.fn(() => '2026-01-02') };
-    const fakeStartTime = { unix: jest.fn(() => 1700000001) };
-    const fakeEndTime = { unix: jest.fn(() => 1700000002) };
+    // DatetimeField values are dayjs objects emitted by the picker; toUnixTimestamp
+    // reinterprets their wall-clock in the configured time zone (UTC here).
+    const fakeStartTime = dayjs.unix(1700000001).utc();
+    const fakeEndTime = dayjs.unix(1700000002).utc();
 
     const conditions = buildSearchConditions(
       {
@@ -104,8 +107,8 @@ describe('useModelOperations/utils', () => {
 
     const startDate = { format: jest.fn(() => '2026-02-01') };
     const endDate = { format: jest.fn(() => '2026-02-03') };
-    const startDt = { unix: jest.fn(() => 1710000000) };
-    const endDt = { unix: jest.fn(() => 1710000100) };
+    const startDt = dayjs.unix(1710000000).utc();
+    const endDt = dayjs.unix(1710000100).utc();
 
     const conditions = buildSearchConditions(
       {
@@ -158,6 +161,28 @@ describe('useModelOperations/utils', () => {
         },
       ]),
     );
+  });
+
+  it('submits TimeField search as a wall-clock HH:mm:ss string', () => {
+    const modelDesc = {
+      attrs: { search_range_fields: [] },
+      fields: {
+        open_at: { field_type: 'TimeField' },
+      },
+    } as any;
+
+    // dayjs emitted by the picker -> formatted wall-clock string (no tz shift)
+    expect(
+      buildSearchConditions(
+        { open_at: dayjs('2026-01-01 14:30:00') },
+        modelDesc,
+      ),
+    ).toEqual([{ field: 'open_at', eq: '14:30:00' }]);
+
+    // plain string passes through unchanged
+    expect(buildSearchConditions({ open_at: '09:00:00' }, modelDesc)).toEqual([
+      { field: 'open_at', eq: '09:00:00' },
+    ]);
   });
 
   it('keeps numeric DatetimeField search timestamps in seconds', () => {

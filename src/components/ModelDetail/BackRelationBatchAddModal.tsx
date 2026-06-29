@@ -1,4 +1,5 @@
 import { Button, Input, Modal, Table } from 'antd';
+import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { isNumericTimestamp, toUnixTimestamp } from '@/utils/timestamp';
 
@@ -102,14 +103,16 @@ const validateAndCastValue = (rawValue: string, fieldConfig: any) => {
   }
 
   if (fieldType === 'DateField') {
-    if (isNumericTimestamp(trimmed)) {
-      return { value: Number(trimmed), error: '' };
-    }
-    const dt = new Date(trimmed);
-    if (Number.isNaN(dt.getTime())) {
+    // DateField is a wall-clock calendar value with no time-zone semantics.
+    // Validate with dayjs (browser-time-zone independent) and pass the input
+    // through unchanged, whether it was typed as a string or a number.
+    const trimmedValue = isNumericTimestamp(trimmed)
+      ? Number(trimmed)
+      : trimmed;
+    if (!dayjs(trimmed).isValid()) {
       return { value: trimmed, error: 'must be a valid date/datetime' };
     }
-    return { value: trimmed, error: '' };
+    return { value: trimmedValue, error: '' };
   }
 
   if (fieldType === 'TimeField') {

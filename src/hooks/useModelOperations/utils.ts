@@ -203,6 +203,17 @@ export const buildSearchConditions = (
         }
         break;
 
+      case 'TimeField':
+        // Mirror the detail-form TimeField transform: submit a wall-clock
+        // 'HH:mm:ss' string. TimeField has no time-zone semantics, so no
+        // timestamp conversion is applied.
+        if (typeof (value as any)?.format === 'function') {
+          condition.eq = (value as any).format('HH:mm:ss') as any;
+        } else if (typeof value === 'string' || typeof value === 'number') {
+          condition.eq = value as any;
+        }
+        break;
+
       default:
         if (typeof value === 'string' || typeof value === 'number') {
           condition.eq = value as any;

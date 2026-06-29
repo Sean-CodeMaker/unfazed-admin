@@ -131,6 +131,15 @@ export const renderFormField = (
           convertValue={(value: any) => {
             return toDisplayDateTimePickerValue(value);
           }}
+          // Date fields are calendar values without time-zone semantics.
+          // The backend always returns wall-clock strings, so submit the
+          // picked wall-clock string back unchanged (no timestamp conversion).
+          transform={(value: any) => {
+            if (!value) return { [fieldName]: value };
+            return typeof value.format === 'function'
+              ? { [fieldName]: value.format('YYYY-MM-DD') }
+              : { [fieldName]: value };
+          }}
         />
       );
 
@@ -161,6 +170,15 @@ export const renderFormField = (
           {...commonProps}
           convertValue={(value: any) => {
             return toDisplayDateTimePickerValue(value);
+          }}
+          // Time fields are clock values without time-zone semantics.
+          // The backend always returns wall-clock strings, so submit the
+          // picked wall-clock string back unchanged (no timestamp conversion).
+          transform={(value: any) => {
+            if (!value) return { [fieldName]: value };
+            return typeof value.format === 'function'
+              ? { [fieldName]: value.format('HH:mm:ss') }
+              : { [fieldName]: value };
           }}
         />
       );

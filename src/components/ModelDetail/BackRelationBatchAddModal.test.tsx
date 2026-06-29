@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import dayjs from 'dayjs';
 import * as React from 'react';
 import BackRelationBatchAddModal from './BackRelationBatchAddModal';
 
@@ -199,6 +200,23 @@ describe('BackRelationBatchAddModal', () => {
         }),
       ]);
     });
+  });
+
+  it('interprets bare DatetimeField strings in the configured time zone', () => {
+    // Default configured time zone is UTC, so a bare wall-clock string must be
+    // interpreted as UTC (independent of the browser local time zone).
+    const onPreview = jest.fn();
+    render(<BackRelationBatchAddModal {...baseProps} onPreview={onPreview} />);
+
+    fireEvent.change(screen.getByTestId('batch-textarea'), {
+      target: { value: '2026-04-08 09:00:00\tcreated\tBare datetime\t1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+
+    const expectedUnix = dayjs.utc('2026-04-08 09:00:00').unix();
+    expect(onPreview).toHaveBeenLastCalledWith([
+      expect.objectContaining({ event_date: expectedUnix }),
+    ]);
   });
 
   it('should accept DateField raw numeric values without changing date strings', () => {

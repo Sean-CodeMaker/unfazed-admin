@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+import dayjs from 'dayjs';
 import * as api from '@/services/api';
 import { buildSearchConditions, useActionExecutor } from './useActionExecutor';
 
@@ -71,7 +72,7 @@ describe('useActionExecutor', () => {
       {
         created_at: ['bad-start', 'bad-end'],
         updated_at: [0, '1700000100'],
-        exact_at: { unix: jest.fn(() => 1700000200) },
+        exact_at: dayjs.unix(1700000200).utc(),
       },
       {
         fields: {

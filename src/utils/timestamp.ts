@@ -43,7 +43,27 @@ export const toUnixTimestamp = (value: any) => {
       : Math.floor(numValue / 1000);
   }
 
-  if (typeof (value as any)?.unix === 'function') {
+  if (
+    typeof (value as any)?.unix === 'function' &&
+    typeof (value as any)?.format === 'function'
+  ) {
+    // A value coming from a date/time picker carries the wall-clock the user
+    // selected in the configured time zone, but its internal time zone may have
+    // been reset to the browser local zone by the picker. Re-interpret the
+    // wall-clock in the configured time zone so the produced UTC timestamp is
+    // independent of the browser time zone and stays symmetric with display.
+    const wallClock = (value as dayjs.Dayjs).format('YYYY-MM-DD HH:mm:ss');
+    const offsetMinutes = parseUtcOffset(getTimeZone());
+
+    if (offsetMinutes !== null) {
+      // Treat the wall-clock as UTC, then shift by the configured offset so the
+      // resulting instant matches what the user saw in the configured zone.
+      const reinterpreted = dayjs
+        .utc(wallClock)
+        .subtract(offsetMinutes, 'minute');
+      return reinterpreted.isValid() ? reinterpreted.unix() : null;
+    }
+
     const unixValue = Number((value as any).unix());
     return Number.isFinite(unixValue) ? unixValue : null;
   }
@@ -51,6 +71,41 @@ export const toUnixTimestamp = (value: any) => {
   if (value instanceof Date) {
     const time = value.getTime();
     return Number.isFinite(time) ? Math.floor(time / 1000) : null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const offsetMinutes = parseUtcOffset(getTimeZone());
+
+    // Strings already carrying a zone are absolute instants; read them as-is.
+    if (HAS_TIME_ZONE_PATTERN.test(trimmed)) {
+      const absolute = dayjs(trimmed);
+      return absolute.isValid() ? absolute.unix() : null;
+    }
+
+    // Date-only / time-only strings have no time-zone semantics; their unix
+    // value is only used for validity/range checks, never submitted for these
+    // field types. Parse without any offset.
+    if (DATE_ONLY_PATTERN.test(trimmed) || TIME_ONLY_PATTERN.test(trimmed)) {
+      const anchor = TIME_ONLY_PATTERN.test(trimmed)
+        ? `1970-01-01 ${trimmed}`
+        : trimmed;
+      const parsed = dayjs(anchor);
+      return parsed.isValid() ? parsed.unix() : null;
+    }
+
+    // Bare datetime wall-clock: interpret in the configured time zone so the
+    // produced UTC instant is independent of the browser time zone and stays
+    // symmetric with display. `.subtract` shifts the absolute instant (unlike
+    // `.utcOffset`, which only changes the displayed wall-clock).
+    const asUtc = dayjs.utc(trimmed);
+    if (!asUtc.isValid()) return null;
+    if (offsetMinutes !== null) {
+      return asUtc.subtract(offsetMinutes, 'minute').unix();
+    }
+    return asUtc.unix();
   }
 
   const parsed = dayjs(value);
@@ -135,7 +190,14 @@ const getDisplayDayjs = (value: any) => {
     const trimmed = value.trim();
     if (!trimmed) return null;
 
-    if (DATE_ONLY_PATTERN.test(trimmed) || TIME_ONLY_PATTERN.test(trimmed)) {
+    if (TIME_ONLY_PATTERN.test(trimmed)) {
+      // dayjs cannot parse a bare clock value; anchor it to a reference date
+      // so the time portion can be displayed/saved as a wall-clock string.
+      const parsed = dayjs(`1970-01-01 ${trimmed}`);
+      return parsed.isValid() ? parsed : null;
+    }
+
+    if (DATE_ONLY_PATTERN.test(trimmed)) {
       const parsed = dayjs(trimmed);
       return parsed.isValid() ? parsed : null;
     }
@@ -173,6 +235,19 @@ export const formatDateTimeValue = (
 
 export const toDisplayDateTimePickerValue = (value: any) => {
   if (isEmptyDateTimeValue(value)) return value;
+
+  // A value that is already a dayjs instance (e.g. emitted by the picker on
+  // user input) must be returned as-is. Re-parsing it through getDisplayDayjs
+  // would re-interpret its absolute instant in the configured time zone, which
+  // makes the displayed wall-clock jump whenever the browser time zone differs
+  // from the configured one. Initial values (numbers / strings / Date) are
+  // still normalized below.
+  if (
+    typeof (value as any)?.format === 'function' &&
+    typeof (value as any)?.unix === 'function'
+  ) {
+    return value;
+  }
 
   const parsed = getDisplayDayjs(value);
   return parsed?.isValid() ? parsed : value;
